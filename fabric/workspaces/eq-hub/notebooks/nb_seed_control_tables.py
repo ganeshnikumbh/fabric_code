@@ -48,7 +48,7 @@ print(f"CSV path   : {CSV_PATH}")
 # ══════════════════════════════════════════════════════════════════════════════
 
 from pyspark.sql import functions as F
-from pyspark.sql.types import IntegerType, StringType, BooleanType, TimestampType
+from pyspark.sql.types import IntegerType, StringType, TimestampType
 from datetime import datetime, timezone
 
 NOW = datetime.now(timezone.utc)
@@ -100,8 +100,8 @@ ingestion_df = (
     # Numeric columns
     .withColumn("source_id",   F.col("source_id").cast(IntegerType()))
     .withColumn("batch_size",  F.col("batch_size").cast(IntegerType()))
-    # Boolean
-    .withColumn("active_flag", F.col("active_flag").cast(BooleanType()))
+    # active_flag — all seed rows are active
+    .withColumn("active_flag", F.lit(True))
     # Nullify empty watermark fields (already handled by nullValue option,
     # but guard in case of whitespace-only values)
     .withColumn("watermark_column", F.when(
