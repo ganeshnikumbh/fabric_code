@@ -1,0 +1,143 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# EquiTrust Fabric Platform — .gitignore
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ── Governance docs (source documents — not version-controlled here) ──────────
+docs/
+
+# ── Secrets & credentials — NEVER commit these ────────────────────────────────
+.env
+.env.*
+*.env
+secrets.yml
+secrets.yaml
+credentials.json
+local.settings.json
+*.pem
+*.key
+*.pfx
+*.p12
+*_secret*
+*_token*
+service_principal.json
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# ── Testing & coverage ────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+coverage/
+htmlcov/
+nosetests.xml
+test-results/
+junit*.xml
+
+# ── Spark / Delta Lake (local development artefacts) ─────────────────────────
+spark-warehouse/
+.spark-events/
+derby.log
+metastore_db/
+_delta_log/
+*.delta/
+*.parquet
+*.orc
+*.avro
+checkpoint/
+checkpoints/
+
+# ── Jupyter notebooks ─────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Local data files (never commit raw or extracted data) ─────────────────────
+*.csv
+!fabric/config/ingestion_config_seed.csv   # exception — seed config is source-controlled
+*.tsv
+*.xlsx
+*.xls
+*.json
+!**/dataflows/*.pq                         # exception — dataflow M code is source-controlled
+data/
+local_data/
+sample_data/
+raw/
+landing/
+
+# ── Log files ─────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Infrastructure state (Bicep/Terraform) ───────────────────────────────────
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+infra/generated/
+
+# ── Azure Functions & App config ─────────────────────────────────────────────
+.azure/
+*.azurePubxml
+PublishProfiles/
+
+# ── IDEs ──────────────────────────────────────────────────────────────────────
+# VS Code — keep shared settings, ignore personal/machine-specific
+.vscode/launch.json
+.vscode/extensions.json
+.vscode/*.code-workspace
+
+# JetBrains (PyCharm, DataSpell)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.nfs*
+
+# ── Temporary & build artefacts ───────────────────────────────────────────────
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+tmp/
+temp/
+dist/
+out/
+target/

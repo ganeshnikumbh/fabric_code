@@ -1,0 +1,60 @@
+# fabric-cicd deployment configuration
+# Reference: https://github.com/microsoft/fabric-cicd
+# EquiTrust Financial — Microsoft Fabric Hub Workspace
+
+source_directory: fabric/workspaces/eq-hub
+
+item_type_in_scope:
+  - Lakehouse
+  - DataPipeline
+  - Dataflow
+  - Notebook
+  - SemanticModel
+
+# Token replacement map — these literals are replaced in item definitions
+# at deploy time with environment-specific values.
+# NEVER hardcode actual values here — all resolved from Key Vault at deploy time.
+find_replace:
+  - find: __ENVIRONMENT__
+    replace: ${ENVIRONMENT}
+
+  - find: __STORAGE_ACCOUNT__
+    replace: ${STORAGE_ACCOUNT}
+
+  - find: __HUB_WORKSPACE_ID__
+    replace: ${HUB_WORKSPACE_ID}
+
+  - find: __KEY_VAULT_NAME__
+    replace: ${KEY_VAULT_NAME}
+
+  - find: __SQL_SERVER_CONNECTION_ID__
+    replace: ${SQL_SERVER_CONNECTION_ID}
+
+  - find: __LOG_ANALYTICS_WORKSPACE_ID__
+    replace: ${LOG_ANALYTICS_WORKSPACE_ID}
+
+  - find: __TEAMS_WEBHOOK_URL__
+    replace: ${TEAMS_WEBHOOK_URL}
+
+  - find: __ONPREM_GATEWAY_ID__
+    replace: ${ONPREM_GATEWAY_ID}
+
+  - find: __SQL_SERVER_HOST__
+    replace: ${SQL_SERVER_HOST}
+
+  - find: __SQL_SERVER_DATABASE__
+    replace: ${SQL_SERVER_DATABASE}
+
+# Deployment order — respects inter-item dependencies
+deployment_order:
+  - Lakehouse
+  - Notebook
+  - Dataflow
+  - DataPipeline
+  - SemanticModel
+
+# Items to exclude from deployment (e.g. local dev scratch notebooks)
+exclude_items:
+  - name_pattern: "scratch_*"
+  - name_pattern: "dev_local_*"
+  - name_pattern: "*_test_local"
