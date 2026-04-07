@@ -70,7 +70,8 @@ checkpoints/
 
 # ── Local data files (never commit raw or extracted data) ─────────────────────
 *.csv
-!fabric/config/**/*.csv                    # exception — seed config CSVs are source-controlled
+!fabric/config/*.csv                       # exception — seed config CSVs are source-controlled
+!fabric/config/seed_data/*.csv
 *.tsv
 *.xlsx
 *.xls
