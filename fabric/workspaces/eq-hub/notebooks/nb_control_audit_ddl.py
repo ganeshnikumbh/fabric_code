@@ -16,43 +16,60 @@ spark = SparkSession.builder.appName("nb_control_audit_ddl").getOrCreate()
 # ══════════════════════════════════════════════════════════════════════════════
 
 # Fabric workspace and lakehouse identifiers
-WORKSPACE_ID   = "__HUB_WORKSPACE_ID__"          # Replace with actual workspace GUID
+# OneLake supports workspace name directly in the abfss:// path —
+# no GUID required. Use the exact name as it appears in the Fabric portal.
+WORKSPACE_NAME = "eq-hub-dev"                     # Fabric workspace name (e.g. eq-hub-dev, eq-hub-prod)
 LAKEHOUSE_NAME = "lh_control"                     # Control lakehouse name
 ENVIRONMENT    = "__ENVIRONMENT__"                # dev | qa | tst | prod
 
 # OneLake base path for all control tables
-# Pattern: abfss://<workspace>@onelake.dfs.fabric.microsoft.com/<lakehouse>.Lakehouse/Files/control_tables/<table>/
+# Pattern: abfss://<workspace_name>@onelake.dfs.fabric.microsoft.com/<lakehouse_name>.Lakehouse/Files/control_tables/<table>/
 ONELAKE_HOST   = "onelake.dfs.fabric.microsoft.com"
 BASE_PATH      = (
-    f"abfss://{WORKSPACE_ID}@{ONELAKE_HOST}"
+    f"abfss://{WORKSPACE_NAME}@{ONELAKE_HOST}"
     f"/{LAKEHOUSE_NAME}.Lakehouse/Files/control_tables"
 )
 
-# Control database / schema name
-CONTROL_DB = "control_db"
-
-print(f"Environment  : {ENVIRONMENT}")
-print(f"Lakehouse    : {LAKEHOUSE_NAME}")
-print(f"Base path    : {BASE_PATH}")
-print(f"Control DB   : {CONTROL_DB}")
+print(f"Environment    : {ENVIRONMENT}")
+print(f"Workspace name : {WORKSPACE_NAME}")
+print(f"Lakehouse      : {LAKEHOUSE_NAME}")
+print(f"Base path      : {BASE_PATH}")
 
 
-# ## CELL 2 — Create Control Database
+# ## CELL 2 — Pre-flight: verify lh_control lakehouse is attached
+# ══════════════════════════════════════════════════════════════════════════════
+# IMPORTANT: Before running this notebook you MUST attach lh_control as the
+# default lakehouse via the Explorer pane (left sidebar → Add lakehouse).
+# All tables are created in the attached lakehouse's default schema.
+# Using CREATE DATABASE / USE is not required — Fabric provides the context
+# automatically from the attached lakehouse.
 # ══════════════════════════════════════════════════════════════════════════════
 
-spark.sql(f"CREATE DATABASE IF NOT EXISTS {CONTROL_DB}")
-spark.sql(f"USE {CONTROL_DB}")
-print(f"Database '{CONTROL_DB}' ready.")
+try:
+    current_db = spark.sql("SELECT current_database()").collect()[0][0]
+    print(f"Default lakehouse context : {current_db}")
+    if not current_db:
+        raise ValueError("No lakehouse attached.")
+except Exception as e:
+    raise RuntimeError(
+        "No default lakehouse context found.\n"
+        "ACTION REQUIRED: Attach 'lh_control' as the default lakehouse before running this notebook.\n"
+        "  1. Open the Explorer pane (left sidebar)\n"
+        "  2. Click '+ Add lakehouse'\n"
+        "  3. Select 'lh_control' and click Confirm\n"
+        "  4. Re-run this notebook.\n"
+        f"Original error: {e}"
+    )
 
 
 # ## CELL 3 — Table 1: ingestion_config
 # Master configuration table for all source entities across all sources.
 # ══════════════════════════════════════════════════════════════════════════════
 
-spark.sql(f"DROP TABLE IF EXISTS {CONTROL_DB}.ingestion_config")
+spark.sql(f"DROP TABLE IF EXISTS ingestion_config")
 
 spark.sql(f"""
-CREATE EXTERNAL TABLE {CONTROL_DB}.ingestion_config (
+CREATE EXTERNAL TABLE ingestion_config (
     source_id           INT         NOT NULL  COMMENT 'Primary key — unique identifier for each source entity configuration',
     source_name         STRING      NOT NULL  COMMENT 'Human-readable name for the source system (e.g. EQ_Warehouse, MortalityAPI)',
     source_type         STRING      NOT NULL  COMMENT 'Source technology type: sqlserver | oracle | api | sftp | blob',
@@ -91,10 +108,10 @@ print("Created: control_db.ingestion_config")
 # Tracks the last successful load state per source entity.
 # ══════════════════════════════════════════════════════════════════════════════
 
-spark.sql(f"DROP TABLE IF EXISTS {CONTROL_DB}.watermark_control")
+spark.sql(f"DROP TABLE IF EXISTS watermark_control")
 
 spark.sql(f"""
-CREATE EXTERNAL TABLE {CONTROL_DB}.watermark_control (
+CREATE EXTERNAL TABLE watermark_control (
     watermark_id                INT         NOT NULL  COMMENT 'Primary key — unique identifier for each watermark tracking record',
     source_id                   INT         NOT NULL  COMMENT 'Foreign key to ingestion_config.source_id',
     entity_name                 STRING      NOT NULL  COMMENT 'Source entity name — denormalized for fast lookup without join',
@@ -123,10 +140,10 @@ print("Created: control_db.watermark_control")
 # Column-level mapping and transformation rules per source entity.
 # ══════════════════════════════════════════════════════════════════════════════
 
-spark.sql(f"DROP TABLE IF EXISTS {CONTROL_DB}.schema_config")
+spark.sql(f"DROP TABLE IF EXISTS schema_config")
 
 spark.sql(f"""
-CREATE EXTERNAL TABLE {CONTROL_DB}.schema_config (
+CREATE EXTERNAL TABLE schema_config (
     schema_id               INT         NOT NULL  COMMENT 'Primary key — unique identifier for each column mapping rule',
     source_id               INT         NOT NULL  COMMENT 'Foreign key to ingestion_config.source_id',
     entity_name             STRING      NOT NULL  COMMENT 'Source entity name this column mapping belongs to',
@@ -161,10 +178,10 @@ print("Created: control_db.schema_config")
 # Execution log for every pipeline run across all layers and entities.
 # ══════════════════════════════════════════════════════════════════════════════
 
-spark.sql(f"DROP TABLE IF EXISTS {CONTROL_DB}.pipeline_run_log")
+spark.sql(f"DROP TABLE IF EXISTS pipeline_run_log")
 
 spark.sql(f"""
-CREATE EXTERNAL TABLE {CONTROL_DB}.pipeline_run_log (
+CREATE EXTERNAL TABLE pipeline_run_log (
     run_id                  STRING      NOT NULL  COMMENT 'Primary key — UUID uniquely identifying this pipeline execution',
     parent_run_id           STRING                COMMENT 'UUID of the parent pipeline run; NULL for top-level runs; used to link child activity runs',
     pipeline_name           STRING      NOT NULL  COMMENT 'Name of the Fabric Data Pipeline or Notebook that produced this log entry',
@@ -206,10 +223,10 @@ print("Created: control_db.pipeline_run_log")
 # Results of data quality rule checks per entity per run.
 # ══════════════════════════════════════════════════════════════════════════════
 
-spark.sql(f"DROP TABLE IF EXISTS {CONTROL_DB}.data_quality_log")
+spark.sql(f"DROP TABLE IF EXISTS data_quality_log")
 
 spark.sql(f"""
-CREATE EXTERNAL TABLE {CONTROL_DB}.data_quality_log (
+CREATE EXTERNAL TABLE data_quality_log (
     dq_log_id           STRING          NOT NULL  COMMENT 'Primary key — UUID uniquely identifying this DQ check result',
     run_id              STRING          NOT NULL  COMMENT 'Foreign key to pipeline_run_log.run_id — links DQ result to its pipeline run',
     entity_name         STRING          NOT NULL  COMMENT 'Entity on which the DQ rule was executed (e.g. policy_master)',
@@ -244,10 +261,10 @@ print("Created: control_db.data_quality_log")
 # Detailed error and exception capture across all pipeline runs.
 # ══════════════════════════════════════════════════════════════════════════════
 
-spark.sql(f"DROP TABLE IF EXISTS {CONTROL_DB}.error_log")
+spark.sql(f"DROP TABLE IF EXISTS error_log")
 
 spark.sql(f"""
-CREATE EXTERNAL TABLE {CONTROL_DB}.error_log (
+CREATE EXTERNAL TABLE error_log (
     error_id            STRING      NOT NULL  COMMENT 'Primary key — UUID uniquely identifying this error record',
     run_id              STRING      NOT NULL  COMMENT 'Foreign key to pipeline_run_log.run_id — links error to its pipeline run',
     pipeline_name       STRING      NOT NULL  COMMENT 'Name of the pipeline or notebook where the error occurred',
@@ -283,10 +300,10 @@ print("Created: control_db.error_log")
 # SLA definitions and alerting configuration per entity per layer.
 # ══════════════════════════════════════════════════════════════════════════════
 
-spark.sql(f"DROP TABLE IF EXISTS {CONTROL_DB}.sla_config")
+spark.sql(f"DROP TABLE IF EXISTS sla_config")
 
 spark.sql(f"""
-CREATE EXTERNAL TABLE {CONTROL_DB}.sla_config (
+CREATE EXTERNAL TABLE sla_config (
     sla_id                  INT         NOT NULL  COMMENT 'Primary key — unique identifier for each SLA definition',
     source_id               INT         NOT NULL  COMMENT 'Foreign key to ingestion_config.source_id',
     entity_name             STRING      NOT NULL  COMMENT 'Entity to which this SLA applies (e.g. policy_master)',
@@ -319,10 +336,10 @@ print("Created: control_db.sla_config")
 # Log of all SLA breaches with notification tracking.
 # ══════════════════════════════════════════════════════════════════════════════
 
-spark.sql(f"DROP TABLE IF EXISTS {CONTROL_DB}.sla_breach_log")
+spark.sql(f"DROP TABLE IF EXISTS sla_breach_log")
 
 spark.sql(f"""
-CREATE EXTERNAL TABLE {CONTROL_DB}.sla_breach_log (
+CREATE EXTERNAL TABLE sla_breach_log (
     breach_id               STRING      NOT NULL  COMMENT 'Primary key — UUID uniquely identifying this SLA breach event',
     sla_id                  INT         NOT NULL  COMMENT 'Foreign key to sla_config.sla_id — identifies the breached SLA definition',
     entity_name             STRING      NOT NULL  COMMENT 'Entity whose pipeline run triggered the SLA breach',
@@ -357,7 +374,7 @@ print("Created: control_db.sla_breach_log")
 # ══════════════════════════════════════════════════════════════════════════════
 
 spark.sql(f"""
-INSERT INTO {CONTROL_DB}.ingestion_config VALUES
+INSERT INTO ingestion_config VALUES
 (
     1, 'EQ_Warehouse', 'sqlserver', 'policy_master',
     'lh_bronze', 'bronze_eqwarehouse', 'policy_master_base',
@@ -383,7 +400,7 @@ print("Inserted 2 rows into ingestion_config")
 # ══════════════════════════════════════════════════════════════════════════════
 
 spark.sql(f"""
-INSERT INTO {CONTROL_DB}.watermark_control VALUES
+INSERT INTO watermark_control VALUES
 (
     1, 1, 'policy_master',
     '2024-03-31 23:59:59', 'datetime',
@@ -404,7 +421,7 @@ print("Inserted 2 rows into watermark_control")
 # ══════════════════════════════════════════════════════════════════════════════
 
 spark.sql(f"""
-INSERT INTO {CONTROL_DB}.schema_config VALUES
+INSERT INTO schema_config VALUES
 (
     1, 1, 'policy_master',
     'PolicyID', 'policy_id',
@@ -445,7 +462,7 @@ print("Inserted 4 rows into schema_config")
 # ══════════════════════════════════════════════════════════════════════════════
 
 spark.sql(f"""
-INSERT INTO {CONTROL_DB}.pipeline_run_log VALUES
+INSERT INTO pipeline_run_log VALUES
 (
     'a1b2c3d4-0001-4000-8000-000000000001',
     NULL,
@@ -459,7 +476,7 @@ INSERT INTO {CONTROL_DB}.pipeline_run_log VALUES
     NULL,
     '2024-03-30 23:59:59', '2024-03-31 23:59:59',
     'schedule',
-    '__HUB_WORKSPACE_ID__', 'fabric-pipeline-item-guid-001',
+    WORKSPACE_NAME, 'fabric-pipeline-item-guid-001',
     NULL,
     current_timestamp()
 ),
@@ -476,7 +493,7 @@ INSERT INTO {CONTROL_DB}.pipeline_run_log VALUES
     'mortality_rates_20240401.json',
     NULL, NULL,
     'schedule',
-    '__HUB_WORKSPACE_ID__', 'fabric-pipeline-item-guid-002',
+    WORKSPACE_NAME, 'fabric-pipeline-item-guid-002',
     NULL,
     current_timestamp()
 )
@@ -488,7 +505,7 @@ print("Inserted 2 rows into pipeline_run_log")
 # ══════════════════════════════════════════════════════════════════════════════
 
 spark.sql(f"""
-INSERT INTO {CONTROL_DB}.data_quality_log VALUES
+INSERT INTO data_quality_log VALUES
 (
     'dq-0001-4000-8000-000000000001',
     'a1b2c3d4-0001-4000-8000-000000000001',
@@ -521,7 +538,7 @@ print("Inserted 2 rows into data_quality_log")
 # ══════════════════════════════════════════════════════════════════════════════
 
 spark.sql(f"""
-INSERT INTO {CONTROL_DB}.error_log VALUES
+INSERT INTO error_log VALUES
 (
     'err-0001-4000-8000-000000000001',
     'a1b2c3d4-0001-4000-8000-000000000001',
@@ -560,7 +577,7 @@ print("Inserted 2 rows into error_log")
 # ══════════════════════════════════════════════════════════════════════════════
 
 spark.sql(f"""
-INSERT INTO {CONTROL_DB}.sla_config VALUES
+INSERT INTO sla_config VALUES
 (
     1, 1, 'policy_master', 'bronze',
     '01:00', '03:00', 120,
@@ -587,7 +604,7 @@ print("Inserted 2 rows into sla_config")
 # ══════════════════════════════════════════════════════════════════════════════
 
 spark.sql(f"""
-INSERT INTO {CONTROL_DB}.sla_breach_log VALUES
+INSERT INTO sla_breach_log VALUES
 (
     'breach-0001-4000-8000-000000000001',
     1, 'policy_master', 'bronze',
@@ -639,7 +656,7 @@ control_tables = [
 
 results = []
 for table in control_tables:
-    count = spark.sql(f"SELECT COUNT(*) AS cnt FROM {CONTROL_DB}.{table}").collect()[0]["cnt"]
+    count = spark.sql(f"SELECT COUNT(*) AS cnt FROM {table}").collect()[0]["cnt"]
     results.append((table, count))
 
 # Display as a single unified output
@@ -654,7 +671,7 @@ print("\n" + "═" * 55)
 print("  EXTERNAL TABLE VERIFICATION")
 print("═" * 55)
 for table in control_tables:
-    detail = spark.sql(f"DESCRIBE DETAIL {CONTROL_DB}.{table}").collect()[0]
+    detail = spark.sql(f"DESCRIBE DETAIL {table}").collect()[0]
     table_type  = detail["type"]
     location    = detail["location"]
     ok = "✓" if table_type == "EXTERNAL" and location.startswith("abfss://") else "✗"
