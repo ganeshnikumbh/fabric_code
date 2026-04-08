@@ -151,7 +151,9 @@ if not mappings:
     )
 
 # Build ordered dict: source_col → target_col
-col_map = {row["source_column"]: row["target_column"] for row in mappings}
+# Also build a case-insensitive version for watermark column resolution.
+col_map            = {row["source_column"]: row["target_column"] for row in mappings}
+col_map_lower      = {k.lower(): v for k, v in col_map.items()}   # used in Section 5
 print(f"  Column mappings  : {len(col_map)} columns mapped")
 
 
@@ -217,20 +219,21 @@ else:  # incremental / cdc
             f"load_type is '{load_type}' but watermark_column is not set "
             f"in ingestion_config for source_id={source_id}."
         )
-    # watermark_column is the SOURCE column name; after transformation it has
-    # been renamed to its target column name — look up the mapped target name.
-    wm_target_col = col_map.get(watermark_column)
+    # watermark_column stores the SOURCE column name (e.g. 'StartDate').
+    # After Section 4 that column has been renamed to its target name.
+    # Use a case-insensitive lookup so 'StartDate' matches a key stored
+    # as 'startdate', 'StartDate', or any other casing in schema_config.
+    wm_target_col = col_map_lower.get(watermark_column.lower())
     if wm_target_col is None:
-        # Watermark column was not in the mapping — fall back to source column
-        # name if it survived transformation (edge case)
-        wm_target_col = watermark_column
-        print(
-            f"  WARNING: watermark_column '{watermark_column}' has no schema_config "
-            f"mapping. Attempting to use it by its original name."
+        raise ValueError(
+            f"watermark_column '{watermark_column}' (source_id={source_id}) has no "
+            f"entry in schema_config. Add a mapping row for this column so the "
+            f"notebook knows its target name after transformation."
         )
     if wm_target_col not in transformed_df.columns:
         raise ValueError(
-            f"Watermark column '{wm_target_col}' not found in transformed DataFrame. "
+            f"Watermark column resolved to '{wm_target_col}' but that column is "
+            f"not present in the transformed DataFrame. "
             f"Columns available: {transformed_df.columns}"
         )
     # Cast to date — handles datetime, integer (YYYYMMDD), and date source types
