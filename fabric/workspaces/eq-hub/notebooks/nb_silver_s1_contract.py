@@ -25,7 +25,7 @@ from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 from delta.tables import DeltaTable
 
-%run /fabric/workspaces/eq-hub/notebooks/nb_logging_library
+%run nb_logging_library
 
 # ─── Parameters ──────────────────────────────────────────────────────────────
 data_date   = dbutils.widgets.get("data_date")    # e.g. "2024-01-15"

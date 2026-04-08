@@ -8,7 +8,7 @@ from datetime import date
 from pyspark.sql import functions as F
 from delta.tables import DeltaTable
 
-%run /fabric/workspaces/eq-hub/notebooks/nb_logging_library
+%run nb_logging_library
 
 data_date   = dbutils.widgets.get("data_date")
 run_id      = dbutils.widgets.get("run_id")

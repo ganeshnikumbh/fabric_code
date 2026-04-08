@@ -15,7 +15,7 @@ from datetime import date
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
-%run /fabric/workspaces/eq-hub/notebooks/nb_logging_library
+%run nb_logging_library
 
 # ─── Parameters ──────────────────────────────────────────────────────────────
 run_id      = dbutils.widgets.get("run_id")

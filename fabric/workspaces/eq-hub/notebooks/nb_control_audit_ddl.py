@@ -144,26 +144,18 @@ spark.sql(f"DROP TABLE IF EXISTS schema_config")
 
 spark.sql(f"""
 CREATE EXTERNAL TABLE schema_config (
-    schema_id               INT         NOT NULL  COMMENT 'Primary key — unique identifier for each column mapping rule',
-    source_id               INT         NOT NULL  COMMENT 'Foreign key to ingestion_config.source_id',
-    entity_name             STRING      NOT NULL  COMMENT 'Source entity name this column mapping belongs to',
-    source_column_name      STRING      NOT NULL  COMMENT 'Exact column name as it appears in the source system',
-    target_column_name      STRING      NOT NULL  COMMENT 'Column name in the target Delta table after rename/standardisation',
-    source_data_type        STRING                COMMENT 'Data type in the source system (e.g. varchar(50), int, datetime2)',
-    target_data_type        STRING                COMMENT 'Target Delta/Spark data type (e.g. STRING, INT, TIMESTAMP, DECIMAL(18,4))',
-    transformation_rule     STRING                COMMENT 'Optional M or PySpark expression applied during ingestion (e.g. upper(trim(col)), cast to date)',
-    is_pii                  BOOLEAN               COMMENT 'true = column contains personally identifiable information; CLS enforced in semantic model',
-    is_nullable             BOOLEAN               COMMENT 'true = column allows NULL values in the target table',
-    is_primary_key          BOOLEAN               COMMENT 'true = column is part of the natural/business key for this entity',
-    default_value           STRING                COMMENT 'Value applied when source column is NULL (e.g. UNKNOWN, 0, false)',
-    ordinal_position        INT                   COMMENT 'Column position in the target table; used to enforce consistent schema ordering',
-    active_flag             BOOLEAN     NOT NULL  COMMENT 'true = column is included in ingestion; false = column is excluded/deprecated',
-    created_date            TIMESTAMP   NOT NULL  COMMENT 'UTC timestamp when this column mapping was first created',
-    modified_date           TIMESTAMP             COMMENT 'UTC timestamp of the most recent modification to this mapping rule'
+    id                      INT         NOT NULL  COMMENT 'Primary key — unique sequential identifier for each column mapping entry',
+    source_table_name       STRING      NOT NULL  COMMENT 'Source table name as it appears in the source system (e.g. Contract, Agent)',
+    source_column_name      STRING      NOT NULL  COMMENT 'Exact column name as it appears in the source table',
+    target_column_name      STRING      NOT NULL  COMMENT 'Column name in the target Delta table after any rename or standardisation',
+    target_data_type        STRING      NOT NULL  COMMENT 'Target Delta/Spark data type (e.g. STRING, INT, TIMESTAMP, DECIMAL(18,4))',
+    ordinal_position        INT         NOT NULL  COMMENT 'Column position within the table; enforces consistent schema ordering per source table',
+    is_active               BOOLEAN     NOT NULL  COMMENT 'true = column is included in ingestion; false = column is excluded or deprecated',
+    created_at              TIMESTAMP   NOT NULL  COMMENT 'UTC timestamp when this column mapping entry was first created'
 )
 USING DELTA
 LOCATION '{BASE_PATH}/schema_config'
-COMMENT 'Column-level schema mapping and transformation registry — defines source-to-target column renames, type casts, PII flags, and transformation expressions per entity.'
+COMMENT 'Column-level schema mapping registry — defines source-to-target column names and data types for every column in every source table.'
 TBLPROPERTIES (
     'delta.autoOptimize.optimizeWrite' = 'true',
     'delta.autoOptimize.autoCompact'   = 'true',
@@ -422,38 +414,16 @@ print("Inserted 2 rows into watermark_control")
 
 spark.sql(f"""
 INSERT INTO schema_config VALUES
-(
-    1, 1, 'policy_master',
-    'PolicyID', 'policy_id',
-    'int', 'INT',
-    NULL, false, false, true,
-    NULL, 1, true,
-    current_timestamp(), NULL
-),
-(
-    2, 1, 'policy_master',
-    'TaxID', 'tax_id_hash',
-    'varbinary(256)', 'BINARY',
-    'cast as binary — do not decode', true, true, false,
-    NULL, 2, true,
-    current_timestamp(), NULL
-),
-(
-    3, 2, 'mortality_rates',
-    'age_band', 'age_band',
-    'varchar(20)', 'STRING',
-    'upper(trim(col))', false, false, true,
-    'UNKNOWN', 1, true,
-    current_timestamp(), NULL
-),
-(
-    4, 2, 'mortality_rates',
-    'mortality_rate', 'mortality_rate',
-    'decimal(10,6)', 'DECIMAL(10,6)',
-    'round(col, 6)', false, true, false,
-    '0.0', 2, true,
-    current_timestamp(), NULL
-)
+(1,  'Contract',       'ContractPK',     'contract_id',     'INT',       1,  true, current_timestamp()),
+(2,  'Contract',       'ContractNumber', 'contract_number', 'STRING',    2,  true, current_timestamp()),
+(3,  'Contract',       'ProductFK',      'product_id',      'INT',       3,  true, current_timestamp()),
+(4,  'Contract',       'AgentFK',        'agent_id',        'INT',       4,  true, current_timestamp()),
+(5,  'Contract',       'IssueDate',      'issue_date',      'TIMESTAMP', 5,  true, current_timestamp()),
+(6,  'Agent',          'AgentPK',        'agent_id',        'INT',       1,  true, current_timestamp()),
+(7,  'Agent',          'AgentNumber',    'agent_number',    'STRING',    2,  true, current_timestamp()),
+(8,  'Agent',          'DisplayName',    'display_name',    'STRING',    3,  true, current_timestamp()),
+(9,  'Activity',       'ActivityPK',     'activity_id',     'BIGINT',    1,  true, current_timestamp()),
+(10, 'Activity',       'ContractFK',     'contract_id',     'INT',       2,  true, current_timestamp())
 """)
 print("Inserted 4 rows into schema_config")
 

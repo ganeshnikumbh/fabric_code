@@ -7,7 +7,7 @@
 # Storage:     __STORAGE_ACCOUNT__
 
 import sys
-%run /fabric/workspaces/eq-hub/notebooks/nb_logging_library
+%run nb_logging_library
 
 ENVIRONMENT = "__ENVIRONMENT__"
 STORAGE_ACCOUNT = "__STORAGE_ACCOUNT__"

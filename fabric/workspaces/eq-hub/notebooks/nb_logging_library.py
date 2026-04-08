@@ -7,7 +7,7 @@
 #             - data_quality_log  : one row per DQ rule checked
 #
 # Usage:
-#   %run /fabric/workspaces/eq-hub/notebooks/nb_logging_library
+#   %run nb_logging_library
 #
 #   logger = FabricLogger(
 #       run_id        = generate_run_id(),
