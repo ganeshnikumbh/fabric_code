@@ -147,36 +147,23 @@ GO
 --          target_data_type, ordinal_position, include_in_md5hash, is_active
 -- ══════════════════════════════════════════════════════════════════════════════
 
-INSERT INTO dbo.schema_config
-    (id, source_table_name, source_column_name, target_column_name, target_data_type, ordinal_position, include_in_md5hash, is_active)
-VALUES
--- ── Contract ──────────────────────────────────────────────────────────────
-(1,  'Contract', 'ContractPK',          'contract_id',          'INT',          1,  1, 1),
-(2,  'Contract', 'ContractNumber',       'contract_number',      'STRING',       2,  1, 1),
-(3,  'Contract', 'ProductFK',            'product_id',           'INT',          3,  1, 1),
-(4,  'Contract', 'AgentFK',              'agent_id',             'INT',          4,  1, 1),
-(5,  'Contract', 'ClientFK',             'client_id',            'INT',          5,  1, 1),
-(6,  'Contract', 'IssueDate',            'issue_date',           'DATE',         6,  1, 1),
-(7,  'Contract', 'StatusCode',           'status_code',          'STRING',       7,  1, 1),
-(8,  'Contract', 'FaceAmount',           'face_amount',          'DECIMAL(18,2)',8,  1, 1),
-(9,  'Contract', 'StartDate',            'start_date',           'TIMESTAMP',    9,  0, 1),  -- watermark, excluded from hash
-(10, 'Contract', 'EffectiveDate',        'effective_date_policy','DATE',         10, 1, 1),
--- ── Agent ──────────────────────────────────────────────────────────────────
-(11, 'Agent',    'AgentPK',              'agent_id',             'INT',          1,  1, 1),
-(12, 'Agent',    'AgentNumber',          'agent_number',         'STRING',       2,  1, 1),
-(13, 'Agent',    'DisplayName',          'display_name',         'STRING',       3,  1, 1),
-(14, 'Agent',    'NationalProducerNum',  'national_producer_number','STRING',    4,  1, 1),
-(15, 'Agent',    'NasdFinraNumber',      'nasd_finra_number',    'STRING',       5,  1, 1),
-(16, 'Agent',    'HireDate',             'hire_date',            'DATE',         6,  1, 1),
-(17, 'Agent',    'TerminationDate',      'termination_date',     'DATE',         7,  1, 1),
-(18, 'Agent',    'ClientFK',             'client_id',            'INT',          8,  1, 1),
-(19, 'Agent',    'StartDate',            'start_timestamp',      'TIMESTAMP',    9,  0, 1),  -- watermark, excluded from hash
-(20, 'Agent',    'EffectiveDate',        'effective_date',       'DATE',         10, 1, 1),
--- ── Activity ───────────────────────────────────────────────────────────────
-(21, 'Activity', 'ActivityPK',           'activity_id',          'BIGINT',       1,  1, 1),
-(22, 'Activity', 'ContractFK',           'contract_id',          'INT',          2,  1, 1),
-(23, 'Activity', 'ActivityTypeFK',       'activity_type_id',     'INT',          3,  1, 1),
-(24, 'Activity', 'ProcessDateFK',        'process_date_fk',      'INT',          4,  0, 1),  -- watermark, excluded from hash
-(25, 'Activity', 'TransactionAmount',    'transaction_amount',   'DECIMAL(18,2)',5,  1, 1),
-(26, 'Activity', 'EffectiveDate',        'effective_date_activity','DATE',       6,  1, 1);
+-- Full schema_config seed data (915 rows covering all 62 EQ_Warehouse entities) is
+-- maintained in a separate file for readability:
+--
+--   sql/schema_config_seed.sql
+--
+-- Run that file after this one to populate dbo.schema_config.
+-- The INSERT statements in schema_config_seed.sql use unqualified table name
+-- (schema_config, not dbo.schema_config). If your Fabric SQL DB default schema
+-- is not dbo, either prefix the table name or set the default schema first:
+--
+--   ALTER USER <your_user> WITH DEFAULT_SCHEMA = dbo;
+--
+-- Column order in schema_config_seed.sql:
+--   id, source_table_name, source_column_name, target_column_name,
+--   target_data_type, ordinal_position, include_in_md5hash, is_active, created_at
+--
+-- include_in_md5hash rules applied:
+--   source_column_name = 'N/A'  (pipeline audit cols)  → false  (305 rows)
+--   all mapped source columns                           → true   (610 rows)
 GO
