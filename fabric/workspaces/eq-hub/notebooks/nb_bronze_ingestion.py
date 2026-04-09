@@ -140,7 +140,8 @@ mappings = (
         F.col("source_column").isNotNull() &
         F.col("target_column").isNotNull()
     )
-    .select("source_column", "target_column")
+    .select("source_column", "target_column", "ordinal_position", "include_in_hash")
+    .orderBy("ordinal_position")
     .collect()
 )
 
@@ -150,11 +151,19 @@ if not mappings:
         f"Ensure column mappings are registered in lh_control.schema_config."
     )
 
-# Build ordered dict: source_col → target_col
-# Also build a case-insensitive version for watermark column resolution.
-col_map            = {row["source_column"]: row["target_column"] for row in mappings}
-col_map_lower      = {k.lower(): v for k, v in col_map.items()}   # used in Section 5
+# col_map            : source_col → target_col  (insertion-ordered by ordinal_position)
+# col_map_lower      : lowercase source_col → target_col  (for case-insensitive lookup)
+# hash_cols_ordered  : target column names flagged include_in_hash=true, in ordinal order
+col_map           = {row["source_column"]: row["target_column"] for row in mappings}
+col_map_lower     = {k.lower(): v for k, v in col_map.items()}
+hash_cols_ordered = [
+    row["target_column"]
+    for row in mappings
+    if row["include_in_hash"] is True
+]
+
 print(f"  Column mappings  : {len(col_map)} columns mapped")
+print(f"  Hash columns     : {len(hash_cols_ordered)} → {hash_cols_ordered}")
 
 
 # ── SECTION 4 — Column Transformation ────────────────────────────────────────
@@ -189,8 +198,34 @@ if missing_in_source:
         tgt_col = col_map[src_col]
         select_exprs.append(F.lit(None).cast("string").alias(tgt_col))
 
+# ── Watermark passthrough for incremental loads ───────────────────────────────
+# The watermark column (e.g. 'StartDate') may not be in schema_config because
+# it is an operational/audit column, not a business column. If it is absent from
+# col_map we still need its value to derive data_date per row. Add it as a
+# hidden passthrough column (__wm_temp__) that is dropped after data_date is set.
+_WM_TEMP = "__wm_temp__"
+_wm_needs_passthrough = False
+
+if load_type != "full" and watermark_column:
+    wm_already_mapped = col_map_lower.get(watermark_column.lower())
+    if wm_already_mapped is None:
+        # Not in schema_config — pull directly from source_df
+        actual_wm = source_columns_lower.get(watermark_column.lower())
+        if actual_wm is None:
+            raise ValueError(
+                f"watermark_column '{watermark_column}' (source_id={source_id}) was "
+                f"not found in the source DataFrame. "
+                f"Source columns: {source_df.columns}"
+            )
+        select_exprs.append(F.col(actual_wm).alias(_WM_TEMP))
+        _wm_needs_passthrough = True
+        print(
+            f"  watermark_column '{watermark_column}' not in schema_config — "
+            f"added as temp passthrough for data_date derivation"
+        )
+
 transformed_df = source_df.select(*select_exprs)
-print(f"  Columns after mapping : {len(transformed_df.columns)}")
+print(f"  Columns after mapping : {len(transformed_df.columns) - int(_wm_needs_passthrough)} business columns")
 
 
 # ── SECTION 5 — Load Type Logic (data_date) ───────────────────────────────────
@@ -219,26 +254,22 @@ else:  # incremental / cdc
             f"load_type is '{load_type}' but watermark_column is not set "
             f"in ingestion_config for source_id={source_id}."
         )
-    # watermark_column stores the SOURCE column name (e.g. 'StartDate').
-    # After Section 4 that column has been renamed to its target name.
-    # Use a case-insensitive lookup so 'StartDate' matches a key stored
-    # as 'startdate', 'StartDate', or any other casing in schema_config.
-    wm_target_col = col_map_lower.get(watermark_column.lower())
-    if wm_target_col is None:
+    # Resolve which column in transformed_df holds the watermark value.
+    # Priority 1: watermark column was in schema_config → it has a target name.
+    # Priority 2: watermark column was NOT in schema_config → it was added as
+    #             _WM_TEMP passthrough in Section 4.
+    wm_in_df = col_map_lower.get(watermark_column.lower()) or (
+        _WM_TEMP if _wm_needs_passthrough else None
+    )
+    if wm_in_df is None or wm_in_df not in transformed_df.columns:
         raise ValueError(
-            f"watermark_column '{watermark_column}' (source_id={source_id}) has no "
-            f"entry in schema_config. Add a mapping row for this column so the "
-            f"notebook knows its target name after transformation."
-        )
-    if wm_target_col not in transformed_df.columns:
-        raise ValueError(
-            f"Watermark column resolved to '{wm_target_col}' but that column is "
-            f"not present in the transformed DataFrame. "
-            f"Columns available: {transformed_df.columns}"
+            f"Watermark column '{watermark_column}' could not be resolved in the "
+            f"transformed DataFrame. Columns available: {transformed_df.columns}"
         )
     # Cast to date — handles datetime, integer (YYYYMMDD), and date source types
-    data_date_col = F.col(wm_target_col).cast("date")
-    print(f"  data_date source : watermark_column '{watermark_column}' → '{wm_target_col}' (cast to date)")
+    data_date_col = F.col(wm_in_df).cast("date")
+    wm_label = watermark_column if not _wm_needs_passthrough else f"{watermark_column} (passthrough)"
+    print(f"  data_date source : watermark_column '{wm_label}' → col '{wm_in_df}' (cast to date)")
 
 # ── Add all audit / lineage columns ──────────────────────────────────────────
 final_df = (
@@ -249,6 +280,40 @@ final_df = (
     .withColumn("ingestion_run_id",    F.lit(ingestion_run_id).cast(StringType()))
     .withColumn("ingestion_timestamp", F.lit(ingestion_timestamp).cast(TimestampType()))
 )
+
+# Drop the watermark passthrough column now that data_date has been derived
+if _wm_needs_passthrough:
+    final_df = final_df.drop(_WM_TEMP)
+    print(f"  Dropped temp passthrough column '{_WM_TEMP}'")
+
+# ── MD5 hash ──────────────────────────────────────────────────────────────────
+# Concatenate columns flagged include_in_hash=true in ordinal_position order,
+# separated by '|' to avoid cross-boundary collisions (e.g. 'AB'+'C' ≠ 'A'+'BC').
+# NULL values are coerced to '' before concatenation so a null field does not
+# cause the entire hash to be NULL.
+# hash_cols_ordered is already sorted by ordinal_position from the metadata read.
+if hash_cols_ordered:
+    # Guard: drop any hash columns that didn't survive the transformation step
+    # (e.g. unmapped columns that were set to NULL earlier)
+    available_cols = set(final_df.columns)
+    missing_hash_cols = [c for c in hash_cols_ordered if c not in available_cols]
+    if missing_hash_cols:
+        print(f"  WARNING: {missing_hash_cols} flagged for hash but not in DataFrame — excluded")
+    active_hash_cols = [c for c in hash_cols_ordered if c in available_cols]
+
+    if active_hash_cols:
+        concat_expr = F.concat_ws(
+            "|",
+            *[F.coalesce(F.col(c).cast(StringType()), F.lit("")) for c in active_hash_cols]
+        )
+        final_df = final_df.withColumn("md5_hash", F.md5(concat_expr))
+        print(f"  md5_hash         : computed from {len(active_hash_cols)} columns in ordinal order")
+    else:
+        final_df = final_df.withColumn("md5_hash", F.lit(None).cast(StringType()))
+        print(f"  md5_hash         : NULL (no valid hash columns after filtering)")
+else:
+    final_df = final_df.withColumn("md5_hash", F.lit(None).cast(StringType()))
+    print(f"  md5_hash         : NULL (no columns flagged include_in_hash=true in schema_config)")
 
 final_row_count = final_df.count()
 print(f"  Rows to write : {final_row_count:,}")
