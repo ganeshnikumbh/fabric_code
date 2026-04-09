@@ -136,30 +136,30 @@ except Exception as e:
 mappings = (
     schema_config_df
     .filter(
-        (F.col("source_id") == source_id) &
-        F.col("source_column").isNotNull() &
-        F.col("target_column").isNotNull()
+        (F.lower(F.col("source_table_name")) == source_table.lower()) &
+        F.col("source_column_name").isNotNull() &
+        F.col("target_column_name").isNotNull()
     )
-    .select("source_column", "target_column", "ordinal_position", "include_in_hash")
+    .select("source_column_name", "target_column_name", "ordinal_position", "include_in_md5hash")
     .orderBy("ordinal_position")
     .collect()
 )
 
 if not mappings:
     raise ValueError(
-        f"No schema_config mappings found for source_id={source_id}. "
+        f"No schema_config mappings found for source_table_name='{source_table}'. "
         f"Ensure column mappings are registered in lh_control.schema_config."
     )
 
 # col_map            : source_col → target_col  (insertion-ordered by ordinal_position)
 # col_map_lower      : lowercase source_col → target_col  (for case-insensitive lookup)
-# hash_cols_ordered  : target column names flagged include_in_hash=true, in ordinal order
-col_map           = {row["source_column"]: row["target_column"] for row in mappings}
+# hash_cols_ordered  : target column names flagged include_in_md5hash=true, in ordinal order
+col_map           = {row["source_column_name"]: row["target_column_name"] for row in mappings}
 col_map_lower     = {k.lower(): v for k, v in col_map.items()}
 hash_cols_ordered = [
-    row["target_column"]
+    row["target_column_name"]
     for row in mappings
-    if row["include_in_hash"] is True
+    if row["include_in_md5hash"] is True
 ]
 
 print(f"  Column mappings  : {len(col_map)} columns mapped")

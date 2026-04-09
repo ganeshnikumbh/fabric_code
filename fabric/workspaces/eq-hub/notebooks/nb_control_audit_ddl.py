@@ -150,7 +150,7 @@ CREATE EXTERNAL TABLE schema_config (
     target_column_name      STRING      NOT NULL  COMMENT 'Column name in the target Delta table after any rename or standardisation',
     target_data_type        STRING      NOT NULL  COMMENT 'Target Delta/Spark data type (e.g. STRING, INT, TIMESTAMP, DECIMAL(18,4))',
     ordinal_position        INT         NOT NULL  COMMENT 'Column position within the table; enforces consistent schema ordering per source table',
-    include_in_hash         BOOLEAN     NOT NULL  COMMENT 'true = include this column when computing the row-level md5_hash fingerprint; false = exclude (e.g. audit columns, nullable optional fields)',
+    include_in_md5hash      BOOLEAN     NOT NULL  COMMENT 'true = include this column when computing the row-level md5_hash fingerprint; false = exclude (e.g. audit columns, nullable optional fields)',
     is_active               BOOLEAN     NOT NULL  COMMENT 'true = column is included in ingestion; false = column is excluded or deprecated',
     created_at              TIMESTAMP   NOT NULL  COMMENT 'UTC timestamp when this column mapping entry was first created'
 )
@@ -415,7 +415,7 @@ print("Inserted 2 rows into watermark_control")
 
 spark.sql(f"""
 -- Columns: id, source_table_name, source_column_name, target_column_name, target_data_type,
---           ordinal_position, include_in_hash, is_active, created_at
+--           ordinal_position, include_in_md5hash, is_active, created_at
 INSERT INTO schema_config VALUES
 (1,  'Contract',  'ContractPK',     'contract_id',     'INT',       1,  true,  true, current_timestamp()),
 (2,  'Contract',  'ContractNumber', 'contract_number', 'STRING',    2,  true,  true, current_timestamp()),
