@@ -203,26 +203,28 @@ if missing_in_source:
 # it is an operational/audit column, not a business column. If it is absent from
 # col_map we still need its value to derive data_date per row. Add it as a
 # hidden passthrough column (__wm_temp__) that is dropped after data_date is set.
+# Fallback: if watermark_column is not configured OR not found in source data,
+# data_date will use ingestion_date (set in Section 5).
 _WM_TEMP = "__wm_temp__"
 _wm_needs_passthrough = False
 
 if load_type != "full" and watermark_column:
     wm_already_mapped = col_map_lower.get(watermark_column.lower())
     if wm_already_mapped is None:
-        # Not in schema_config — pull directly from source_df
+        # Not in schema_config — try to pull directly from source_df
         actual_wm = source_columns_lower.get(watermark_column.lower())
         if actual_wm is None:
-            raise ValueError(
-                f"watermark_column '{watermark_column}' (source_id={source_id}) was "
-                f"not found in the source DataFrame. "
-                f"Source columns: {source_df.columns}"
+            print(
+                f"  WARNING: watermark_column '{watermark_column}' not found in "
+                f"source data — data_date will fall back to ingestion_date"
             )
-        select_exprs.append(F.col(actual_wm).alias(_WM_TEMP))
-        _wm_needs_passthrough = True
-        print(
-            f"  watermark_column '{watermark_column}' not in schema_config — "
-            f"added as temp passthrough for data_date derivation"
-        )
+        else:
+            select_exprs.append(F.col(actual_wm).alias(_WM_TEMP))
+            _wm_needs_passthrough = True
+            print(
+                f"  watermark_column '{watermark_column}' not in schema_config — "
+                f"added as temp passthrough for data_date derivation"
+            )
 
 transformed_df = source_df.select(*select_exprs)
 print(f"  Columns after mapping : {len(transformed_df.columns) - int(_wm_needs_passthrough)} business columns")
@@ -249,27 +251,26 @@ if load_type == "full":
     print(f"  data_date source : pipeline parameter → {data_date}")
 
 else:  # incremental / cdc
-    if not watermark_column:
-        raise ValueError(
-            f"load_type is '{load_type}' but watermark_column is not set "
-            f"in ingestion_config for source_id={source_id}."
-        )
     # Resolve which column in transformed_df holds the watermark value.
-    # Priority 1: watermark column was in schema_config → it has a target name.
-    # Priority 2: watermark column was NOT in schema_config → it was added as
-    #             _WM_TEMP passthrough in Section 4.
-    wm_in_df = col_map_lower.get(watermark_column.lower()) or (
-        _WM_TEMP if _wm_needs_passthrough else None
-    )
-    if wm_in_df is None or wm_in_df not in transformed_df.columns:
-        raise ValueError(
-            f"Watermark column '{watermark_column}' could not be resolved in the "
-            f"transformed DataFrame. Columns available: {transformed_df.columns}"
+    # Priority 1: watermark_column mapped in schema_config → use its target name.
+    # Priority 2: watermark_column not in schema_config but present in source → _WM_TEMP passthrough.
+    # Priority 3: watermark_column not configured OR not found in source → fall back to ingestion_date.
+    wm_in_df = None
+    if watermark_column:
+        wm_in_df = col_map_lower.get(watermark_column.lower()) or (
+            _WM_TEMP if _wm_needs_passthrough else None
         )
-    # Cast to date — handles datetime, integer (YYYYMMDD), and date source types
-    data_date_col = F.col(wm_in_df).cast("date")
-    wm_label = watermark_column if not _wm_needs_passthrough else f"{watermark_column} (passthrough)"
-    print(f"  data_date source : watermark_column '{wm_label}' → col '{wm_in_df}' (cast to date)")
+
+    if wm_in_df and wm_in_df in transformed_df.columns:
+        # Cast to date — handles datetime, integer (YYYYMMDD), and date source types
+        data_date_col = F.col(wm_in_df).cast("date")
+        wm_label = watermark_column if not _wm_needs_passthrough else f"{watermark_column} (passthrough)"
+        print(f"  data_date source : watermark_column '{wm_label}' → col '{wm_in_df}' (cast to date)")
+    else:
+        # Fallback: watermark_column not set, not in source, or not resolvable
+        data_date_col = F.lit(ingestion_date).cast("date")
+        reason = "not configured in ingestion_config" if not watermark_column else f"'{watermark_column}' not found in source data"
+        print(f"  data_date source : ingestion_date (fallback — watermark_column {reason})")
 
 # ── Add all audit / lineage columns ──────────────────────────────────────────
 final_df = (
