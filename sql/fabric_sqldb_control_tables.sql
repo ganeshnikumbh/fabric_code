@@ -164,6 +164,6 @@ GO
 --   target_data_type, ordinal_position, include_in_md5hash, is_active, created_at
 --
 -- include_in_md5hash rules applied:
---   source_column_name = 'N/A'  (pipeline audit cols)  → false  (305 rows)
---   all mapped source columns                           → true   (610 rows)
+--   source_column_name = 'N/A'  (pipeline audit cols)  → 0  (305 rows)
+--   all mapped source columns                           → 1   (610 rows)
 GO
