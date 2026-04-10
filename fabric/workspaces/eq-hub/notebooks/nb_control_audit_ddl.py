@@ -73,6 +73,7 @@ CREATE EXTERNAL TABLE ingestion_config (
     source_id           INT         NOT NULL  COMMENT 'Primary key — unique identifier for each source entity configuration',
     source_name         STRING      NOT NULL  COMMENT 'Human-readable name for the source system (e.g. EQ_Warehouse, MortalityAPI)',
     source_type         STRING      NOT NULL  COMMENT 'Source technology type: sqlserver | oracle | api | sftp | blob',
+    source_schema       STRING                COMMENT 'Schema in the source system (e.g. dbo for SQL Server); NULL for non-database sources',
     entity_name         STRING      NOT NULL  COMMENT 'Source table or API endpoint entity name (e.g. policy_master, mortality_rates)',
     target_lakehouse    STRING      NOT NULL  COMMENT 'Target Fabric lakehouse name (e.g. lh_bronze, lh_silver)',
     target_schema       STRING      NOT NULL  COMMENT 'Target schema/database within the lakehouse (e.g. bronze_eqwarehouse)',
@@ -145,6 +146,7 @@ spark.sql(f"DROP TABLE IF EXISTS schema_config")
 spark.sql(f"""
 CREATE EXTERNAL TABLE schema_config (
     id                      INT         NOT NULL  COMMENT 'Primary key — unique sequential identifier for each column mapping entry',
+    source_name             STRING      NOT NULL  COMMENT 'Source system name — matches source_name in ingestion_config (e.g. EQ_Warehouse)',
     source_table_name       STRING      NOT NULL  COMMENT 'Source table name as it appears in the source system (e.g. Contract, Agent)',
     source_column_name      STRING      NOT NULL  COMMENT 'Exact column name as it appears in the source table',
     target_column_name      STRING      NOT NULL  COMMENT 'Column name in the target Delta table after any rename or standardisation',
