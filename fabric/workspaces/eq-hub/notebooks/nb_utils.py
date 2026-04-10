@@ -1,22 +1,23 @@
 # Notebook: nb_utils
 # Purpose:  Shared utility functions for the EquiTrust ingestion framework.
-#           Provides JDBC helpers to read control metadata from Fabric SQL DB
-#           (ingestion_config, schema_config) and return PySpark DataFrames.
+#           Provides helpers to read control metadata from Fabric SQL DB using
+#           the native com.microsoft.sqlserver.jdbc.spark connector and return
+#           PySpark DataFrames. Also provides JSON → DataFrame helpers used by
+#           nb_bronze_ingestion_v2 to avoid repeated DB calls per entity.
 #
 # Usage:
 #   %run nb_utils
 #
 #   # Then call the functions directly:
-#   jdbc_url      = "jdbc:sqlserver://<server>.database.fabric.microsoft.com:1433;..."
-#   ingestion_df  = get_ingestion_config(jdbc_url)
-#   schema_df     = get_schema_config(jdbc_url)
+#   jdbc_url     = "jdbc:sqlserver://<workspace>.database.fabric.microsoft.com:1433;database=<db>;"
+#   ingestion_df = get_ingestion_config(jdbc_url)
+#   schema_df    = get_schema_config(jdbc_url)
 #
 # Notes:
-#   - JDBC driver (com.microsoft.sqlserver.jdbc.SQLServerDriver) is pre-installed
-#     in Fabric Spark runtimes — no extra installation needed.
-#   - Authentication uses the token passed in the JDBC URL (AAD token or SQL auth).
-#   - All functions return DataFrames — callers .collect() only what they need
-#     so the full table is never pulled into driver memory unnecessarily.
+#   - Uses the com.microsoft.sqlserver.jdbc.spark connector (.mssql()) which is
+#     pre-installed in Fabric Spark runtimes — no extra driver config needed.
+#   - Authentication is handled via the JDBC URL (AAD token or SQL auth).
+#   - All DB functions return DataFrames — callers .collect() only what they need.
 
 import json
 
@@ -30,45 +31,36 @@ from typing import Optional
 
 spark = SparkSession.builder.appName("nb_utils").getOrCreate()
 
-# ── JDBC driver class used by all Fabric SQL DB connections ──────────────────
-_JDBC_DRIVER = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
-
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Core JDBC reader
+# Core SQL DB readers  (com.microsoft.sqlserver.jdbc.spark connector)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def read_jdbc_table(jdbc_url: str, table_name: str, schema: str = "dbo") -> DataFrame:
+def read_mssql_table(jdbc_url: str, table_name: str, schema: str = "dbo") -> DataFrame:
     """
-    Read a table from Fabric SQL DB via JDBC and return a Spark DataFrame.
+    Read a full table from Fabric SQL DB using the native mssql connector.
 
     Parameters
     ----------
-    jdbc_url   : Full JDBC connection string including authentication.
+    jdbc_url   : JDBC connection string.
                  Example:
                    jdbc:sqlserver://<workspace>.database.fabric.microsoft.com:1433;
-                   database=<db_name>;encrypt=true;trustServerCertificate=false;
-                   Authentication=ActiveDirectoryServicePrincipal;
-                   AADSecurePrincipalId=<client_id>;
-                   AADSecurePrincipalSecret=<client_secret>
+                   database=<db_name>;
     table_name : Unqualified table name (e.g. 'ingestion_config').
     schema     : SQL schema (default: 'dbo').
 
     Returns
     -------
-    DataFrame  : Lazy Spark DataFrame — no data fetched until an action is called.
+    DataFrame  : Lazy Spark DataFrame.
     """
     qualified = f"{schema}.{table_name}"
     try:
         df = (
             spark.read
-            .format("jdbc")
-            .option("url",    jdbc_url)
-            .option("dbtable", qualified)
-            .option("driver", _JDBC_DRIVER)
-            .load()
+            .option("url", jdbc_url)
+            .mssql(qualified)
         )
-        print(f"[nb_utils] read_jdbc_table: loaded '{qualified}' via JDBC")
+        print(f"[nb_utils] read_mssql_table: loaded '{qualified}'")
         return df
     except Exception as e:
         raise RuntimeError(
@@ -77,15 +69,15 @@ def read_jdbc_table(jdbc_url: str, table_name: str, schema: str = "dbo") -> Data
         )
 
 
-def read_jdbc_query(jdbc_url: str, query: str) -> DataFrame:
+def read_mssql_query(jdbc_url: str, query: str) -> DataFrame:
     """
     Execute a custom SQL query against Fabric SQL DB and return a DataFrame.
-    Useful for filtered reads to avoid loading entire large tables.
+    Wraps the query as a subquery so the mssql connector can handle it.
 
     Parameters
     ----------
     jdbc_url : JDBC connection string.
-    query    : SQL SELECT statement (must be a complete SELECT).
+    query    : SQL SELECT statement.
                Example: "SELECT * FROM dbo.ingestion_config WHERE active_flag = 1"
 
     Returns
@@ -95,17 +87,14 @@ def read_jdbc_query(jdbc_url: str, query: str) -> DataFrame:
     try:
         df = (
             spark.read
-            .format("jdbc")
-            .option("url",    jdbc_url)
-            .option("query",  query)
-            .option("driver", _JDBC_DRIVER)
-            .load()
+            .option("url", jdbc_url)
+            .mssql(f"({query}) AS _q")
         )
-        print(f"[nb_utils] read_jdbc_query: executed query via JDBC")
+        print(f"[nb_utils] read_mssql_query: executed query")
         return df
     except Exception as e:
         raise RuntimeError(
-            f"[nb_utils] Failed to execute JDBC query.\n"
+            f"[nb_utils] Failed to execute query.\n"
             f"Query: {query}\n{e}"
         )
 
@@ -117,9 +106,8 @@ def read_jdbc_query(jdbc_url: str, query: str) -> DataFrame:
 def get_ingestion_config(jdbc_url: str) -> DataFrame:
     """
     Return all active rows from dbo.ingestion_config as a DataFrame.
-    Only active_flag = 1 rows are returned.
     """
-    return read_jdbc_query(
+    return read_mssql_query(
         jdbc_url,
         "SELECT source_id, source_name, source_type, source_schema, entity_name, "
         "       target_lakehouse, target_schema, target_table, "
@@ -139,7 +127,7 @@ def get_ingestion_config_by_source(jdbc_url: str, source_name: str) -> DataFrame
     source_name : Value to match against source_name (case-insensitive).
                   E.g. 'EQ_Warehouse'
     """
-    return read_jdbc_query(
+    return read_mssql_query(
         jdbc_url,
         f"SELECT source_id, source_name, source_type, source_schema, entity_name, "
         f"       target_lakehouse, target_schema, target_table, "
@@ -159,15 +147,10 @@ def get_ingestion_config_for_entity(
     """
     Return a single Row from dbo.ingestion_config matching source_table + target_table.
     Returns None if no matching row is found.
-
-    Parameters
-    ----------
-    source_table : Value to match against entity_name (case-insensitive).
-    target_table : Value to match against target_table (case-insensitive).
     """
-    df = read_jdbc_query(
+    df = read_mssql_query(
         jdbc_url,
-        f"SELECT TOP 1 source_id, load_type, watermark_column, watermark_type, batch_size "
+        f"SELECT TOP 1 source_id, source_schema, load_type, watermark_column, watermark_type, batch_size "
         f"FROM dbo.ingestion_config "
         f"WHERE LOWER(entity_name)  = LOWER('{source_table}') "
         f"  AND LOWER(target_table) = LOWER('{target_table}') "
@@ -187,7 +170,7 @@ def get_schema_config(jdbc_url: str) -> DataFrame:
     """
     Return all active rows from dbo.schema_config as a DataFrame.
     """
-    return read_jdbc_query(
+    return read_mssql_query(
         jdbc_url,
         "SELECT id, source_name, source_table_name, source_column_name, target_column_name, "
         "       target_data_type, ordinal_position, include_in_md5hash "
@@ -200,14 +183,13 @@ def get_schema_config(jdbc_url: str) -> DataFrame:
 def get_schema_config_by_source(jdbc_url: str, source_name: str) -> DataFrame:
     """
     Return active rows from dbo.schema_config filtered by source_name.
-    Returns a DataFrame (all columns); caller can .collect() as needed.
 
     Parameters
     ----------
     source_name : Value to match against source_name (case-insensitive).
                   E.g. 'EQ_Warehouse'
     """
-    return read_jdbc_query(
+    return read_mssql_query(
         jdbc_url,
         f"SELECT id, source_name, source_table_name, source_column_name, target_column_name, "
         f"       target_data_type, ordinal_position, include_in_md5hash "
@@ -227,14 +209,13 @@ def get_schema_config_for_table(jdbc_url: str, source_table_name: str) -> list:
     -------
     list[Row]  : Empty list if no mappings found.
     """
-    df = read_jdbc_query(
+    df = read_mssql_query(
         jdbc_url,
         f"SELECT source_column_name, target_column_name, "
         f"       ordinal_position, include_in_md5hash "
         f"FROM dbo.schema_config "
         f"WHERE LOWER(source_table_name) = LOWER('{source_table_name}') "
         f"  AND is_active = 1 "
-        f"  AND source_column_name <> 'N/A' "
         f"ORDER BY ordinal_position"
     )
     return df.collect()
@@ -242,7 +223,7 @@ def get_schema_config_for_table(jdbc_url: str, source_table_name: str) -> list:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # JSON schema definitions
-# Used to create DataFrames from pipeline-passed JSON strings (no JDBC round-trip).
+# Used to create DataFrames from pipeline-passed JSON strings (no DB round-trip).
 # ─────────────────────────────────────────────────────────────────────────────
 
 def get_ingestion_config_schema() -> StructType:
@@ -341,7 +322,7 @@ def build_col_maps(mappings: list) -> tuple:
 
     Parameters
     ----------
-    mappings : list[Row] — from get_schema_config_for_table()
+    mappings : list[Row] — from get_schema_config_for_table() or .collect()
 
     Returns
     -------
@@ -360,7 +341,7 @@ def build_col_maps(mappings: list) -> tuple:
     return col_map, col_map_lower, hash_cols_ordered
 
 
-print("[nb_utils] Loaded — functions available: read_jdbc_table, read_jdbc_query, "
+print("[nb_utils] Loaded — functions available: read_mssql_table, read_mssql_query, "
       "get_ingestion_config, get_ingestion_config_by_source, get_ingestion_config_for_entity, "
       "get_schema_config, get_schema_config_by_source, get_schema_config_for_table, "
       "get_ingestion_config_schema, get_schema_config_schema, "
