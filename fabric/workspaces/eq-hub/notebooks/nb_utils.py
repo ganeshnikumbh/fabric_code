@@ -113,8 +113,7 @@ def get_ingestion_config(jdbc_url: str) -> DataFrame:
         "       target_lakehouse, target_schema, target_table, "
         "       load_type, watermark_column, watermark_type, batch_size "
         "FROM dbo.ingestion_config "
-        "WHERE active_flag = 1 "
-        "ORDER BY source_id"
+        "WHERE active_flag = 1"
     )
 
 
@@ -134,8 +133,7 @@ def get_ingestion_config_by_source(jdbc_url: str, source_name: str) -> DataFrame
         f"       load_type, watermark_column, watermark_type, batch_size "
         f"FROM dbo.ingestion_config "
         f"WHERE LOWER(source_name) = LOWER('{source_name}') "
-        f"  AND active_flag = 1 "
-        f"ORDER BY source_id"
+        f"  AND active_flag = 1"
     )
 
 
@@ -175,8 +173,7 @@ def get_schema_config(jdbc_url: str) -> DataFrame:
         "SELECT id, source_name, source_table_name, source_column_name, target_column_name, "
         "       target_data_type, ordinal_position, include_in_md5hash "
         "FROM dbo.schema_config "
-        "WHERE is_active = 1 "
-        "ORDER BY source_table_name, ordinal_position"
+        "WHERE is_active = 1"
     )
 
 
@@ -195,8 +192,7 @@ def get_schema_config_by_source(jdbc_url: str, source_name: str) -> DataFrame:
         f"       target_data_type, ordinal_position, include_in_md5hash "
         f"FROM dbo.schema_config "
         f"WHERE LOWER(source_name) = LOWER('{source_name}') "
-        f"  AND is_active = 1 "
-        f"ORDER BY source_table_name, ordinal_position"
+        f"  AND is_active = 1"
     )
 
 
@@ -215,8 +211,7 @@ def get_schema_config_for_table(jdbc_url: str, source_table_name: str) -> list:
         f"       ordinal_position, include_in_md5hash "
         f"FROM dbo.schema_config "
         f"WHERE LOWER(source_table_name) = LOWER('{source_table_name}') "
-        f"  AND is_active = 1 "
-        f"ORDER BY ordinal_position"
+        f"  AND is_active = 1"
     )
     return df.collect()
 
