@@ -54,6 +54,7 @@ CREATE TABLE dbo.schema_config (
     target_data_type    NVARCHAR(100)   NOT NULL,
     ordinal_position    INT             NOT NULL,
     include_in_md5hash  BIT             NOT NULL    CONSTRAINT df_schema_config_hash DEFAULT (1),
+    is_primary_key      BIT             NOT NULL    CONSTRAINT df_schema_config_pk DEFAULT (0),
     is_active           BIT             NOT NULL    CONSTRAINT df_schema_config_active DEFAULT (1),
     created_at          DATETIME2       NOT NULL    CONSTRAINT df_schema_config_created_at DEFAULT (SYSUTCDATETIME()),
     CONSTRAINT pk_schema_config PRIMARY KEY (id)
@@ -100,11 +101,11 @@ VALUES
 (20, 'EQ_Warehouse', 'sqlserver', 'dbo', 'Contract',                     'lh_bronze', 'bronze_eqwarehouse', 'contract_base',                          'incremental', 'StartDate',        'datetime', 50000,  1),
 -- ── Relationship tables ────────────────────────────────────────────────────
 (21, 'EQ_Warehouse', 'sqlserver', 'dbo', 'AgentContract',                'lh_bronze', 'bronze_eqwarehouse', 'agent_contract_base',                    'incremental', 'StartDate',        'datetime', 50000,  1),
-(22, 'EQ_Warehouse', 'sqlserver', 'dbo', 'AgentLicense',                 'lh_bronze', 'bronze_eqwarehouse', 'agent_license_base',                     'incremental', 'StartDate',        'datetime', 50000,  1),
-(23, 'EQ_Warehouse', 'sqlserver', 'dbo', 'AgentPrincipal',               'lh_bronze', 'bronze_eqwarehouse', 'agent_principal_base',                   'incremental', 'StartDate',        'datetime', 50000,  1),
+(22, 'EQ_Warehouse', 'sqlserver', 'dbo', 'AgentLicense_Group',                 'lh_bronze', 'bronze_eqwarehouse', 'agent_license_group_base',                     'incremental', 'StartDate',        'datetime', 50000,  1),
+(23, 'EQ_Warehouse', 'sqlserver', 'dbo', 'AgentPrincipal_Group',               'lh_bronze', 'bronze_eqwarehouse', 'agent_principal_group_base',                   'incremental', 'StartDate',        'datetime', 50000,  1),
 (24, 'EQ_Warehouse', 'sqlserver', 'dbo', 'AgentTraining',                'lh_bronze', 'bronze_eqwarehouse', 'agent_training_base',                    'incremental', 'StartDate',        'datetime', 50000,  1),
-(25, 'EQ_Warehouse', 'sqlserver', 'dbo', 'TrainingProduct',              'lh_bronze', 'bronze_eqwarehouse', 'training_product_base',                  'full',        NULL,               NULL,       NULL,   1),
-(26, 'EQ_Warehouse', 'sqlserver', 'dbo', 'TrainingState',                'lh_bronze', 'bronze_eqwarehouse', 'training_state_base',                    'full',        NULL,               NULL,       NULL,   1),
+(25, 'EQ_Warehouse', 'sqlserver', 'dbo', 'TrainingProduct_Group',              'lh_bronze', 'bronze_eqwarehouse', 'training_product_group_base',                  'full',        NULL,               NULL,       NULL,   1),
+(26, 'EQ_Warehouse', 'sqlserver', 'dbo', 'TrainingState_Group',                'lh_bronze', 'bronze_eqwarehouse', 'training_state_group_base',                    'full',        NULL,               NULL,       NULL,   1),
 (27, 'EQ_Warehouse', 'sqlserver', 'dbo', 'HierarchyTerritory',           'lh_bronze', 'bronze_eqwarehouse', 'hierarchy_territory_base',               'full',        NULL,               NULL,       NULL,   1),
 (28, 'EQ_Warehouse', 'sqlserver', 'dbo', 'Hierarchy',                    'lh_bronze', 'bronze_eqwarehouse', 'hierarchy_base',                         'incremental', 'StartDate',        'datetime', 50000,  1),
 (29, 'EQ_Warehouse', 'sqlserver', 'dbo', 'Hierarchy_SuperHierarchy',     'lh_bronze', 'bronze_eqwarehouse', 'hierarchy_super_hierarchy_base',         'incremental', 'StartDate',        'datetime', 50000,  1),
@@ -121,11 +122,11 @@ VALUES
 (39, 'EQ_Warehouse', 'sqlserver', 'dbo', 'Accounting',                   'lh_bronze', 'bronze_eqwarehouse', 'accounting_base',                        'incremental', 'EntryUpdateDate',  'datetime', 100000, 1),
 (40, 'EQ_Warehouse', 'sqlserver', 'dbo', 'AccountingDetail',             'lh_bronze', 'bronze_eqwarehouse', 'accounting_detail_base',                 'incremental', 'EntryUpdateDate',  'datetime', 100000, 1),
 (41, 'EQ_Warehouse', 'sqlserver', 'dbo', 'ContractValue_Group',          'lh_bronze', 'bronze_eqwarehouse', 'contract_value_group_base',              'incremental', 'StartDate',        'datetime', 50000,  1),
-(42, 'EQ_Warehouse', 'sqlserver', 'dbo', 'ContractDeposit',              'lh_bronze', 'bronze_eqwarehouse', 'contract_deposit_base',                  'incremental', 'DepositDate',      'datetime', 50000,  1),
-(43, 'EQ_Warehouse', 'sqlserver', 'dbo', 'RecurringPayment',             'lh_bronze', 'bronze_eqwarehouse', 'recurring_payment_base',                 'incremental', 'StartDate',        'datetime', 50000,  1),
-(44, 'EQ_Warehouse', 'sqlserver', 'dbo', 'AgentSummary',                 'lh_bronze', 'bronze_eqwarehouse', 'agent_summary_base',                     'incremental', 'SummaryDate',      'datetime', 50000,  1),
-(45, 'EQ_Warehouse', 'sqlserver', 'dbo', 'IndexValue',                   'lh_bronze', 'bronze_eqwarehouse', 'index_value_base',                       'incremental', 'IndexDate',        'datetime', 50000,  1),
-(46, 'EQ_Warehouse', 'sqlserver', 'dbo', 'RenewalRate',                  'lh_bronze', 'bronze_eqwarehouse', 'renewal_rate_base',                      'incremental', 'RateEffectiveDate','datetime', 50000,  1),
+(42, 'EQ_Warehouse', 'sqlserver', 'dbo', 'ContractDeposit_Group',              'lh_bronze', 'bronze_eqwarehouse', 'contract_deposit_group_base',                  'incremental', 'DepositDate',      'datetime', 50000,  1),
+(43, 'EQ_Warehouse', 'sqlserver', 'dbo', 'RecurringPayment_Group',             'lh_bronze', 'bronze_eqwarehouse', 'recurring_payment_group_base',                 'incremental', 'StartDate',        'datetime', 50000,  1),
+(44, 'EQ_Warehouse', 'sqlserver', 'dbo', 'AgentSummary_Group',                 'lh_bronze', 'bronze_eqwarehouse', 'agent_summary_group_base',                     'incremental', 'SummaryDate',      'datetime', 50000,  1),
+(45, 'EQ_Warehouse', 'sqlserver', 'dbo', 'IndexValue_Group',                   'lh_bronze', 'bronze_eqwarehouse', 'index_value_group_base',                       'incremental', 'IndexDate',        'datetime', 50000,  1),
+(46, 'EQ_Warehouse', 'sqlserver', 'dbo', 'RenewalRate_Group',                  'lh_bronze', 'bronze_eqwarehouse', 'renewal_rate_group_base',                      'incremental', 'RateEffectiveDate','datetime', 50000,  1),
 (47, 'EQ_Warehouse', 'sqlserver', 'dbo', 'CAPRepayment',                 'lh_bronze', 'bronze_eqwarehouse', 'cap_repayment_base',                     'incremental', 'RepaymentDate',    'datetime', 50000,  1),
 (48, 'EQ_Warehouse', 'sqlserver', 'dbo', 'CAPStatusChange',              'lh_bronze', 'bronze_eqwarehouse', 'cap_status_change_base',                 'incremental', 'ChangeDate',       'datetime', 50000,  1),
 (49, 'EQ_Warehouse', 'sqlserver', 'dbo', 'hedge.Ratios',                 'lh_bronze', 'bronze_eqwarehouse', 'hedge_ratios_base',                      'incremental', 'RatioDate',        'datetime', 50000,  1),
@@ -136,21 +137,48 @@ VALUES
 (53, 'EQ_Warehouse', 'sqlserver', 'dbo', 'Note_Group',                   'lh_bronze', 'bronze_eqwarehouse', 'note_group_base',                        'incremental', 'NoteDate',         'datetime', 50000,  1),
 (54, 'EQ_Warehouse', 'sqlserver', 'dbo', 'LastProcessing',               'lh_bronze', 'bronze_eqwarehouse', 'last_processing_base',                   'full',        NULL,               NULL,       NULL,   1),
 (55, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_Client',                'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_client_base',                     'full',        NULL,               NULL,       NULL,   1),
-(56, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_Contract',              'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_base',                   'full',        NULL,               NULL,       NULL,   1),
+(56, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractClient',        'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_client_base',            'full',        NULL,               NULL,       NULL,   1),
 (57, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_Agent',                 'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_agent_base',                      'full',        NULL,               NULL,       NULL,   1),
-(58, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_Activity',              'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_activity_base',                   'full',        NULL,               NULL,       NULL,   1),
-(59, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_Accounting',            'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_accounting_base',                 'full',        NULL,               NULL,       NULL,   1),
-(60, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_AccountValue',          'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_account_value_base',              'full',        NULL,               NULL,       NULL,   1),
-(61, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_AgentSummary',          'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_agent_summary_base',              'full',        NULL,               NULL,       NULL,   1),
+(58, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractTreaty',        'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_treaty_base',            'full',        NULL,               NULL,       NULL,   1),
+(59, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractRider',         'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_rider_base',             'full',        NULL,               NULL,       NULL,   1),
+(60, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractTrx',           'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_trx_base',               'full',        NULL,               NULL,       NULL,   1),
+(61, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractPrimarySegment','lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_primary_segment_base',   'full',        NULL,               NULL,       NULL,   1),
 (62, 'EQ_Warehouse', 'sqlserver', 'dbo', 'ref_Product',                  'lh_bronze', 'bronze_eqwarehouse', 'ref_product_base',                       'full',        NULL,               NULL,       NULL,   1);
+GO
+
+
+-- ── TABLE 3: source_load_control ────────────────────────────────────────────
+
+IF OBJECT_ID('dbo.source_load_control', 'U') IS NOT NULL
+    DROP TABLE dbo.source_load_control;
+GO
+
+CREATE TABLE dbo.source_load_control (
+    id                  INT             NOT NULL    IDENTITY(1,1),
+    source_name         NVARCHAR(100)   NOT NULL,               -- e.g. 'EQ_Warehouse'
+    entity_name         NVARCHAR(200)   NOT NULL,               -- e.g. 'Client' — matches ingestion_config.entity_name
+    last_load_date      DATETIME2       NULL,                   -- UTC timestamp of last successful load
+    bronze_run_status   NVARCHAR(20)    NOT NULL                -- success | failed | running | skipped
+                            CONSTRAINT df_slc_bronze_status DEFAULT ('pending'),
+    silver_run_status   NVARCHAR(20)    NOT NULL                -- success | failed | running | skipped | pending
+                            CONSTRAINT df_slc_silver_status DEFAULT ('pending'),
+    created_date        DATETIME2       NOT NULL    CONSTRAINT df_slc_created DEFAULT (SYSUTCDATETIME()),
+    modified_date       DATETIME2       NULL,
+    CONSTRAINT pk_source_load_control PRIMARY KEY (id),
+    CONSTRAINT uq_source_load_control UNIQUE (source_name, entity_name)
+);
+GO
+
+CREATE INDEX ix_slc_source_entity
+    ON dbo.source_load_control (source_name, entity_name);
 GO
 
 
 -- ══════════════════════════════════════════════════════════════════════════════
 -- SEED DATA: schema_config
 -- Sample mappings for Contract and Agent — extend per actual source schemas.
--- Columns: id, source_table_name, source_column_name, target_column_name,
---          target_data_type, ordinal_position, include_in_md5hash, is_active
+-- Columns: id, source_name, source_table_name, source_column_name, target_column_name,
+--          target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active
 -- ══════════════════════════════════════════════════════════════════════════════
 
 -- Full schema_config seed data (915 rows covering all 62 EQ_Warehouse entities) is

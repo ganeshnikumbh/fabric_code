@@ -153,6 +153,7 @@ CREATE EXTERNAL TABLE schema_config (
     target_data_type        STRING      NOT NULL  COMMENT 'Target Delta/Spark data type (e.g. STRING, INT, TIMESTAMP, DECIMAL(18,4))',
     ordinal_position        INT         NOT NULL  COMMENT 'Column position within the table; enforces consistent schema ordering per source table',
     include_in_md5hash      BOOLEAN     NOT NULL  COMMENT 'true = include this column when computing the row-level md5_hash fingerprint; false = exclude (e.g. audit columns, nullable optional fields)',
+    is_primary_key          BOOLEAN     NOT NULL  COMMENT 'true = this column is a primary key in the source table; used for dedup and merge logic in silver layer',
     is_active               BOOLEAN     NOT NULL  COMMENT 'true = column is included in ingestion; false = column is excluded or deprecated',
     created_at              TIMESTAMP   NOT NULL  COMMENT 'UTC timestamp when this column mapping entry was first created'
 )

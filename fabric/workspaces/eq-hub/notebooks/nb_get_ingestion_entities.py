@@ -59,6 +59,8 @@ spark = SparkSession.builder.appName("nb_get_ingestion_entities").getOrCreate()
 p_jdbc_url    = ""                  # REQUIRED — Fabric SQL DB JDBC connection string
 p_source_name = ""                  # REQUIRED — e.g. "EQ_Warehouse"
 p_config_type = "ingestion_config"  # REQUIRED — "ingestion_config" | "schema_config"
+p_table_name  = ""                  # OPTIONAL — filter to a single entity_name (e.g. "Client")
+                                    #            leave empty ("") to return ALL active entities
 
 # ── Guards ────────────────────────────────────────────────────────────────────
 if not p_jdbc_url or not p_jdbc_url.strip():
@@ -76,12 +78,14 @@ if p_config_type.strip().lower() not in _valid_config_types:
 
 p_source_name = p_source_name.strip()
 p_config_type = p_config_type.strip().lower()
+p_table_name  = p_table_name.strip() if p_table_name else ""
 
 print("=" * 65)
 print("  nb_get_ingestion_entities — START")
 print("=" * 65)
 print(f"  p_source_name  : {p_source_name}")
 print(f"  p_config_type  : {p_config_type}")
+print(f"  p_table_name   : {p_table_name or '(all tables)'}")
 print("=" * 65)
 
 
@@ -94,9 +98,16 @@ output_json = "[]"
 # ── Branch A: ingestion_config ────────────────────────────────────────────────
 if p_config_type == "ingestion_config":
 
-    print(f"\n[1/1] Reading dbo.ingestion_config for source_name='{p_source_name}' ...")
+    _table_filter = f" for entity_name='{p_table_name}'" if p_table_name else " (all entities)"
+    print(f"\n[1/1] Reading dbo.ingestion_config for source_name='{p_source_name}'{_table_filter} ...")
 
     ingestion_df = get_ingestion_config_by_source(p_jdbc_url, p_source_name)  # noqa: F821 — injected by %run nb_utils
+
+    if p_table_name:
+        ingestion_df = ingestion_df.filter(
+            F.lower(F.col("entity_name")) == p_table_name.lower()
+        )
+
     rows = ingestion_df.collect()
     print(f"  Rows returned : {len(rows)}")
 

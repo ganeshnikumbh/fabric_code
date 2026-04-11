@@ -171,7 +171,7 @@ def get_schema_config(jdbc_url: str) -> DataFrame:
     return read_mssql_query(
         jdbc_url,
         "SELECT id, source_name, source_table_name, source_column_name, target_column_name, "
-        "       target_data_type, ordinal_position, include_in_md5hash "
+        "       target_data_type, ordinal_position, include_in_md5hash, is_primary_key "
         "FROM dbo.schema_config "
         "WHERE is_active = 1"
     )
@@ -208,12 +208,100 @@ def get_schema_config_for_table(jdbc_url: str, source_table_name: str) -> list:
     df = read_mssql_query(
         jdbc_url,
         f"SELECT source_column_name, target_column_name, "
-        f"       ordinal_position, include_in_md5hash "
+        f"       ordinal_position, include_in_md5hash, is_primary_key "
         f"FROM dbo.schema_config "
         f"WHERE LOWER(source_table_name) = LOWER('{source_table_name}') "
         f"  AND is_active = 1"
     )
     return df.collect()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# source_load_control helpers
+# ─────────────────────────────────────────────────────────────────────────────
+
+def upsert_load_control(
+    jdbc_url:           str,
+    source_name:        str,
+    entity_name:        str,
+    bronze_run_status:  str,
+    silver_run_status:  str  = "pending",
+    last_load_date:     str  = None,
+) -> None:
+    """
+    Insert or update a row in dbo.source_load_control for the given entity.
+
+    Uses MERGE so repeated calls for the same (source_name, entity_name) pair
+    update the existing row instead of inserting duplicates.
+
+    Parameters
+    ----------
+    jdbc_url           : Fabric SQL DB JDBC connection string.
+    source_name        : e.g. 'EQ_Warehouse'
+    entity_name        : Source table name, e.g. 'Client' — matches ingestion_config.entity_name
+    bronze_run_status  : 'success' | 'failed' | 'running' | 'skipped' | 'pending'
+    silver_run_status  : 'success' | 'failed' | 'running' | 'skipped' | 'pending'  (default: 'pending')
+    last_load_date     : ISO timestamp string for a successful load, e.g. '2025-04-09T01:00:00'.
+                         Pass None to leave existing value unchanged on UPDATE,
+                         or to write NULL on INSERT.
+
+    Example
+    -------
+    upsert_load_control(
+        jdbc_url          = jdbc_url,
+        source_name       = "EQ_Warehouse",
+        entity_name       = "Client",
+        bronze_run_status = "success",
+        last_load_date    = "2025-04-09T01:00:00",
+    )
+    """
+    if last_load_date:
+        last_load_sql = f"CONVERT(DATETIME2, '{last_load_date}', 126)"
+    else:
+        last_load_sql = "NULL"
+
+    merge_sql = f"""
+MERGE dbo.source_load_control AS tgt
+USING (
+    SELECT
+        '{source_name}'       AS source_name,
+        '{entity_name}'       AS entity_name,
+        {last_load_sql}        AS last_load_date,
+        '{bronze_run_status}' AS bronze_run_status,
+        '{silver_run_status}' AS silver_run_status
+) AS src
+ON  tgt.source_name = src.source_name
+AND tgt.entity_name = src.entity_name
+WHEN MATCHED THEN
+    UPDATE SET
+        tgt.bronze_run_status = src.bronze_run_status,
+        tgt.silver_run_status = src.silver_run_status,
+        tgt.last_load_date    = CASE
+                                    WHEN src.last_load_date IS NOT NULL
+                                    THEN src.last_load_date
+                                    ELSE tgt.last_load_date
+                                END,
+        tgt.modified_date     = SYSUTCDATETIME()
+WHEN NOT MATCHED THEN
+    INSERT (source_name, entity_name, last_load_date, bronze_run_status, silver_run_status)
+    VALUES (src.source_name, src.entity_name, src.last_load_date, src.bronze_run_status, src.silver_run_status);
+    """
+
+    # Execute DML via raw JDBC connection (mssql connector is read-only)
+    try:
+        from py4j.java_gateway import java_import
+        java_import(spark._jvm, "java.sql.DriverManager")
+        conn  = spark._jvm.java.sql.DriverManager.getConnection(jdbc_url)
+        stmt  = conn.createStatement()
+        stmt.execute(merge_sql.strip())
+        stmt.close()
+        conn.close()
+    except Exception as e:
+        raise RuntimeError(
+            f"[nb_utils] upsert_load_control failed for {source_name}.{entity_name}.\n{e}"
+        )
+
+    print(f"[nb_utils] upsert_load_control: {source_name}.{entity_name} → bronze={bronze_run_status}, silver={silver_run_status}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -267,6 +355,7 @@ def get_schema_config_schema() -> StructType:
         StructField("target_data_type",   StringType(),  nullable=False),
         StructField("ordinal_position",   IntegerType(), nullable=False),
         StructField("include_in_md5hash", IntegerType(), nullable=False),
+        StructField("is_primary_key",     IntegerType(), nullable=False),
     ])
 
 
@@ -339,5 +428,6 @@ def build_col_maps(mappings: list) -> tuple:
 print("[nb_utils] Loaded — functions available: read_mssql_table, read_mssql_query, "
       "get_ingestion_config, get_ingestion_config_by_source, get_ingestion_config_for_entity, "
       "get_schema_config, get_schema_config_by_source, get_schema_config_for_table, "
+      "upsert_load_control, "
       "get_ingestion_config_schema, get_schema_config_schema, "
       "ingestion_config_df_from_json, schema_config_df_from_json, build_col_maps")
