@@ -66,11 +66,10 @@ INSERT INTO schema_config
     (id, source_name, source_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
 VALUES
-  (  50, 'EQ_Warehouse', 'Hierarchy'                                 , 'Source Column Name'                        , 'Target Column Name'                        , 'TARGET DATA TYPE'    ,   1, 1, 0, 1, GETUTCDATE()),
-  (  51, 'EQ_Warehouse', 'Hierarchy'                                 , 'HierarchyPK'                               , 'hierarchy_id'                              , 'INT'                 ,   2, 1, 1, 1, GETUTCDATE()),
-  (  52, 'EQ_Warehouse', 'Hierarchy'                                 , 'HierarchySetKey'                           , 'hierarchy_set_key'                         , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  (  53, 'EQ_Warehouse', 'Hierarchy'                                 , 'AgentContractFK'                           , 'agent_contract_id'                         , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE()),
-  (  54, 'EQ_Warehouse', 'Hierarchy'                                 , 'ReverseLevel'                              , 'reverse_level'                             , 'INT'                 ,   5, 1, 0, 1, GETUTCDATE());
+  (  51, 'EQ_Warehouse', 'Hierarchy'                                 , 'HierarchyPK'                               , 'hierarchy_id'                              , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
+  (  52, 'EQ_Warehouse', 'Hierarchy'                                 , 'HierarchySetKey'                           , 'hierarchy_set_key'                         , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
+  (  53, 'EQ_Warehouse', 'Hierarchy'                                 , 'AgentContractFK'                           , 'agent_contract_id'                         , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
+  (  54, 'EQ_Warehouse', 'Hierarchy'                                 , 'ReverseLevel'                              , 'reverse_level'                             , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE());
 
 -- [07] CommissionLevelRank (8 columns)
 INSERT INTO schema_config
@@ -856,13 +855,12 @@ INSERT INTO schema_config
     (id, source_name, source_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
 VALUES
-  ( 792, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'Source Column Name'                        , 'Target Column Name'                        , 'TARGET DATA TYPE (FABRIC)',   1, 1, 1, GETUTCDATE()),
-  ( 793, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'ContractPK'                                , 'contract_id'                               , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 794, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'ClientFK'                                  , 'client_id'                                 , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 795, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'RoleName'                                  , 'client_role_name'                          , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 796, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'Relationship'                              , 'relationship_to_insured'                   , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 797, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'AllocationPercent'                         , 'share_percentage'                          , 'DECIMAL(18,4)'       ,   6, 1, 1, GETUTCDATE()),
-  ( 798, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'Status'                                    , 'status'                                    , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE());
+  ( 793, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'ContractPK'                                , 'contract_id'                               , 'INT'                 ,   1, 1, 0, 1, GETUTCDATE()),
+  ( 794, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'ClientFK'                                  , 'client_id'                                 , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
+  ( 795, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'RoleName'                                  , 'client_role_name'                          , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
+  ( 796, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'Relationship'                              , 'relationship_to_insured'                   , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
+  ( 797, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'AllocationPercent'                         , 'share_percentage'                          , 'DECIMAL(18,4)'       ,   5, 1, 1, GETUTCDATE()),
+  ( 798, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'Status'                                    , 'status'                                    , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE());
 
 -- [55] vw_SEG_ContractTreaty (12 columns)
 INSERT INTO schema_config
@@ -911,16 +909,15 @@ INSERT INTO schema_config
     (id, source_name, source_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
 VALUES
-  ( 844, 'EQ_Warehouse', 'ref_Product'                               , 'Source Column Name'                        , 'Target Column Name'                        , 'TARGET DATA TYPE (FABRIC)',   1, 1, 1, GETUTCDATE()),
-  ( 845, 'EQ_Warehouse', 'ref_Product'                               , 'ProductPK'                                 , 'product_id'                                , 'INT'                 ,   2, 1, 1, 1, GETUTCDATE()),
-  ( 846, 'EQ_Warehouse', 'ref_Product'                               , 'ProductName'                               , 'product_name'                              , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 847, 'EQ_Warehouse', 'ref_Product'                               , 'MarketingName'                             , 'marketing_name'                            , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 848, 'EQ_Warehouse', 'ref_Product'                               , 'ProductType'                               , 'product_type'                              , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 849, 'EQ_Warehouse', 'ref_Product'                               , 'CUSIPNumber'                               , 'cusip_number'                              , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 850, 'EQ_Warehouse', 'ref_Product'                               , 'Context'                                   , 'product_context'                           , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 851, 'EQ_Warehouse', 'ref_Product'                               , 'GLLOB'                                     , 'gl_line_of_business'                       , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 852, 'EQ_Warehouse', 'ref_Product'                               , 'Status'                                    , 'status'                                    , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 853, 'EQ_Warehouse', 'ref_Product'                               , 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,  10, 1, 0, 1, GETUTCDATE());
+  ( 845, 'EQ_Warehouse', 'ref_Product'                               , 'ProductPK'                                 , 'product_id'                                , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
+  ( 846, 'EQ_Warehouse', 'ref_Product'                               , 'ProductName'                               , 'product_name'                              , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
+  ( 847, 'EQ_Warehouse', 'ref_Product'                               , 'MarketingName'                             , 'marketing_name'                            , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
+  ( 848, 'EQ_Warehouse', 'ref_Product'                               , 'ProductType'                               , 'product_type'                              , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
+  ( 849, 'EQ_Warehouse', 'ref_Product'                               , 'CUSIPNumber'                               , 'cusip_number'                              , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
+  ( 850, 'EQ_Warehouse', 'ref_Product'                               , 'Context'                                   , 'product_context'                           , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
+  ( 851, 'EQ_Warehouse', 'ref_Product'                               , 'GLLOB'                                     , 'gl_line_of_business'                       , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
+  ( 852, 'EQ_Warehouse', 'ref_Product'                               , 'Status'                                    , 'status'                                    , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
+  ( 853, 'EQ_Warehouse', 'ref_Product'                               , 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,  9, 1, 0, 1, GETUTCDATE());
 
 -- [58] vw_SEG_ContractTrx (14 columns)
 INSERT INTO schema_config
