@@ -32,7 +32,7 @@ VALUES
   (  16, 'EQ_Warehouse', 'Hierarchy_SuperHierarchy'                  , 'SuperHierarchyPK'                          , 'super_hierarchy_id'                        , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
   (  17, 'EQ_Warehouse', 'Hierarchy_SuperHierarchy'                  , 'AgentContractFK'                           , 'agent_contract_id'                         , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
   (  18, 'EQ_Warehouse', 'Hierarchy_SuperHierarchy'                  , 'HierarchySetKey'                           , 'hierarchy_set_key'                         , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  (  19, 'EQ_Warehouse', 'Hierarchy_SuperHierarchy'                  , 'ReverseLevel'                              , 'reverse_level'                             , 'DECIMAL(18,4)'       ,   4, 1, 1, GETUTCDATE()),
+  (  19, 'EQ_Warehouse', 'Hierarchy_SuperHierarchy'                  , 'ReverseLevel'                              , 'reverse_level'                             , 'DECIMAL(18,4)'       ,   4, 1, 0, 1, GETUTCDATE()),
   (  20, 'EQ_Warehouse', 'Hierarchy_SuperHierarchy'                  , 'DisplayName'                               , 'display_name'                              , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE());
 
 -- [04] Hierarchy_Option (9 columns)
@@ -53,7 +53,7 @@ VALUES
   (  35, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'HierarchyBridgePK'                         , 'hierarchy_bridge_id'                       , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
   (  36, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'HierarchyGroupKey'                         , 'hierarchy_group_key'                       , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
   (  37, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'HierarchySetKey'                           , 'hierarchy_set_key'                         , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  (  38, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'SplitPercent'                              , 'split_percent'                             , 'DECIMAL(18,4)'       ,   4, 1, 1, GETUTCDATE()),
+  (  38, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'SplitPercent'                              , 'split_percent'                             , 'DECIMAL(18,4)'       ,   4, 1, 0, 1, GETUTCDATE()),
   (  39, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'ServicingAgentIndicator'                   , 'servicing_agent_indicator'                 , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
   (  40, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'CommissionOnlyIndicator'                   , 'commission_only_indicator'                 , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
   (  41, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'CommissionOption'                          , 'commission_option'                         , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
@@ -127,14 +127,14 @@ VALUES
   ( 104, 'EQ_Warehouse', 'Rider_Group'                               , 'RiderGroupKey'                             , 'rider_group_key'                           , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
   ( 105, 'EQ_Warehouse', 'Rider_Group'                               , 'Code'                                      , 'rider_code'                                , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
   ( 106, 'EQ_Warehouse', 'Rider_Group'                               , 'Description'                               , 'description'                               , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 107, 'EQ_Warehouse', 'Rider_Group'                               , 'BaseValue'                                 , 'base_value'                                , 'DECIMAL(18,4)'       ,   5, 1, 1, GETUTCDATE()),
+  ( 107, 'EQ_Warehouse', 'Rider_Group'                               , 'BaseValue'                                 , 'base_value'                                , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE()),
   ( 108, 'EQ_Warehouse', 'Rider_Group'                               , 'EligibilityDate'                           , 'eligibility_timestamp'                     , 'TIMESTAMP'           ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 109, 'EQ_Warehouse', 'Rider_Group'                               , 'FeePercent'                                , 'fee_percent'                               , 'DECIMAL(18,4)'       ,   7, 1, 1, GETUTCDATE()),
+  ( 109, 'EQ_Warehouse', 'Rider_Group'                               , 'FeePercent'                                , 'fee_percent'                               , 'DECIMAL(18,4)'       ,   7, 1, 0, 1, GETUTCDATE()),
   ( 110, 'EQ_Warehouse', 'Rider_Group'                               , 'Lives'                                     , 'lives'                                     , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 111, 'EQ_Warehouse', 'Rider_Group'                               , 'PayValue'                                  , 'pay_value'                                 , 'DECIMAL(18,4)'       ,   9, 1, 1, GETUTCDATE()),
+  ( 111, 'EQ_Warehouse', 'Rider_Group'                               , 'PayValue'                                  , 'pay_value'                                 , 'DECIMAL(18,4)'       ,   9, 1, 0, 1, GETUTCDATE()),
   ( 112, 'EQ_Warehouse', 'Rider_Group'                               , 'Frequency'                                 , 'frequency'                                 , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
   ( 113, 'EQ_Warehouse', 'Rider_Group'                               , 'WellnessEnrollment'                        , 'is_wellness_enrollment'                    , 'BOOLEAN'             ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 114, 'EQ_Warehouse', 'Rider_Group'                               , 'WellnessCredits'                           , 'wellness_credits'                          , 'DECIMAL(18,4)'       ,  12, 1, 1, GETUTCDATE()),
+  ( 114, 'EQ_Warehouse', 'Rider_Group'                               , 'WellnessCredits'                           , 'wellness_credits'                          , 'DECIMAL(18,4)'       ,  12, 1, 0, 1, GETUTCDATE()),
   ( 115, 'EQ_Warehouse', 'Rider_Group'                               , 'StartAge'                                  , 'start_age'                                 , 'INT'                 ,  13, 1, 0, 1, GETUTCDATE()),
   ( 116, 'EQ_Warehouse', 'Rider_Group'                               , 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,  14, 1, 0, 1, GETUTCDATE()),
   ( 117, 'EQ_Warehouse', 'Rider_Group'                               , 'StopDate'                                  , 'stop_timestamp'                            , 'TIMESTAMP'           ,  15, 1, 0, 1, GETUTCDATE());
@@ -164,7 +164,7 @@ VALUES
   ( 139, 'EQ_Warehouse', 'RenewalRate_Group'                         , 'EffectiveDate'                             , 'effective_timestamp'                       , 'TIMESTAMP'           ,   3, 1, 0, 1, GETUTCDATE()),
   ( 140, 'EQ_Warehouse', 'RenewalRate_Group'                         , 'Year'                                      , 'year'                                      , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE()),
   ( 141, 'EQ_Warehouse', 'RenewalRate_Group'                         , 'YearDisplay'                               , 'year_display'                              , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 142, 'EQ_Warehouse', 'RenewalRate_Group'                         , 'Rate'                                      , 'rate'                                      , 'DECIMAL(18,4)'       ,   6, 1, 1, GETUTCDATE());
+  ( 142, 'EQ_Warehouse', 'RenewalRate_Group'                         , 'Rate'                                      , 'rate'                                      , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE());
 
 -- [14] Reinsurance_Group (9 columns)
 INSERT INTO schema_config
@@ -174,7 +174,7 @@ VALUES
   ( 148, 'EQ_Warehouse', 'Reinsurance_Group'                         , 'ReinsuranceGroupPK'                        , 'reinsurance_group_id'                      , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
   ( 149, 'EQ_Warehouse', 'Reinsurance_Group'                         , 'ReinsuranceGroupKey'                       , 'reinsurance_group_key'                     , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
   ( 150, 'EQ_Warehouse', 'Reinsurance_Group'                         , 'TreatyCode'                                , 'treaty_code'                               , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 151, 'EQ_Warehouse', 'Reinsurance_Group'                         , 'CoinsurancePercentage'                     , 'coinsurance_percentage'                    , 'DECIMAL(18,4)'       ,   4, 1, 1, GETUTCDATE());
+  ( 151, 'EQ_Warehouse', 'Reinsurance_Group'                         , 'CoinsurancePercentage'                     , 'coinsurance_percentage'                    , 'DECIMAL(18,4)'       ,   4, 1, 0, 1, GETUTCDATE());
 
 -- [15] RecurringPayment_Group (21 columns)
 INSERT INTO schema_config
@@ -195,7 +195,7 @@ VALUES
   ( 168, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'PriorDate'                                 , 'prior_timestamp'                           , 'TIMESTAMP'           ,  12, 1, 0, 1, GETUTCDATE()),
   ( 169, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'PriorActivityFK'                           , 'prior_activity_id'                         , 'INT'                 ,  13, 1, 0, 1, GETUTCDATE()),
   ( 170, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'EligibleRMDDate'                           , 'eligible_rmd_timestamp'                    , 'TIMESTAMP'           ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 171, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'CalculatedAmount'                          , 'calculated_amount'                         , 'DECIMAL(18,4)'       ,  15, 1, 1, GETUTCDATE()),
+  ( 171, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'CalculatedAmount'                          , 'calculated_amount'                         , 'DECIMAL(18,4)'       ,  15, 1, 0, 1, GETUTCDATE()),
   ( 172, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'GrossNet'                                  , 'gross_net'                                 , 'STRING'              ,  16, 1, 0, 1, GETUTCDATE());
 
 -- [16] Note_Group (21 columns)
@@ -230,8 +230,8 @@ VALUES
   ( 201, 'EQ_Warehouse', 'IndexValue_Group'                          , 'Ticker'                                    , 'ticker'                                    , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
   ( 202, 'EQ_Warehouse', 'IndexValue_Group'                          , 'IndexName'                                 , 'index_name'                                , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
   ( 203, 'EQ_Warehouse', 'IndexValue_Group'                          , 'EffectiveDate'                             , 'effective_timestamp'                       , 'TIMESTAMP'           ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 204, 'EQ_Warehouse', 'IndexValue_Group'                          , 'IndexValue'                                , 'index_value'                               , 'DECIMAL(18,4)'       ,   6, 1, 1, GETUTCDATE()),
-  ( 205, 'EQ_Warehouse', 'IndexValue_Group'                          , 'Change'                                    , 'change_amount'                             , 'DECIMAL(18,4)'       ,   7, 1, 1, GETUTCDATE());
+  ( 204, 'EQ_Warehouse', 'IndexValue_Group'                          , 'IndexValue'                                , 'index_value'                               , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE()),
+  ( 205, 'EQ_Warehouse', 'IndexValue_Group'                          , 'Change'                                    , 'change_amount'                             , 'DECIMAL(18,4)'       ,   7, 1, 0, 1, GETUTCDATE());
 
 -- [18] ExternalAccount_Group (14 columns)
 INSERT INTO schema_config
@@ -257,7 +257,7 @@ VALUES
   ( 226, 'EQ_Warehouse', 'ContractValue_Group'                       , 'ContractValueGroupKey'                     , 'contract_value_group_key'                  , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
   ( 227, 'EQ_Warehouse', 'ContractValue_Group'                       , 'ValueType'                                 , 'value_type'                                , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
   ( 228, 'EQ_Warehouse', 'ContractValue_Group'                       , 'ValueDate'                                 , 'value_timestamp'                           , 'TIMESTAMP'           ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 229, 'EQ_Warehouse', 'ContractValue_Group'                       , 'Value'                                     , 'value'                                     , 'DECIMAL(18,4)'       ,   5, 1, 1, GETUTCDATE()),
+  ( 229, 'EQ_Warehouse', 'ContractValue_Group'                       , 'Value'                                     , 'value'                                     , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE()),
   ( 230, 'EQ_Warehouse', 'ContractValue_Group'                       , 'ValueAsDate'                               , 'value_as_timestamp'                        , 'TIMESTAMP'           ,   6, 1, 0, 1, GETUTCDATE()),
   ( 231, 'EQ_Warehouse', 'ContractValue_Group'                       , 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,   7, 1, 0, 1, GETUTCDATE()),
   ( 232, 'EQ_Warehouse', 'ContractValue_Group'                       , 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE());
@@ -280,10 +280,10 @@ VALUES
   ( 248, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'PremiumType'                               , 'premium_type'                              , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE()),
   ( 249, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'PlannedIndicator'                          , 'planned_indicator'                         , 'STRING'              ,  12, 1, 0, 1, GETUTCDATE()),
   ( 250, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'Reference'                                 , 'reference'                                 , 'STRING'              ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 251, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'AnticipatedAmount'                         , 'anticipated_amount'                        , 'DECIMAL(18,4)'       ,  14, 1, 1, GETUTCDATE()),
-  ( 252, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'ActualAmount'                              , 'actual_amount'                             , 'DECIMAL(18,4)'       ,  15, 1, 1, GETUTCDATE()),
-  ( 253, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'CostBasis'                                 , 'cost_basis'                                , 'DECIMAL(18,4)'       ,  16, 1, 1, GETUTCDATE()),
-  ( 254, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'RefundAmount'                              , 'refund_amount'                             , 'DECIMAL(18,4)'       ,  17, 1, 1, GETUTCDATE());
+  ( 251, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'AnticipatedAmount'                         , 'anticipated_amount'                        , 'DECIMAL(18,4)'       ,  14, 1, 0, 1, GETUTCDATE()),
+  ( 252, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'ActualAmount'                              , 'actual_amount'                             , 'DECIMAL(18,4)'       ,  15, 1, 0, 1, GETUTCDATE()),
+  ( 253, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'CostBasis'                                 , 'cost_basis'                                , 'DECIMAL(18,4)'       ,  16, 1, 0, 1, GETUTCDATE()),
+  ( 254, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'RefundAmount'                              , 'refund_amount'                             , 'DECIMAL(18,4)'       ,  17, 1, 0, 1, GETUTCDATE());
 
 -- [21] AgentSummary_Group (10 columns)
 INSERT INTO schema_config
@@ -294,7 +294,7 @@ VALUES
   ( 261, 'EQ_Warehouse', 'AgentSummary_Group'                        , 'AgentSummaryGroupKey'                      , 'agent_summary_group_key'                   , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
   ( 262, 'EQ_Warehouse', 'AgentSummary_Group'                        , 'SummaryType'                               , 'summary_type'                              , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
   ( 263, 'EQ_Warehouse', 'AgentSummary_Group'                        , 'SummaryDate'                               , 'summary_timestamp'                         , 'TIMESTAMP'           ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 264, 'EQ_Warehouse', 'AgentSummary_Group'                        , 'SummaryValue'                              , 'summary_value'                             , 'DECIMAL(18,4)'       ,   5, 1, 1, GETUTCDATE());
+  ( 264, 'EQ_Warehouse', 'AgentSummary_Group'                        , 'SummaryValue'                              , 'summary_value'                             , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE());
 
 -- [22] AgentPrincipal_Group (10 columns)
 INSERT INTO schema_config
@@ -354,7 +354,7 @@ VALUES
   ( 317, 'EQ_Warehouse', 'AdditionalClient_Group'                    , 'ClientFK'                                  , 'client_id'                                 , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
   ( 318, 'EQ_Warehouse', 'AdditionalClient_Group'                    , 'AdditionalType'                            , 'additional_type'                           , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
   ( 319, 'EQ_Warehouse', 'AdditionalClient_Group'                    , 'Relation'                                  , 'relation'                                  , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 320, 'EQ_Warehouse', 'AdditionalClient_Group'                    , 'AllocationPercent'                         , 'allocation_percent'                        , 'DECIMAL(18,4)'       ,   6, 1, 1, GETUTCDATE()),
+  ( 320, 'EQ_Warehouse', 'AdditionalClient_Group'                    , 'AllocationPercent'                         , 'allocation_percent'                        , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE()),
   ( 321, 'EQ_Warehouse', 'AdditionalClient_Group'                    , 'Active'                                    , 'is_active'                                 , 'BOOLEAN'             ,   7, 1, 0, 1, GETUTCDATE());
 
 -- [26] AccountingReporting_Group (10 columns)
@@ -419,8 +419,8 @@ VALUES
   ( 376, 'EQ_Warehouse', 'hedge.Ratios'                              , 'RatiosPK'                                  , 'ratios_id'                                 , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
   ( 377, 'EQ_Warehouse', 'hedge.Ratios'                              , 'ContractFK'                                , 'contract_id'                               , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
   ( 378, 'EQ_Warehouse', 'hedge.Ratios'                              , 'ValueDate'                                 , 'value_timestamp'                           , 'TIMESTAMP'           ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 379, 'EQ_Warehouse', 'hedge.Ratios'                              , 'BaseHedgeRatio'                            , 'base_hedge_ratio'                          , 'DECIMAL(18,4)'       ,   4, 1, 1, GETUTCDATE()),
-  ( 380, 'EQ_Warehouse', 'hedge.Ratios'                              , 'BaseSurvivalRatio'                         , 'base_survival_ratio'                       , 'DECIMAL(18,4)'       ,   5, 1, 1, GETUTCDATE()),
+  ( 379, 'EQ_Warehouse', 'hedge.Ratios'                              , 'BaseHedgeRatio'                            , 'base_hedge_ratio'                          , 'DECIMAL(18,4)'       ,   4, 1, 0, 1, GETUTCDATE()),
+  ( 380, 'EQ_Warehouse', 'hedge.Ratios'                              , 'BaseSurvivalRatio'                         , 'base_survival_ratio'                       , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE()),
   ( 381, 'EQ_Warehouse', 'hedge.Ratios'                              , 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,   6, 1, 0, 1, GETUTCDATE()),
   ( 382, 'EQ_Warehouse', 'hedge.Ratios'                              , 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,   7, 1, 0, 1, GETUTCDATE());
 
@@ -433,19 +433,19 @@ VALUES
   ( 389, 'EQ_Warehouse', 'hedge.Options'                             , 'ContractFK'                                , 'contract_id'                               , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
   ( 390, 'EQ_Warehouse', 'hedge.Options'                             , 'InvestmentFK'                              , 'investment_id'                             , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
   ( 391, 'EQ_Warehouse', 'hedge.Options'                             , 'RenewalDate'                               , 'renewal_timestamp'                         , 'TIMESTAMP'           ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 392, 'EQ_Warehouse', 'hedge.Options'                             , 'IndexValue'                                , 'index_value'                               , 'DECIMAL(18,4)'       ,   5, 1, 1, GETUTCDATE()),
-  ( 393, 'EQ_Warehouse', 'hedge.Options'                             , 'HedgingPercentage'                         , 'hedging_percentage'                        , 'DECIMAL(18,4)'       ,   6, 1, 1, GETUTCDATE()),
+  ( 392, 'EQ_Warehouse', 'hedge.Options'                             , 'IndexValue'                                , 'index_value'                               , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE()),
+  ( 393, 'EQ_Warehouse', 'hedge.Options'                             , 'HedgingPercentage'                         , 'hedging_percentage'                        , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE()),
   ( 394, 'EQ_Warehouse', 'hedge.Options'                             , 'HedgeID1'                                  , 'hedge_id_1'                                , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
   ( 395, 'EQ_Warehouse', 'hedge.Options'                             , 'HedgeID2'                                  , 'hedge_id_2'                                , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
   ( 396, 'EQ_Warehouse', 'hedge.Options'                             , 'HedgeRenewalDate'                          , 'hedge_renewal_timestamp'                   , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE()),
   ( 397, 'EQ_Warehouse', 'hedge.Options'                             , 'ValueDate'                                 , 'value_timestamp'                           , 'TIMESTAMP'           ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 398, 'EQ_Warehouse', 'hedge.Options'                             , 'SeriatimHedgeRatio'                        , 'seriatim_hedge_ratio'                      , 'DECIMAL(18,4)'       ,  11, 1, 1, GETUTCDATE()),
-  ( 399, 'EQ_Warehouse', 'hedge.Options'                             , 'PresentValue'                              , 'present_value'                             , 'DECIMAL(18,4)'       ,  12, 1, 1, GETUTCDATE()),
-  ( 400, 'EQ_Warehouse', 'hedge.Options'                             , 'Delta'                                     , 'delta'                                     , 'DECIMAL(18,4)'       ,  13, 1, 1, GETUTCDATE()),
-  ( 401, 'EQ_Warehouse', 'hedge.Options'                             , 'Gamma'                                     , 'gamma'                                     , 'DECIMAL(18,4)'       ,  14, 1, 1, GETUTCDATE()),
-  ( 402, 'EQ_Warehouse', 'hedge.Options'                             , 'Vega'                                      , 'vega'                                      , 'DECIMAL(18,4)'       ,  15, 1, 1, GETUTCDATE()),
-  ( 403, 'EQ_Warehouse', 'hedge.Options'                             , 'Rho'                                       , 'rho'                                       , 'DECIMAL(18,4)'       ,  16, 1, 1, GETUTCDATE()),
-  ( 404, 'EQ_Warehouse', 'hedge.Options'                             , 'Theta'                                     , 'theta'                                     , 'DECIMAL(18,4)'       ,  17, 1, 1, GETUTCDATE()),
+  ( 398, 'EQ_Warehouse', 'hedge.Options'                             , 'SeriatimHedgeRatio'                        , 'seriatim_hedge_ratio'                      , 'DECIMAL(18,4)'       ,  11, 1, 0, 1, GETUTCDATE()),
+  ( 399, 'EQ_Warehouse', 'hedge.Options'                             , 'PresentValue'                              , 'present_value'                             , 'DECIMAL(18,4)'       ,  12, 1, 0, 1, GETUTCDATE()),
+  ( 400, 'EQ_Warehouse', 'hedge.Options'                             , 'Delta'                                     , 'delta'                                     , 'DECIMAL(18,4)'       ,  13, 1, 0, 1, GETUTCDATE()),
+  ( 401, 'EQ_Warehouse', 'hedge.Options'                             , 'Gamma'                                     , 'gamma'                                     , 'DECIMAL(18,4)'       ,  14, 1, 0, 1, GETUTCDATE()),
+  ( 402, 'EQ_Warehouse', 'hedge.Options'                             , 'Vega'                                      , 'vega'                                      , 'DECIMAL(18,4)'       ,  15, 1, 0, 1, GETUTCDATE()),
+  ( 403, 'EQ_Warehouse', 'hedge.Options'                             , 'Rho'                                       , 'rho'                                       , 'DECIMAL(18,4)'       ,  16, 1, 0, 1, GETUTCDATE()),
+  ( 404, 'EQ_Warehouse', 'hedge.Options'                             , 'Theta'                                     , 'theta'                                     , 'DECIMAL(18,4)'       ,  17, 1, 0, 1, GETUTCDATE()),
   ( 405, 'EQ_Warehouse', 'hedge.Options'                             , 'NeedsHedged'                               , 'needs_hedged'                              , 'BOOLEAN'             ,  18, 1, 0, 1, GETUTCDATE()),
   ( 406, 'EQ_Warehouse', 'hedge.Options'                             , 'IsHedged'                                  , 'is_hedged'                                 , 'BOOLEAN'             ,  19, 1, 0, 1, GETUTCDATE()),
   ( 407, 'EQ_Warehouse', 'hedge.Options'                             , 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,  20, 1, 0, 1, GETUTCDATE()),
@@ -565,9 +565,9 @@ VALUES
   ( 514, 'EQ_Warehouse', 'CAPRepayment'                              , 'OwnerResState'                             , 'owner_res_state'                           , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
   ( 515, 'EQ_Warehouse', 'CAPRepayment'                              , 'OwnerCountry'                              , 'owner_country'                             , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
   ( 516, 'EQ_Warehouse', 'CAPRepayment'                              , 'TerminationDate'                           , 'termination_date'                          , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 517, 'EQ_Warehouse', 'CAPRepayment'                              , 'FactorTrail'                               , 'factor_trail'                              , 'DECIMAL(18,4)'       ,   9, 1, 1, GETUTCDATE()),
+  ( 517, 'EQ_Warehouse', 'CAPRepayment'                              , 'FactorTrail'                               , 'factor_trail'                              , 'DECIMAL(18,4)'       ,   9, 1, 0, 1, GETUTCDATE()),
   ( 518, 'EQ_Warehouse', 'CAPRepayment'                              , 'RenewalPeriod'                             , 'renewal_period'                            , 'INT'                 ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 519, 'EQ_Warehouse', 'CAPRepayment'                              , 'CommissionableAmount'                      , 'commissionable_amount'                     , 'DECIMAL(18,4)'       ,  11, 1, 1, GETUTCDATE());
+  ( 519, 'EQ_Warehouse', 'CAPRepayment'                              , 'CommissionableAmount'                      , 'commissionable_amount'                     , 'DECIMAL(18,4)'       ,  11, 1, 0, 1, GETUTCDATE());
 
 -- [40] ActivityType (11 columns)
 INSERT INTO schema_config
@@ -587,18 +587,18 @@ INSERT INTO schema_config
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
 VALUES
   ( 536, 'EQ_Warehouse', 'ActivityFinancial'                         , 'ActivityPK'                                , 'activity_id'                               , 'BIGINT'              ,   1, 1, 0, 1, GETUTCDATE()),
-  ( 537, 'EQ_Warehouse', 'ActivityFinancial'                         , 'FreeAmount'                                , 'free_amount'                               , 'DECIMAL(18,4)'       ,   2, 1, 1, GETUTCDATE()),
-  ( 538, 'EQ_Warehouse', 'ActivityFinancial'                         , 'SurrenderCharge'                           , 'surrender_charge'                          , 'DECIMAL(18,4)'       ,   3, 1, 1, GETUTCDATE()),
-  ( 539, 'EQ_Warehouse', 'ActivityFinancial'                         , 'MVA'                                       , 'mva'                                       , 'DECIMAL(18,4)'       ,   4, 1, 1, GETUTCDATE()),
-  ( 540, 'EQ_Warehouse', 'ActivityFinancial'                         , 'PolicyFee'                                 , 'policy_fee'                                , 'DECIMAL(18,4)'       ,   5, 1, 1, GETUTCDATE()),
-  ( 541, 'EQ_Warehouse', 'ActivityFinancial'                         , 'COIRefund'                                 , 'coi_refund'                                , 'DECIMAL(18,4)'       ,   6, 1, 1, GETUTCDATE()),
-  ( 542, 'EQ_Warehouse', 'ActivityFinancial'                         , 'ABRDiscountCharge'                         , 'abr_discount_charge'                       , 'DECIMAL(18,4)'       ,   7, 1, 1, GETUTCDATE()),
-  ( 543, 'EQ_Warehouse', 'ActivityFinancial'                         , 'AdminCharge'                               , 'admin_charge'                              , 'DECIMAL(18,4)'       ,   8, 1, 1, GETUTCDATE()),
-  ( 544, 'EQ_Warehouse', 'ActivityFinancial'                         , 'FederalTax'                                , 'federal_tax'                               , 'DECIMAL(18,4)'       ,   9, 1, 1, GETUTCDATE()),
-  ( 545, 'EQ_Warehouse', 'ActivityFinancial'                         , 'StateTax'                                  , 'state_tax'                                 , 'DECIMAL(18,4)'       ,  10, 1, 1, GETUTCDATE()),
-  ( 546, 'EQ_Warehouse', 'ActivityFinancial'                         , 'Rate'                                      , 'rate'                                      , 'DECIMAL(18,4)'       ,  11, 1, 1, GETUTCDATE()),
-  ( 547, 'EQ_Warehouse', 'ActivityFinancial'                         , 'BaseAmount'                                , 'base_amount'                               , 'DECIMAL(18,4)'       ,  12, 1, 1, GETUTCDATE()),
-  ( 548, 'EQ_Warehouse', 'ActivityFinancial'                         , 'TaxableBenefit'                            , 'taxable_benefit'                           , 'DECIMAL(18,4)'       ,  13, 1, 1, GETUTCDATE());
+  ( 537, 'EQ_Warehouse', 'ActivityFinancial'                         , 'FreeAmount'                                , 'free_amount'                               , 'DECIMAL(18,4)'       ,   2, 1, 0, 1, GETUTCDATE()),
+  ( 538, 'EQ_Warehouse', 'ActivityFinancial'                         , 'SurrenderCharge'                           , 'surrender_charge'                          , 'DECIMAL(18,4)'       ,   3, 1, 0, 1, GETUTCDATE()),
+  ( 539, 'EQ_Warehouse', 'ActivityFinancial'                         , 'MVA'                                       , 'mva'                                       , 'DECIMAL(18,4)'       ,   4, 1, 0, 1, GETUTCDATE()),
+  ( 540, 'EQ_Warehouse', 'ActivityFinancial'                         , 'PolicyFee'                                 , 'policy_fee'                                , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE()),
+  ( 541, 'EQ_Warehouse', 'ActivityFinancial'                         , 'COIRefund'                                 , 'coi_refund'                                , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE()),
+  ( 542, 'EQ_Warehouse', 'ActivityFinancial'                         , 'ABRDiscountCharge'                         , 'abr_discount_charge'                       , 'DECIMAL(18,4)'       ,   7, 1, 0, 1, GETUTCDATE()),
+  ( 543, 'EQ_Warehouse', 'ActivityFinancial'                         , 'AdminCharge'                               , 'admin_charge'                              , 'DECIMAL(18,4)'       ,   8, 1, 0, 1, GETUTCDATE()),
+  ( 544, 'EQ_Warehouse', 'ActivityFinancial'                         , 'FederalTax'                                , 'federal_tax'                               , 'DECIMAL(18,4)'       ,   9, 1, 0, 1, GETUTCDATE()),
+  ( 545, 'EQ_Warehouse', 'ActivityFinancial'                         , 'StateTax'                                  , 'state_tax'                                 , 'DECIMAL(18,4)'       ,  10, 1, 0, 1, GETUTCDATE()),
+  ( 546, 'EQ_Warehouse', 'ActivityFinancial'                         , 'Rate'                                      , 'rate'                                      , 'DECIMAL(18,4)'       ,  11, 1, 0, 1, GETUTCDATE()),
+  ( 547, 'EQ_Warehouse', 'ActivityFinancial'                         , 'BaseAmount'                                , 'base_amount'                               , 'DECIMAL(18,4)'       ,  12, 1, 0, 1, GETUTCDATE()),
+  ( 548, 'EQ_Warehouse', 'ActivityFinancial'                         , 'TaxableBenefit'                            , 'taxable_benefit'                           , 'DECIMAL(18,4)'       ,  13, 1, 0, 1, GETUTCDATE());
 
 -- [42] AccountingDetail (23 columns)
 INSERT INTO schema_config
@@ -663,7 +663,7 @@ VALUES
   ( 607, 'EQ_Warehouse', 'Accounting'                                , 'InvestmentFK'                              , 'investment_id'                             , 'INT'                 ,  15, 1, 0, 1, GETUTCDATE()),
   ( 608, 'EQ_Warehouse', 'Accounting'                                , 'ProductFK'                                 , 'product_id'                                , 'INT'                 ,  16, 1, 0, 1, GETUTCDATE()),
   ( 609, 'EQ_Warehouse', 'Accounting'                                , 'AgentFK'                                   , 'agent_id'                                  , 'INT'                 ,  17, 1, 0, 1, GETUTCDATE()),
-  ( 610, 'EQ_Warehouse', 'Accounting'                                , 'Amount'                                    , 'amount'                                    , 'DECIMAL(18,4)'       ,  18, 1, 1, GETUTCDATE()),
+  ( 610, 'EQ_Warehouse', 'Accounting'                                , 'Amount'                                    , 'amount'                                    , 'DECIMAL(18,4)'       ,  18, 1, 0, 1, GETUTCDATE()),
   ( 611, 'EQ_Warehouse', 'Accounting'                                , 'Block'                                     , 'block_code'                                , 'STRING'              ,  19, 1, 0, 1, GETUTCDATE());
 
 -- [45] Surrender (18 columns)
@@ -680,7 +680,7 @@ VALUES
   ( 623, 'EQ_Warehouse', 'Surrender'                                 , 'Age'                                       , 'customer_age'                              , 'INT'                 ,   7, 1, 0, 1, GETUTCDATE()),
   ( 624, 'EQ_Warehouse', 'Surrender'                                 , 'ContractYear'                              , 'policy_year'                               , 'INT'                 ,   8, 1, 0, 1, GETUTCDATE()),
   ( 625, 'EQ_Warehouse', 'Surrender'                                 , 'SurrenderLength'                           , 'penalty_duration_years'                    , 'INT'                 ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 626, 'EQ_Warehouse', 'Surrender'                                 , 'Rate'                                      , 'penalty_percentage'                        , 'DECIMAL(18,4)'       ,  10, 1, 1, GETUTCDATE()),
+  ( 626, 'EQ_Warehouse', 'Surrender'                                 , 'Rate'                                      , 'penalty_percentage'                        , 'DECIMAL(18,4)'       ,  10, 1, 0, 1, GETUTCDATE()),
   ( 627, 'EQ_Warehouse', 'Surrender'                                 , 'RateAppliedTo'                             , 'rate_calculation_basis'                    , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE()),
   ( 628, 'EQ_Warehouse', 'Surrender'                                 , 'EffectiveDate'                             , 'rule_start_date'                           , 'TIMESTAMP'           ,  12, 1, 0, 1, GETUTCDATE()),
   ( 629, 'EQ_Warehouse', 'Surrender'                                 , 'EndDate'                                   , 'rule_end_date'                             , 'TIMESTAMP'           ,  13, 1, 0, 1, GETUTCDATE());
@@ -736,9 +736,9 @@ VALUES
   ( 676, 'EQ_Warehouse', 'Activity'                                  , 'ProcessDateFK'                             , 'process_date_id'                           , 'INT'                 ,  15, 1, 0, 1, GETUTCDATE()),
   ( 677, 'EQ_Warehouse', 'Activity'                                  , 'ReleaseDate'                               , 'release_date'                              , 'TIMESTAMP'           ,  16, 1, 0, 1, GETUTCDATE()),
   ( 678, 'EQ_Warehouse', 'Activity'                                  , 'PeriodDate'                                , 'period_date'                               , 'TIMESTAMP'           ,  17, 1, 0, 1, GETUTCDATE()),
-  ( 679, 'EQ_Warehouse', 'Activity'                                  , 'GrossAmount'                               , 'gross_amount'                              , 'DECIMAL(18,4)'       ,  18, 1, 1, GETUTCDATE()),
-  ( 680, 'EQ_Warehouse', 'Activity'                                  , 'NetAmount'                                 , 'net_amount'                                , 'DECIMAL(18,4)'       ,  19, 1, 1, GETUTCDATE()),
-  ( 681, 'EQ_Warehouse', 'Activity'                                  , 'CheckAmount'                               , 'check_amount'                              , 'DECIMAL(18,4)'       ,  20, 1, 1, GETUTCDATE()),
+  ( 679, 'EQ_Warehouse', 'Activity'                                  , 'GrossAmount'                               , 'gross_amount'                              , 'DECIMAL(18,4)'       ,  18, 1, 0, 1, GETUTCDATE()),
+  ( 680, 'EQ_Warehouse', 'Activity'                                  , 'NetAmount'                                 , 'net_amount'                                , 'DECIMAL(18,4)'       ,  19, 1, 0, 1, GETUTCDATE()),
+  ( 681, 'EQ_Warehouse', 'Activity'                                  , 'CheckAmount'                               , 'check_amount'                              , 'DECIMAL(18,4)'       ,  20, 1, 0, 1, GETUTCDATE()),
   ( 682, 'EQ_Warehouse', 'Activity'                                  , 'DistributionType'                          , 'distribution_type'                         , 'STRING'              ,  21, 1, 0, 1, GETUTCDATE()),
   ( 683, 'EQ_Warehouse', 'Activity'                                  , 'TextValue'                                 , 'activity_notes'                            , 'STRING'              ,  22, 1, 0, 1, GETUTCDATE());
 
@@ -750,9 +750,9 @@ VALUES
   ( 689, 'EQ_Warehouse', 'AccountValue'                              , 'AccountValuePK'                            , 'account_value_id'                          , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
   ( 690, 'EQ_Warehouse', 'AccountValue'                              , 'ContractFK'                                , 'contract_id'                               , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
   ( 691, 'EQ_Warehouse', 'AccountValue'                              , 'InvestmentFK'                              , 'investment_id'                             , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 692, 'EQ_Warehouse', 'AccountValue'                              , 'Value'                                     , 'account_value_amount'                      , 'DECIMAL(18,4)'       ,   4, 1, 1, GETUTCDATE()),
-  ( 693, 'EQ_Warehouse', 'AccountValue'                              , 'CurrentInterestRate'                       , 'current_interest_rate'                     , 'DECIMAL(18,4)'       ,   5, 1, 1, GETUTCDATE()),
-  ( 694, 'EQ_Warehouse', 'AccountValue'                              , 'AllocationPercent'                         , 'allocation_percentage'                     , 'DECIMAL(18,4)'       ,   6, 1, 1, GETUTCDATE()),
+  ( 692, 'EQ_Warehouse', 'AccountValue'                              , 'Value'                                     , 'account_value_amount'                      , 'DECIMAL(18,4)'       ,   4, 1, 0, 1, GETUTCDATE()),
+  ( 693, 'EQ_Warehouse', 'AccountValue'                              , 'CurrentInterestRate'                       , 'current_interest_rate'                     , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE()),
+  ( 694, 'EQ_Warehouse', 'AccountValue'                              , 'AllocationPercent'                         , 'allocation_percentage'                     , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE()),
   ( 695, 'EQ_Warehouse', 'AccountValue'                              , 'DepositDate'                               , 'deposit_date'                              , 'TIMESTAMP'           ,   7, 1, 0, 1, GETUTCDATE()),
   ( 696, 'EQ_Warehouse', 'AccountValue'                              , 'RenewalDate'                               , 'renewal_date'                              , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE()),
   ( 697, 'EQ_Warehouse', 'AccountValue'                              , 'ValuationDate'                             , 'valuation_date'                            , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE()),
@@ -859,7 +859,7 @@ VALUES
   ( 794, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'ClientFK'                                  , 'client_id'                                 , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
   ( 795, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'RoleName'                                  , 'client_role_name'                          , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
   ( 796, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'Relationship'                              , 'relationship_to_insured'                   , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 797, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'AllocationPercent'                         , 'share_percentage'                          , 'DECIMAL(18,4)'       ,   5, 1, 1, GETUTCDATE()),
+  ( 797, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'AllocationPercent'                         , 'share_percentage'                          , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE()),
   ( 798, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'Status'                                    , 'status'                                    , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE());
 
 -- [55] vw_SEG_ContractTreaty (12 columns)
@@ -931,7 +931,7 @@ VALUES
   ( 863, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'TrxDescription'                            , 'trx_description'                           , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
   ( 864, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,   6, 1, 0, 1, GETUTCDATE()),
   ( 865, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'ProcessDate'                               , 'process_date'                              , 'TIMESTAMP'           ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 866, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'Amount'                                    , 'trx_amount'                                , 'DECIMAL(18,4)'       ,   8, 1, 1, GETUTCDATE()),
+  ( 866, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'Amount'                                    , 'trx_amount'                                , 'DECIMAL(18,4)'       ,   8, 1, 0, 1, GETUTCDATE()),
   ( 867, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'Status'                                    , 'trx_status'                                , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE());
 
 -- [59] vw_SEG_ContractPrimarySegment (12 columns)
@@ -944,8 +944,8 @@ VALUES
   ( 875, 'EQ_Warehouse', 'vw_SEG_ContractPrimarySegment'             , 'ContractNumber'                            , 'contract_number'                           , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
   ( 876, 'EQ_Warehouse', 'vw_SEG_ContractPrimarySegment'             , 'SegmentNumber'                             , 'segment_number'                            , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE()),
   ( 877, 'EQ_Warehouse', 'vw_SEG_ContractPrimarySegment'             , 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 878, 'EQ_Warehouse', 'vw_SEG_ContractPrimarySegment'             , 'CostBasis'                                 , 'cost_basis'                                , 'DECIMAL(18,4)'       ,   6, 1, 1, GETUTCDATE()),
-  ( 879, 'EQ_Warehouse', 'vw_SEG_ContractPrimarySegment'             , 'FreeAmount'                                , 'free_amount'                               , 'DECIMAL(18,4)'       ,   7, 1, 1, GETUTCDATE());
+  ( 878, 'EQ_Warehouse', 'vw_SEG_ContractPrimarySegment'             , 'CostBasis'                                 , 'cost_basis'                                , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE()),
+  ( 879, 'EQ_Warehouse', 'vw_SEG_ContractPrimarySegment'             , 'FreeAmount'                                , 'free_amount'                               , 'DECIMAL(18,4)'       ,   7, 1, 0, 1, GETUTCDATE());
 
 -- [60] vw_SEG_Agent (15 columns)
 INSERT INTO schema_config
