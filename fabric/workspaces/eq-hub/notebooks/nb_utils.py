@@ -32,8 +32,9 @@ from typing import Optional
 try:
     from builtin.fabric_logging_utils import FabricLogger as _FabricLogger  # type: ignore[import]
     _fabric_logger = _FabricLogger("EquiTrust")
-except Exception:
-    # Outside Fabric runtime (local IDE) — logging is a no-op
+    print("[nb_utils] FabricLogger initialised successfully.")
+except Exception as _fabric_logger_init_error:
+    print(f"[nb_utils] WARNING: FabricLogger init failed ({type(_fabric_logger_init_error).__name__}): {_fabric_logger_init_error}")
     _fabric_logger = None
 
 spark = SparkSession.builder.appName("nb_utils").getOrCreate()
