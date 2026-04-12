@@ -29,13 +29,6 @@ from pyspark.sql.types import (
 )
 from typing import Optional
 
-try:
-    from builtin.fabric_logging_utils import FabricLogger as _FabricLogger  # type: ignore[import]
-    _fabric_logger = _FabricLogger("EquiTrust")
-    print("[nb_utils] FabricLogger initialised successfully.")
-except Exception as _fabric_logger_init_error:
-    print(f"[nb_utils] WARNING: FabricLogger init failed ({type(_fabric_logger_init_error).__name__}): {_fabric_logger_init_error}")
-    _fabric_logger = None
 
 spark = SparkSession.builder.appName("nb_utils").getOrCreate()
 
@@ -448,16 +441,16 @@ def log_fabric_operation(
     error_message:   str   = None,
 ) -> None:
     """
-    Write a log entry to LH_EquiTrust_Monitoring via FabricLogger.
+    Write a log entry to LH_EquiTrust_Monitoring via nb_log_operation.
 
-    FabricLogger creates and manages its own Fabric Lakehouse
-    (LH_EquiTrust_Monitoring) using the Fabric API and writes to it via
-    absolute OneLake paths — so calling this from a notebook that has
-    lh_bronze attached as the default lakehouse is safe and does not
-    pollute lh_bronze.
+    Delegates to nb_log_operation via mssparkutils.notebook.run() so that
+    FabricLogger always runs in its own isolated Spark session with NO default
+    lakehouse attached. This prevents FabricLogger from creating its monitoring
+    tables (dim_date, dim_time, monitoring_log) in the calling notebook's
+    default lakehouse (e.g. lh_bronze).
 
-    Silently skips logging if FabricLogger is unavailable (e.g. during
-    local IDE runs or if the import failed at load time).
+    Never raises — logging failures are printed as warnings so ingestion
+    is never blocked by a logging error.
 
     Parameters
     ----------
@@ -470,19 +463,20 @@ def log_fabric_operation(
     message         : Optional success / info message.
     error_message   : Optional error description (None on success).
     """
-    if _fabric_logger is None:
-        print(f"[nb_utils] log_fabric_operation: FabricLogger not available — skipping log entry")
-        return
     try:
-        _fabric_logger.log_operation(
-            notebook_name  = notebook_name,
-            table_name     = table_name,
-            operation_type = operation_type,
-            rows_before    = rows_before,
-            rows_after     = rows_after,
-            execution_time = execution_time,
-            message        = message,
-            error_message  = error_message,
+        mssparkutils.notebook.run(  # type: ignore[name-defined]  — available in Fabric runtime
+            "nb_log_operation",
+            timeout   = 120,
+            arguments = {
+                "p_notebook_name"  : notebook_name,
+                "p_table_name"     : table_name,
+                "p_operation_type" : operation_type,
+                "p_rows_before"    : str(rows_before),
+                "p_rows_after"     : str(rows_after),
+                "p_execution_time" : str(execution_time),
+                "p_message"        : message       or "",
+                "p_error_message"  : error_message or "",
+            }
         )
     except Exception as e:
         # Never let a logging failure break ingestion

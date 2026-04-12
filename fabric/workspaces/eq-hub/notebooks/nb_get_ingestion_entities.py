@@ -49,7 +49,7 @@ import json
 
 spark = SparkSession.builder.appName("nb_get_ingestion_entities").getOrCreate()
 
-%run nb_utils
+%run nb_utils.py
 
 
 # ══════════════════════════════════════════════════════════════════════════════

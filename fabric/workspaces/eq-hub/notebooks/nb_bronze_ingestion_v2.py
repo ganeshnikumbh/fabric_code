@@ -26,8 +26,9 @@
 #   - Attach lh_bronze as the default lakehouse before running.
 #   - lh_landing must be added to the notebook session
 #     (Notebook settings → Lakehouses → Add).
-#   - fabric_logging_utils.py must be uploaded to nb_utils notebook's
-#     Resources/builtin/ folder (one-time setup).
+#   - nb_log_operation notebook must exist in the same workspace with
+#     NO lakehouse attached (so FabricLogger writes to LH_EquiTrust_Monitoring).
+#   - fabric_logging_utils.py must be in nb_log_operation's Resources/builtin/ folder.
 
 import time
 
@@ -37,7 +38,7 @@ from pyspark.sql.types import StringType, TimestampType
 
 spark = SparkSession.builder.appName("nb_bronze_ingestion_v2").getOrCreate()
 
-%run nb_utils
+%run nb_utils.py
 
 _notebook_start = time.time()
 

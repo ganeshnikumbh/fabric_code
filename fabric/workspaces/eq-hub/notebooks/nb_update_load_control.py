@@ -18,7 +18,7 @@ from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("nb_update_load_control").getOrCreate()
 
-%run nb_utils
+%run nb_utils.py
 
 
 # ══════════════════════════════════════════════════════════════════════════════
