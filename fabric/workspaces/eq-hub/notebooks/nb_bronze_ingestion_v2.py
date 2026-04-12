@@ -26,8 +26,8 @@
 #   - Attach lh_bronze as the default lakehouse before running.
 #   - lh_landing must be added to the notebook session
 #     (Notebook settings → Lakehouses → Add).
-#   - nb_log_operation notebook must exist in the same workspace with
-#     NO lakehouse attached (so FabricLogger creates LH_EquiTrust_Monitoring).
+#   - fabric_logging_utils.py must be uploaded to nb_utils notebook's
+#     Resources/builtin/ folder (one-time setup).
 
 import time
 
@@ -187,18 +187,14 @@ try:
     print(f"  Column mappings  : {len(col_map)} columns mapped")
     print(f"  Hash columns     : {len(hash_cols_ordered)}")
 
-    mssparkutils.notebook.run(
-        "nb_log_operation",
-        timeout    = 120,
-        arguments  = {
-            "p_notebook_name"  : "nb_bronze_ingestion_v2",
-            "p_table_name"     : qualified_target,
-            "p_operation_type" : "EXTRACT",
-            "p_rows_before"    : "0",
-            "p_rows_after"     : str(source_row_count),
-            "p_execution_time" : str(round(time.time() - _notebook_start, 6)),
-            "p_message"        : f"Source rows read from {_landing_ref} | run_id={p_ingestion_run_id}",
-        }
+    log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]  — injected by %run nb_utils
+        notebook_name  = "nb_bronze_ingestion_v2",
+        table_name     = qualified_target,
+        operation_type = "EXTRACT",
+        rows_before    = 0,
+        rows_after     = source_row_count,
+        execution_time = round(time.time() - _notebook_start, 6),
+        message        = f"Source rows read from {_landing_ref} | run_id={p_ingestion_run_id}",
     )
 
 
@@ -361,21 +357,17 @@ try:
     print(f"  Verified rows in target : {verified_count:,}")
 
     # ── Log success ───────────────────────────────────────────────────────────
-    mssparkutils.notebook.run(
-        "nb_log_operation",
-        timeout    = 120,
-        arguments  = {
-            "p_notebook_name"  : "nb_bronze_ingestion_v2",
-            "p_table_name"     : qualified_target,
-            "p_operation_type" : "LOAD",
-            "p_rows_before"    : str(rows_before),
-            "p_rows_after"     : str(verified_count),
-            "p_execution_time" : str(_write_secs),
-            "p_message"        : (
-                f"load_type={load_type} | source={p_source_table} | "
-                f"rows_written={final_row_count} | run_id={p_ingestion_run_id}"
-            ),
-        }
+    log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]  — injected by %run nb_utils
+        notebook_name  = "nb_bronze_ingestion_v2",
+        table_name     = qualified_target,
+        operation_type = "LOAD",
+        rows_before    = rows_before,
+        rows_after     = verified_count,
+        execution_time = _write_secs,
+        message        = (
+            f"load_type={load_type} | source={p_source_table} | "
+            f"rows_written={final_row_count} | run_id={p_ingestion_run_id}"
+        ),
     )
 
     print("\n" + "=" * 65)
@@ -397,22 +389,14 @@ try:
 
 except Exception as _exc:
     _elapsed = round(time.time() - _notebook_start, 6)
-    try:
-        mssparkutils.notebook.run(
-            "nb_log_operation",
-            timeout    = 120,
-            arguments  = {
-                "p_notebook_name"  : "nb_bronze_ingestion_v2",
-                "p_table_name"     : qualified_target,
-                "p_operation_type" : "LOAD",
-                "p_rows_before"    : "0",
-                "p_rows_after"     : "0",
-                "p_execution_time" : str(_elapsed),
-                "p_error_message"  : str(_exc),
-                "p_message"        : f"FAILED | source={p_source_table} | run_id={p_ingestion_run_id}",
-            }
-        )
-    except Exception:
-        # Never let a logging failure mask the original exception
-        pass
+    log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]  — injected by %run nb_utils
+        notebook_name  = "nb_bronze_ingestion_v2",
+        table_name     = qualified_target,
+        operation_type = "LOAD",
+        rows_before    = 0,
+        rows_after     = 0,
+        execution_time = _elapsed,
+        error_message  = str(_exc),
+        message        = f"FAILED | source={p_source_table} | run_id={p_ingestion_run_id}",
+    )
     raise

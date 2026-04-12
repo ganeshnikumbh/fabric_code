@@ -29,6 +29,13 @@ from pyspark.sql.types import (
 )
 from typing import Optional
 
+try:
+    from builtin.fabric_logging_utils import FabricLogger as _FabricLogger  # type: ignore[import]
+    _fabric_logger = _FabricLogger("EquiTrust")
+except Exception:
+    # Outside Fabric runtime (local IDE) — logging is a no-op
+    _fabric_logger = None
+
 spark = SparkSession.builder.appName("nb_utils").getOrCreate()
 
 
@@ -425,9 +432,65 @@ def build_col_maps(mappings: list) -> tuple:
     return col_map, col_map_lower, hash_cols_ordered
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# FabricLogger wrapper
+# ─────────────────────────────────────────────────────────────────────────────
+
+def log_fabric_operation(
+    notebook_name:   str,
+    table_name:      str,
+    operation_type:  str,
+    rows_before:     int   = 0,
+    rows_after:      int   = 0,
+    execution_time:  float = 0.0,
+    message:         str   = None,
+    error_message:   str   = None,
+) -> None:
+    """
+    Write a log entry to LH_EquiTrust_Monitoring via FabricLogger.
+
+    FabricLogger creates and manages its own Fabric Lakehouse
+    (LH_EquiTrust_Monitoring) using the Fabric API and writes to it via
+    absolute OneLake paths — so calling this from a notebook that has
+    lh_bronze attached as the default lakehouse is safe and does not
+    pollute lh_bronze.
+
+    Silently skips logging if FabricLogger is unavailable (e.g. during
+    local IDE runs or if the import failed at load time).
+
+    Parameters
+    ----------
+    notebook_name   : Name of the calling notebook.
+    table_name      : Target table being operated on (e.g. 'bronze_eqwarehouse.client_base').
+    operation_type  : 'LOAD' | 'EXTRACT' | 'TRANSFORM' | 'VALIDATE' | 'MERGE' etc.
+    rows_before     : Row count before the operation.
+    rows_after      : Row count after the operation.
+    execution_time  : Elapsed seconds for the operation.
+    message         : Optional success / info message.
+    error_message   : Optional error description (None on success).
+    """
+    if _fabric_logger is None:
+        print(f"[nb_utils] log_fabric_operation: FabricLogger not available — skipping log entry")
+        return
+    try:
+        _fabric_logger.log_operation(
+            notebook_name  = notebook_name,
+            table_name     = table_name,
+            operation_type = operation_type,
+            rows_before    = rows_before,
+            rows_after     = rows_after,
+            execution_time = execution_time,
+            message        = message,
+            error_message  = error_message,
+        )
+    except Exception as e:
+        # Never let a logging failure break ingestion
+        print(f"[nb_utils] WARNING: log_fabric_operation failed (non-fatal): {e}")
+
+
 print("[nb_utils] Loaded — functions available: read_mssql_table, read_mssql_query, "
       "get_ingestion_config, get_ingestion_config_by_source, get_ingestion_config_for_entity, "
       "get_schema_config, get_schema_config_by_source, get_schema_config_for_table, "
-      "upsert_load_control, "
+      "upsert_load_control, log_fabric_operation, "
       "get_ingestion_config_schema, get_schema_config_schema, "
       "ingestion_config_df_from_json, schema_config_df_from_json, build_col_maps")
