@@ -323,13 +323,13 @@ def get_ingestion_config_schema() -> StructType:
     }
     """
     return StructType([
-        StructField("source_id",        IntegerType(), nullable=False),
-        StructField("source_name",      StringType(),  nullable=False),
-        StructField("source_table",     StringType(),  nullable=False),
+        StructField("source_id",        IntegerType(), nullable=True),
+        StructField("source_name",      StringType(),  nullable=True),
+        StructField("source_table",     StringType(),  nullable=True),
         StructField("source_schema",    StringType(),  nullable=True),
-        StructField("target_table",     StringType(),  nullable=False),
-        StructField("target_schema",    StringType(),  nullable=False),
-        StructField("load_type",        StringType(),  nullable=False),
+        StructField("target_table",     StringType(),  nullable=True),
+        StructField("target_schema",    StringType(),  nullable=True),
+        StructField("load_type",        StringType(),  nullable=True),
         StructField("watermark_column", StringType(),  nullable=True),
         StructField("watermark_type",   StringType(),  nullable=True),
         StructField("batch_size",       IntegerType(), nullable=True),
@@ -349,14 +349,14 @@ def get_schema_config_schema() -> StructType:
     }
     """
     return StructType([
-        StructField("source_name",        StringType(),  nullable=False),
-        StructField("source_table_name",  StringType(),  nullable=False),
-        StructField("source_column_name", StringType(),  nullable=False),
-        StructField("target_column_name", StringType(),  nullable=False),
-        StructField("target_data_type",   StringType(),  nullable=False),
-        StructField("ordinal_position",   IntegerType(), nullable=False),
-        StructField("include_in_md5hash", IntegerType(), nullable=False),
-        StructField("is_primary_key",     IntegerType(), nullable=False),
+        StructField("source_name",        StringType(),  nullable=True),
+        StructField("source_table_name",  StringType(),  nullable=True),
+        StructField("source_column_name", StringType(),  nullable=True),
+        StructField("target_column_name", StringType(),  nullable=True),
+        StructField("target_data_type",   StringType(),  nullable=True),
+        StructField("ordinal_position",   IntegerType(), nullable=True),
+        StructField("include_in_md5hash", IntegerType(), nullable=True),
+        StructField("is_primary_key",     IntegerType(), nullable=True),
     ])
 
 
@@ -463,24 +463,8 @@ def log_fabric_operation(
     message         : Optional success / info message.
     error_message   : Optional error description (None on success).
     """
-    try:
-        mssparkutils.notebook.run(  # type: ignore[name-defined]  — available in Fabric runtime
-            "nb_log_operation",
-            timeout   = 120,
-            arguments = {
-                "p_notebook_name"  : notebook_name,
-                "p_table_name"     : table_name,
-                "p_operation_type" : operation_type,
-                "p_rows_before"    : str(rows_before),
-                "p_rows_after"     : str(rows_after),
-                "p_execution_time" : str(execution_time),
-                "p_message"        : message       or "",
-                "p_error_message"  : error_message or "",
-            }
-        )
-    except Exception as e:
-        # Never let a logging failure break ingestion
-        print(f"[nb_utils] WARNING: log_fabric_operation failed (non-fatal): {e}")
+    # Logging temporarily disabled — re-enable when nb_log_operation is wired up.
+    pass
 
 
 print("[nb_utils] Loaded — functions available: read_mssql_table, read_mssql_query, "
