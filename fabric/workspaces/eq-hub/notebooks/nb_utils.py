@@ -28,6 +28,7 @@ from pyspark.sql.types import (
     StringType, IntegerType,
 )
 from typing import Optional
+import com.microsoft.sqlserver.jdbc.spark
 
 
 spark = SparkSession.builder.appName("nb_utils").getOrCreate()

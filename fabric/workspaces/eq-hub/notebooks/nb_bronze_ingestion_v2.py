@@ -37,6 +37,8 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import StringType, TimestampType
 
 spark = SparkSession.builder.appName("nb_bronze_ingestion_v2").getOrCreate()
+spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
+spark.conf.set("spark.sql.parquet.datetimeRebaseModeInRead", "LEGACY")
 
 %run nb_utils.py
 
