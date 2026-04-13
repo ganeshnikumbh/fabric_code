@@ -158,11 +158,13 @@ try:
     source_schema    = (config["source_schema"]    or "").strip()
     target_schema    = (config["target_schema"]    or "bronze_eqwarehouse").strip()
     qualified_target = f"{target_schema}.{p_target_table}"
+    partition_cols   = [c.strip() for c in (config["partition_by_column_names"] or "").split(",") if c.strip()]
 
     print(f"  source_id        : {source_id}")
     print(f"  source_schema    : {source_schema or '(none)'}")
     print(f"  load_type        : {load_type}")
     print(f"  watermark_column : {watermark_column or '(none — full load)'}")
+    print(f"  partition_cols   : {partition_cols or '(none)'}")
 
     # ── 3b. schema_config ────────────────────────────────────────────────────
     schema_config_df = schema_config_df_from_json(p_schema_config_json)  # noqa: F821  # type: ignore[name-defined]
@@ -334,13 +336,16 @@ try:
 
     if not table_exists:
         print(f"  Action  : CREATE")
-        (
+        _writer = (
             final_df.write
             .format("delta")
             .option("mergeSchema", "true")
             .mode("overwrite")
-            .saveAsTable(qualified_target)
         )
+        if partition_cols:
+            _writer = _writer.partitionBy(*partition_cols)
+            print(f"  Partitioning by  : {partition_cols}")
+        _writer.saveAsTable(qualified_target)
         print(f"  Created : lh_bronze.{qualified_target}")
     else:
         print(f"  Action  : APPEND")

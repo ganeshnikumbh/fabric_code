@@ -148,6 +148,7 @@ CREATE EXTERNAL TABLE schema_config (
     id                      INT         NOT NULL  COMMENT 'Primary key — unique sequential identifier for each column mapping entry',
     source_name             STRING      NOT NULL  COMMENT 'Source system name — matches source_name in ingestion_config (e.g. EQ_Warehouse)',
     source_table_name       STRING      NOT NULL  COMMENT 'Source table name as it appears in the source system (e.g. Contract, Agent)',
+    target_table_name       STRING      NOT NULL  COMMENT 'Bronze target table name in lh_bronze (e.g. client_base) — used by silver layer to resolve schema without ingestion_config join',
     source_column_name      STRING      NOT NULL  COMMENT 'Exact column name as it appears in the source table',
     target_column_name      STRING      NOT NULL  COMMENT 'Column name in the target Delta table after any rename or standardisation',
     target_data_type        STRING      NOT NULL  COMMENT 'Target Delta/Spark data type (e.g. STRING, INT, TIMESTAMP, DECIMAL(18,4))',

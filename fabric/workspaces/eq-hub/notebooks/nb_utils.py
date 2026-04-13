@@ -112,7 +112,8 @@ def get_ingestion_config(jdbc_url: str) -> DataFrame:
         jdbc_url,
         "SELECT source_id, source_name, source_type, source_schema, entity_name, "
         "       target_lakehouse, target_schema, target_table, "
-        "       load_type, watermark_column, watermark_type, batch_size "
+        "       load_type, watermark_column, watermark_type, batch_size, "
+        "       partition_by_column_names, is_scd2 "
         "FROM dbo.ingestion_config "
         "WHERE active_flag = 1"
     )
@@ -131,7 +132,8 @@ def get_ingestion_config_by_source(jdbc_url: str, source_name: str) -> DataFrame
         jdbc_url,
         f"SELECT source_id, source_name, source_type, source_schema, entity_name, "
         f"       target_lakehouse, target_schema, target_table, "
-        f"       load_type, watermark_column, watermark_type, batch_size "
+        f"       load_type, watermark_column, watermark_type, batch_size, "
+        f"       partition_by_column_names, is_scd2 "
         f"FROM dbo.ingestion_config "
         f"WHERE LOWER(source_name) = LOWER('{source_name}') "
         f"  AND active_flag = 1"
@@ -149,7 +151,8 @@ def get_ingestion_config_for_entity(
     """
     df = read_mssql_query(
         jdbc_url,
-        f"SELECT TOP 1 source_id, source_schema, load_type, watermark_column, watermark_type, batch_size "
+        f"SELECT TOP 1 source_id, source_schema, load_type, watermark_column, watermark_type, "
+        f"             batch_size, partition_by_column_names, is_scd2 "
         f"FROM dbo.ingestion_config "
         f"WHERE LOWER(entity_name)  = LOWER('{source_table}') "
         f"  AND LOWER(target_table) = LOWER('{target_table}') "
@@ -171,8 +174,9 @@ def get_schema_config(jdbc_url: str) -> DataFrame:
     """
     return read_mssql_query(
         jdbc_url,
-        "SELECT id, source_name, source_table_name, source_column_name, target_column_name, "
-        "       target_data_type, ordinal_position, include_in_md5hash, is_primary_key "
+        "SELECT id, source_name, source_table_name, target_table_name, source_column_name, "
+        "       target_column_name, target_data_type, ordinal_position, "
+        "       include_in_md5hash, is_primary_key "
         "FROM dbo.schema_config "
         "WHERE is_active = 1"
     )
@@ -189,8 +193,9 @@ def get_schema_config_by_source(jdbc_url: str, source_name: str) -> DataFrame:
     """
     return read_mssql_query(
         jdbc_url,
-        f"SELECT id, source_name, source_table_name, source_column_name, target_column_name, "
-        f"       target_data_type, ordinal_position, include_in_md5hash "
+        f"SELECT id, source_name, source_table_name, target_table_name, source_column_name, "
+        f"       target_column_name, target_data_type, ordinal_position, "
+        f"       include_in_md5hash, is_primary_key "
         f"FROM dbo.schema_config "
         f"WHERE LOWER(source_name) = LOWER('{source_name}') "
         f"  AND is_active = 1"
@@ -208,8 +213,8 @@ def get_schema_config_for_table(jdbc_url: str, source_table_name: str) -> list:
     """
     df = read_mssql_query(
         jdbc_url,
-        f"SELECT source_column_name, target_column_name, "
-        f"       ordinal_position, include_in_md5hash, is_primary_key "
+        f"SELECT source_table_name, target_table_name, source_column_name, "
+        f"       target_column_name, ordinal_position, include_in_md5hash, is_primary_key "
         f"FROM dbo.schema_config "
         f"WHERE LOWER(source_table_name) = LOWER('{source_table_name}') "
         f"  AND is_active = 1"
@@ -305,6 +310,39 @@ WHEN NOT MATCHED THEN
     print(f"[nb_utils] upsert_load_control: {source_name}.{entity_name} → bronze={bronze_run_status}, silver={silver_run_status}")
 
 
+def get_load_control_by_source(jdbc_url: str, source_name: str) -> DataFrame:
+    """
+    Return all rows from dbo.source_load_control for the given source_name.
+
+    Returns one row per entity_name — the row with the latest last_load_date.
+    Rows where last_load_date IS NULL (never loaded) are included but ranked
+    after rows that have a date.
+    Excludes created_date and modified_date.
+
+    Parameters
+    ----------
+    source_name : e.g. 'EQ_Warehouse'
+    """
+    return read_mssql_query(
+        jdbc_url,
+        f"SELECT id, source_name, entity_name, last_load_date, "
+        f"       bronze_run_status, silver_run_status "
+        f"FROM ( "
+        f"    SELECT id, source_name, entity_name, last_load_date, "
+        f"           bronze_run_status, silver_run_status, "
+        f"           ROW_NUMBER() OVER ( "
+        f"               PARTITION BY entity_name "
+        f"               ORDER BY "
+        f"                   CASE WHEN last_load_date IS NULL THEN 1 ELSE 0 END, "
+        f"                   last_load_date DESC "
+        f"           ) AS _rn "
+        f"    FROM dbo.source_load_control "
+        f"    WHERE LOWER(source_name) = LOWER('{source_name}') "
+        f") _ranked "
+        f"WHERE _rn = 1"
+    )
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # JSON schema definitions
 # Used to create DataFrames from pipeline-passed JSON strings (no DB round-trip).
@@ -323,16 +361,18 @@ def get_ingestion_config_schema() -> StructType:
     }
     """
     return StructType([
-        StructField("source_id",        IntegerType(), nullable=True),
-        StructField("source_name",      StringType(),  nullable=True),
-        StructField("source_table",     StringType(),  nullable=True),
-        StructField("source_schema",    StringType(),  nullable=True),
-        StructField("target_table",     StringType(),  nullable=True),
-        StructField("target_schema",    StringType(),  nullable=True),
-        StructField("load_type",        StringType(),  nullable=True),
-        StructField("watermark_column", StringType(),  nullable=True),
-        StructField("watermark_type",   StringType(),  nullable=True),
-        StructField("batch_size",       IntegerType(), nullable=True),
+        StructField("source_id",                 IntegerType(), nullable=True),
+        StructField("source_name",               StringType(),  nullable=True),
+        StructField("source_table",              StringType(),  nullable=True),
+        StructField("source_schema",             StringType(),  nullable=True),
+        StructField("target_table",              StringType(),  nullable=True),
+        StructField("target_schema",             StringType(),  nullable=True),
+        StructField("load_type",                 StringType(),  nullable=True),
+        StructField("watermark_column",          StringType(),  nullable=True),
+        StructField("watermark_type",            StringType(),  nullable=True),
+        StructField("batch_size",                IntegerType(), nullable=True),
+        StructField("partition_by_column_names", StringType(),  nullable=True),
+        StructField("is_scd2",                   IntegerType(), nullable=True),
     ])
 
 
@@ -343,14 +383,15 @@ def get_schema_config_schema() -> StructType:
 
     JSON shape per item:
     {
-      "source_name", "source_table_name", "source_column_name",
-      "target_column_name", "target_data_type",
-      "ordinal_position", "include_in_md5hash"
+      "source_name", "source_table_name", "target_table_name",
+      "source_column_name", "target_column_name", "target_data_type",
+      "ordinal_position", "include_in_md5hash", "is_primary_key"
     }
     """
     return StructType([
         StructField("source_name",        StringType(),  nullable=True),
         StructField("source_table_name",  StringType(),  nullable=True),
+        StructField("target_table_name",  StringType(),  nullable=True),
         StructField("source_column_name", StringType(),  nullable=True),
         StructField("target_column_name", StringType(),  nullable=True),
         StructField("target_data_type",   StringType(),  nullable=True),
@@ -395,6 +436,47 @@ def schema_config_df_from_json(json_str: str) -> DataFrame:
     """
     data = json.loads(json_str)
     return spark.createDataFrame(data, schema=get_schema_config_schema())
+
+
+def get_load_control_schema() -> StructType:
+    """
+    Return the Spark StructType for source_load_control JSON items.
+    Matches the shape emitted by nb_get_ingestion_entities (p_config_type='load_control').
+
+    JSON shape per item:
+    {
+      "id", "source_name", "entity_name",
+      "last_load_date",     ← ISO string e.g. "2025-04-09 01:00:00" or null
+      "bronze_run_status", "silver_run_status"
+    }
+    """
+    return StructType([
+        StructField("id",                IntegerType(), nullable=True),
+        StructField("source_name",       StringType(),  nullable=True),
+        StructField("entity_name",       StringType(),  nullable=True),
+        StructField("last_load_date",    StringType(),  nullable=True),
+        StructField("bronze_run_status", StringType(),  nullable=True),
+        StructField("silver_run_status", StringType(),  nullable=True),
+    ])
+
+
+def load_control_df_from_json(json_str: str) -> DataFrame:
+    """
+    Create a typed DataFrame from a source_load_control JSON array string.
+
+    Parameters
+    ----------
+    json_str : JSON array string produced by nb_get_ingestion_entities
+               with p_config_type='load_control'.
+
+    Returns
+    -------
+    DataFrame with schema from get_load_control_schema().
+    """
+    data = json.loads(json_str)
+    if isinstance(data, dict):
+        data = [data]
+    return spark.createDataFrame(data, schema=get_load_control_schema())
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -470,6 +552,8 @@ def log_fabric_operation(
 print("[nb_utils] Loaded — functions available: read_mssql_table, read_mssql_query, "
       "get_ingestion_config, get_ingestion_config_by_source, get_ingestion_config_for_entity, "
       "get_schema_config, get_schema_config_by_source, get_schema_config_for_table, "
+      "get_load_control_by_source, "
       "upsert_load_control, log_fabric_operation, "
-      "get_ingestion_config_schema, get_schema_config_schema, "
-      "ingestion_config_df_from_json, schema_config_df_from_json, build_col_maps")
+      "get_ingestion_config_schema, get_schema_config_schema, get_load_control_schema, "
+      "ingestion_config_df_from_json, schema_config_df_from_json, load_control_df_from_json, "
+      "build_col_maps")

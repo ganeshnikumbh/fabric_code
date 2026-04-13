@@ -37,11 +37,28 @@
 #   {
 #     "source_name"        : "EQ_Warehouse",
 #     "source_table_name"  : "Client",
+#     "target_table_name"  : "client_base",
 #     "source_column_name" : "ContractPK",
 #     "target_column_name" : "contract_id",
 #     "target_data_type"   : "INT",
 #     "ordinal_position"   : 1,
-#     "include_in_md5hash" : 1
+#     "include_in_md5hash" : 1,
+#     "is_primary_key"     : 1
+#   }
+#
+# ── p_config_type = "load_control" ────────────────────────────────────────────
+#   Returns the latest run state per entity from dbo.source_load_control.
+#   Only entities for p_source_name are returned. Excludes created_date and
+#   modified_date. One row per entity (UNIQUE constraint on source_name + entity_name).
+#
+#   Output shape per item:
+#   {
+#     "id"                 : 1,
+#     "source_name"        : "EQ_Warehouse",
+#     "entity_name"        : "Client",
+#     "last_load_date"     : "2025-04-09 01:00:00",   ← null if never loaded
+#     "bronze_run_status"  : "success",
+#     "silver_run_status"  : "pending"
 #   }
 
 from pyspark.sql import SparkSession
@@ -69,7 +86,7 @@ if not p_jdbc_url or not p_jdbc_url.strip():
 if not p_source_name or not p_source_name.strip():
     raise ValueError("Parameter 'p_source_name' is required.")
 
-_valid_config_types = {"ingestion_config", "schema_config"}
+_valid_config_types = {"ingestion_config", "schema_config", "load_control"}
 if p_config_type.strip().lower() not in _valid_config_types:
     raise ValueError(
         f"Parameter 'p_config_type' must be one of {_valid_config_types}. "
@@ -117,16 +134,18 @@ if p_config_type == "ingestion_config":
         output_json = json.dumps(
             [
                 {
-                    "source_id"        : int(row["source_id"]),
-                    "source_name"      : str(row["source_name"]),
-                    "source_table"     : str(row["entity_name"]),
-                    "source_schema"    : str(row["source_schema"]) if row["source_schema"] else "",
-                    "target_table"     : str(row["target_table"]),
-                    "target_schema"    : str(row["target_schema"]),
-                    "load_type"        : str(row["load_type"]),
-                    "watermark_column" : str(row["watermark_column"]) if row["watermark_column"] else "",
-                    "watermark_type"   : str(row["watermark_type"])   if row["watermark_type"]   else "",
-                    "batch_size"       : int(row["batch_size"])        if row["batch_size"]       else 0,
+                    "source_id"                 : int(row["source_id"]),
+                    "source_name"               : str(row["source_name"]),
+                    "source_table"              : str(row["entity_name"]),
+                    "source_schema"             : str(row["source_schema"]) if row["source_schema"] else "",
+                    "target_table"              : str(row["target_table"]),
+                    "target_schema"             : str(row["target_schema"]),
+                    "load_type"                 : str(row["load_type"]),
+                    "watermark_column"          : str(row["watermark_column"]) if row["watermark_column"] else "",
+                    "watermark_type"            : str(row["watermark_type"])   if row["watermark_type"]   else "",
+                    "batch_size"                : int(row["batch_size"])        if row["batch_size"]       else 0,
+                    "partition_by_column_names" : str(row["partition_by_column_names"]) if row["partition_by_column_names"] else "",
+                    "is_scd2"                   : int(row["is_scd2"])           if row["is_scd2"] is not None else 0,
                 }
                 for row in rows
             ],
@@ -150,11 +169,41 @@ elif p_config_type == "schema_config":
                 {
                     "source_name"        : str(row["source_name"]),
                     "source_table_name"  : str(row["source_table_name"]),
+                    "target_table_name"  : str(row["target_table_name"]),
                     "source_column_name" : str(row["source_column_name"]),
                     "target_column_name" : str(row["target_column_name"]),
                     "target_data_type"   : str(row["target_data_type"]),
                     "ordinal_position"   : int(row["ordinal_position"]),
                     "include_in_md5hash" : int(row["include_in_md5hash"]) if row["include_in_md5hash"] is not None else 0,
+                    "is_primary_key"     : int(row["is_primary_key"])     if row["is_primary_key"]     is not None else 0,
+                }
+                for row in rows
+            ],
+            ensure_ascii=False
+        )
+
+
+# ── Branch C: load_control ───────────────────────────────────────────────────
+elif p_config_type == "load_control":
+
+    print(f"\n[1/1] Reading dbo.source_load_control for source_name='{p_source_name}' ...")
+
+    lc_df  = get_load_control_by_source(p_jdbc_url, p_source_name)  # noqa: F821 — injected by %run nb_utils
+    rows   = lc_df.collect()
+    print(f"  Rows returned : {len(rows)}")
+
+    if not rows:
+        print(f"  WARNING: No source_load_control rows found for source_name='{p_source_name}'. Returning empty JSON array.")
+    else:
+        output_json = json.dumps(
+            [
+                {
+                    "id"                : int(row["id"]),
+                    "source_name"       : str(row["source_name"]),
+                    "entity_name"       : str(row["entity_name"]),
+                    "last_load_date"    : str(row["last_load_date"]) if row["last_load_date"] is not None else None,
+                    "bronze_run_status" : str(row["bronze_run_status"]),
+                    "silver_run_status" : str(row["silver_run_status"]),
                 }
                 for row in rows
             ],
