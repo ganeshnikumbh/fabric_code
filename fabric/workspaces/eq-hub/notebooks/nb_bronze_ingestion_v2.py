@@ -58,7 +58,7 @@ p_ingestion_config_json  = ""   # REQUIRED — full ingestion_config JSON array 
 p_schema_config_json     = ""   # REQUIRED — full schema_config JSON array for the source
                                 #            Pipeline expression: @variables('v_schema_config_json')
 p_ingestion_date         = ""   # e.g. "2025-04-09"     — pipeline run date
-p_data_date              = ""   # e.g. "2025-04-08"     — business data date (full load only)
+p_data_timestamp              = ""   # e.g. "2025-04-08"     — business data date (full load only)
 p_source_system          = ""   # e.g. "EQ_Warehouse"
 p_ingestion_run_id       = ""   # UUID from pipeline
 p_ingestion_timestamp    = ""   # e.g. "2025-04-09T01:00:00Z"
@@ -91,7 +91,7 @@ print(f"  source_table      : {p_source_table}")
 print(f"  source_schema     : {p_source_schema}")
 print(f"  target_table      : {p_target_table}")
 print(f"  ingestion_date    : {p_ingestion_date}")
-print(f"  data_date         : {p_data_date}")
+print(f"  data_timestamp         : {p_data_timestamp}")
 print(f"  source_system     : {p_source_system}")
 print(f"  ingestion_run_id  : {p_ingestion_run_id}")
 print(f"  ingestion_timestamp: {p_ingestion_timestamp}")
@@ -237,14 +237,14 @@ try:
             if actual_wm is None:
                 print(
                     f"  WARNING: watermark_column '{watermark_column}' not found in "
-                    f"source data — data_date will fall back to ingestion_date"
+                    f"source data — data_timestamp will fall back to ingestion_date"
                 )
             else:
                 select_exprs.append(F.col(actual_wm).alias(_WM_TEMP))
                 _wm_needs_passthrough = True
                 print(
                     f"  watermark_column '{watermark_column}' not in schema_config — "
-                    f"added as temp passthrough for data_date derivation"
+                    f"added as temp passthrough for data_timestamp derivation"
                 )
 
     transformed_df = source_df.select(*select_exprs)
@@ -252,20 +252,20 @@ try:
 
 
     # ══════════════════════════════════════════════════════════════════════════
-    # SECTION 5 — Load Type Logic (data_date) + Audit Columns + MD5 Hash
+    # SECTION 5 — Load Type Logic (data_timestamp) + Audit Columns + MD5 Hash
     # ══════════════════════════════════════════════════════════════════════════
 
     print(f"\n[4/5] Applying load_type logic  (load_type={load_type})")
 
-    # ── data_date derivation ──────────────────────────────────────────────────
+    # ── data_timestamp derivation ──────────────────────────────────────────────────
     if load_type == "full":
-        if not p_data_date or not p_data_date.strip():
+        if not p_data_timestamp or not p_data_timestamp.strip():
             raise ValueError(
-                "load_type is 'full' but p_data_date parameter is empty. "
-                "Provide p_data_date from the pipeline."
+                "load_type is 'full' but p_data_timestamp parameter is empty. "
+                "Provide p_data_timestamp from the pipeline."
             )
-        data_date_col = F.lit(p_data_date).cast("date")
-        print(f"  data_date source : pipeline parameter → {p_data_date}")
+        data_timestamp_col = F.lit(p_data_timestamp).cast(TimestampType())
+        print(f"  data_timestamp source : pipeline parameter → {p_data_timestamp}")
 
     else:  # incremental / cdc
         wm_in_df = None
@@ -275,19 +275,19 @@ try:
             )
 
         if wm_in_df and wm_in_df in transformed_df.columns:
-            data_date_col = F.col(wm_in_df).cast("date")
+            data_timestamp_col = F.col(wm_in_df).cast(TimestampType())
             wm_label = watermark_column if not _wm_needs_passthrough else f"{watermark_column} (passthrough)"
-            print(f"  data_date source : watermark_column '{wm_label}' → col '{wm_in_df}' (cast to date)")
+            print(f"  data_timestamp source : watermark_column '{wm_label}' → col '{wm_in_df}' (cast to timestamp)")
         else:
-            data_date_col = F.lit(p_ingestion_date).cast("date")
+            data_timestamp_col = F.lit(p_ingestion_timestamp).cast(TimestampType())
             reason = "not configured in ingestion_config" if not watermark_column else f"'{watermark_column}' not found in source data"
-            print(f"  data_date source : ingestion_date (fallback — watermark_column {reason})")
+            print(f"  data_timestamp source : ingestion_timestamp (fallback — watermark_column {reason})")
 
     # ── Audit columns ─────────────────────────────────────────────────────────
     final_df = (
         transformed_df
         .withColumn("ingestion_date",      F.lit(p_ingestion_date).cast("date"))
-        .withColumn("data_date",           data_date_col)
+        .withColumn("data_timestamp",           data_timestamp_col)
         .withColumn("source_system",       F.lit(p_source_system).cast(StringType()))
         .withColumn("ingestion_run_id",    F.lit(p_ingestion_run_id).cast(StringType()))
         .withColumn("ingestion_timestamp", F.lit(p_ingestion_timestamp).cast(TimestampType()))

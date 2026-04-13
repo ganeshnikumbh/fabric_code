@@ -1,7 +1,7 @@
 # Notebook: nb_silver_s1_ingestion
 # Layer:    Silver S1
 # Purpose:  Metadata-driven SCD2 MERGE from lh_bronze → lh_silver (silver_s1 schema).
-#           Reads the latest bronze batch by computing max(data_date) directly from
+#           Reads the latest bronze batch by computing max(data_timestamp) directly from
 #           the bronze table, then applies an md5-hash-only SCD2 strategy.
 #
 # Pipeline flow:
@@ -16,7 +16,7 @@
 #        p_schema_config_json    : @variables('v_schema_config_json')
 #
 # Bronze filter:
-#   max(data_date) is derived directly from the bronze table at runtime.
+#   max(data_timestamp) is derived directly from the bronze table at runtime.
 #   All rows matching that max date are read as the current batch.
 #
 # schema_config lookup note:
@@ -142,7 +142,7 @@ try:
 
     # ══════════════════════════════════════════════════════════════════════════
     # SECTION 3 — Read Source Data from lh_bronze
-    # Derive the filter date by computing max(data_date) directly from the
+    # Derive the filter date by computing max(data_timestamp) directly from the
     # bronze table. All rows matching that date form the current batch.
     # ══════════════════════════════════════════════════════════════════════════
 
@@ -156,16 +156,16 @@ try:
             f"Ensure lh_bronze is added to this notebook session.\n{e}"
         )
 
-    # ── Derive filter date from bronze max(data_date) ─────────────────────────
-    max_data_date_row = bronze_df.agg(F.max("data_date").alias("max_data_date")).collect()
-    max_data_date     = max_data_date_row[0]["max_data_date"] if max_data_date_row else None
+    # ── Derive filter date from bronze max(ingestion_date) ─────────────────────────
+    max_ingestion_date_row = bronze_df.agg(F.max("ingestion_date").alias("max_ingestion_date")).collect()
+    max_ingestion_date     = max_ingestion_date_row[0]["max_ingestion_date"] if max_ingestion_date_row else None
 
-    if max_data_date:
-        source_df = bronze_df.filter(F.col("data_date") == max_data_date)
-        print(f"  Filter             : data_date = '{max_data_date}'  (max from bronze)")
+    if max_ingestion_date:
+        source_df = bronze_df.filter(F.col("ingestion_date") == max_ingestion_date)
+        print(f"  Filter             : ingestion_date = '{max_ingestion_date}'  (max from bronze)")
     else:
         source_df = bronze_df
-        print(f"  Filter             : none (bronze table has no data_date — reading all rows)")
+        print(f"  Filter             : none (bronze table has no data_timestamp — reading all rows)")
 
     source_row_count = source_df.count()
     print(f"  Rows to merge      : {source_row_count:,}")
@@ -187,7 +187,7 @@ try:
     source_df = (
         source_df
         .withColumn("ingestion_date",      F.lit(p_ingestion_date).cast("date"))
-        .withColumn("data_date",           F.lit(p_ingestion_date).cast("date"))
+        .withColumn("data_timestamp",      F.lit(p_ingestion_timestamp).cast(TimestampType()))
         .withColumn("source_system",       F.lit(p_source_system).cast(StringType()))
         .withColumn("ingestion_run_id",    F.lit(p_ingestion_run_id).cast(StringType()))
         .withColumn("ingestion_timestamp", F.lit(p_ingestion_timestamp).cast(TimestampType()))
@@ -318,6 +318,12 @@ try:
         # Source rows with a new md5_hash are appended.
         # No updates to existing rows — md5 match = record unchanged.
         # ══════════════════════════════════════════════════════════════════════
+
+        # ── Step 1: Add is_current columns to source ───────────────────────────────
+        source_df = (
+            source_df
+            .withColumn("is_current",           F.lit(1).cast(IntegerType()))
+        )
 
         if not table_exists:
             # First run — create table with full write
