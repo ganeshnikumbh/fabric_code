@@ -1,34 +1,28 @@
 # Notebook: nb_silver_s1_ingestion
 # Layer:    Silver S1
-# Purpose:  Metadata-driven MERGE from lh_bronze → lh_silver (silver_s1 schema).
-#           Reads the last bronze batch using last_load_date from p_load_control_json,
-#           then merges into the silver S1 table using primary keys from schema_config.
-#           Rows are updated only when the source md5_hash differs from the target.
+# Purpose:  Metadata-driven SCD2 MERGE from lh_bronze → lh_silver (silver_s1 schema).
+#           Reads the latest bronze batch by computing max(data_date) directly from
+#           the bronze table, then applies an md5-hash-only SCD2 strategy.
 #
 # Pipeline flow:
 #   1. nb_get_ingestion_entities (p_config_type='ingestion_config') → v_ingestion_config_json
 #   2. nb_get_ingestion_entities (p_config_type='schema_config')    → v_schema_config_json
-#   3. nb_get_ingestion_entities (p_config_type='load_control')     → v_load_control_json
-#   4. ForEach over ingestion_config items → calls this notebook per entity
+#   3. ForEach over ingestion_config items → calls this notebook per entity
 #      Parameters per iteration:
 #        p_source_schema         : @item().target_schema           ← bronze schema, e.g. bronze_eqwarehouse
 #        p_source_table          : @item().target_table            ← bronze table,  e.g. client_base
 #        p_target_table          : @item().target_table            ← silver table   (same name convention)
 #        p_ingestion_config_json : @variables('v_ingestion_config_json')
 #        p_schema_config_json    : @variables('v_schema_config_json')
-#        p_load_control_json     : @variables('v_load_control_json')
 #
-# MERGE strategy  (SCD Type 1 — current state only):
-#   WHEN MATCHED AND src.md5_hash IS DISTINCT FROM tgt.md5_hash → UPDATE all columns
-#   WHEN NOT MATCHED BY TARGET                                   → INSERT
-#   Rows unchanged (same md5_hash) are skipped — no write amplification.
+# Bronze filter:
+#   max(data_date) is derived directly from the bronze table at runtime.
+#   All rows matching that max date are read as the current batch.
 #
 # schema_config lookup note:
 #   schema_config.target_table_name = bronze table name (e.g. 'client_base') = p_source_table.
 #   Filtering schema_config by target_table_name gives both the column mappings AND the
-#   source_table_name (landing entity name, e.g. 'Client') used for load_control lookup.
-#   Primary key columns are target_column_name values where is_primary_key = 1
-#   (target_column_name = bronze column name = silver column name).
+#   source_table_name (landing entity name, e.g. 'Client').
 #
 # Pre-requisites:
 #   - Attach lh_silver as the default lakehouse before running.
@@ -36,11 +30,10 @@
 #     (Notebook settings → Lakehouses → Add).
 
 import time
-from datetime import datetime, timedelta
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.types import StringType, TimestampType
+from pyspark.sql.types import StringType, TimestampType, IntegerType
 from delta.tables import DeltaTable
 
 spark = SparkSession.builder.appName("nb_silver_s1_ingestion").getOrCreate()
@@ -65,7 +58,6 @@ p_ingestion_timestamp    = ""   # REQUIRED — e.g. "2025-04-09T01:00:00Z"
 p_ingestion_date         = ""   # REQUIRED — e.g. "2025-04-09"
 p_ingestion_config_json  = ""   # REQUIRED — full ingestion_config JSON array
 p_schema_config_json     = ""   # REQUIRED — full schema_config JSON array
-p_load_control_json      = ""   # REQUIRED — full load_control JSON array
 
 _required = {
     "p_source_schema"         : p_source_schema,
@@ -77,7 +69,6 @@ _required = {
     "p_ingestion_date"        : p_ingestion_date,
     "p_ingestion_config_json" : p_ingestion_config_json,
     "p_schema_config_json"    : p_schema_config_json,
-    "p_load_control_json"     : p_load_control_json,
 }
 _missing = [k for k, v in _required.items() if not str(v).strip()]
 if _missing:
@@ -104,7 +95,7 @@ try:
     # ══════════════════════════════════════════════════════════════════════════
     # SECTION 2 — Resolve entity_name and schema mappings from JSON metadata
     # schema_config.target_table_name = bronze table name = p_source_table
-    # schema_config.source_table_name = landing entity name used by load_control
+    # schema_config.source_table_name = landing entity name (e.g. 'Client')
     # ══════════════════════════════════════════════════════════════════════════
 
     print(f"\n[1/5] Resolving metadata from JSON parameters")
@@ -127,22 +118,8 @@ try:
             f"Ensure column mappings are registered in schema_config with the correct target_table_name."
         )
 
-    # entity_name = source_table_name (landing table, e.g. 'Client') — used for load_control lookup
     entity_name = mappings[0]["source_table_name"]
     print(f"  entity_name resolved : '{entity_name}' (from target_table_name='{p_source_table}')")
-
-    # Primary key columns — these are target_column_name values (= bronze/silver column names)
-    pk_cols = [
-        row["target_column_name"]
-        for row in mappings
-        if row["is_primary_key"] == 1 or row["is_primary_key"] is True
-    ]
-    if not pk_cols:
-        raise ValueError(
-            f"No primary key columns defined in schema_config for '{entity_name}'. "
-            f"Set is_primary_key = 1 for at least one column."
-        )
-    print(f"  Primary key cols     : {pk_cols}")
     print(f"  Schema mappings      : {len(mappings)} columns")
 
     # ── 2b. ingestion_config → is_scd2 and partition_by_column_names ─────────
@@ -163,24 +140,10 @@ try:
     print(f"  is_scd2              : {is_scd2}")
     print(f"  partition_cols       : {partition_cols or '(none)'}")
 
-    # ── 2c. load_control → last_load_date for bronze filter ──────────────────
-    load_control_df = load_control_df_from_json(p_load_control_json)  # noqa: F821  # type: ignore[name-defined]
-
-    lc_row = (
-        load_control_df
-        .filter(F.lower(F.col("entity_name")) == entity_name.lower())
-        .limit(1)
-        .collect()
-    )
-    last_load_date = lc_row[0]["last_load_date"] if lc_row else None
-    filter_date    = last_load_date[:10] if last_load_date else None   # extract "YYYY-MM-DD"
-    print(f"  last_load_date       : {last_load_date or '(none — will read all bronze rows)'}")
-
-
     # ══════════════════════════════════════════════════════════════════════════
     # SECTION 3 — Read Source Data from lh_bronze
-    # Filter to rows written in the last bronze run (by ingestion_date).
-    # If no last_load_date exists (first silver run) read all bronze rows.
+    # Derive the filter date by computing max(data_date) directly from the
+    # bronze table. All rows matching that date form the current batch.
     # ══════════════════════════════════════════════════════════════════════════
 
     print(f"\n[2/5] Reading bronze source: {qualified_source}")
@@ -193,12 +156,16 @@ try:
             f"Ensure lh_bronze is added to this notebook session.\n{e}"
         )
 
-    if filter_date:
-        source_df = bronze_df.filter(F.col("ingestion_date") == filter_date)
-        print(f"  Filter             : ingestion_date = '{filter_date}'")
+    # ── Derive filter date from bronze max(data_date) ─────────────────────────
+    max_data_date_row = bronze_df.agg(F.max("data_date").alias("max_data_date")).collect()
+    max_data_date     = max_data_date_row[0]["max_data_date"] if max_data_date_row else None
+
+    if max_data_date:
+        source_df = bronze_df.filter(F.col("data_date") == max_data_date)
+        print(f"  Filter             : data_date = '{max_data_date}'  (max from bronze)")
     else:
         source_df = bronze_df
-        print(f"  Filter             : none (first silver run — reading all rows)")
+        print(f"  Filter             : none (bronze table has no data_date — reading all rows)")
 
     source_row_count = source_df.count()
     print(f"  Rows to merge      : {source_row_count:,}")
@@ -229,48 +196,40 @@ try:
 
 
     # ══════════════════════════════════════════════════════════════════════════
-    # SECTION 4 — Write / MERGE into Silver S1
+    # SECTION 4 — SCD2 Write / MERGE into Silver S1
     #
-    # SCD Type 1 (is_scd2=False):
-    #   WHEN MATCHED AND md5_hash differs → UPDATE all columns
-    #   WHEN NOT MATCHED                  → INSERT
+    # MD5-hash-only SCD2 strategy — primary key is NOT used in any join:
     #
-    # SCD Type 2 (is_scd2=True):
-    #   Two-step merge to preserve full history:
-    #   Step 1 — expire changed active records:
-    #     WHEN MATCHED AND md5 differs AND tgt.expiration_timestamp = '9999-12-31' → UPDATE expiration_timestamp
-    #   Step 2 — insert new / changed records:
-    #     WHEN NOT MATCHED BY TARGET (against active records) → INSERT
-    #   SCD2 columns added to all writes:
-    #     effective_timestamp  = p_ingestion_date
-    #     expiration_timestamp = 9999-12-31 00:00:00  (open/active sentinel)
+    #   MD5 in source | MD5 in target (active) | Action
+    #   ──────────────|────────────────────────|─────────────────────────────
+    #   YES           | YES                    | SKIP  — unchanged, do nothing
+    #   YES           | NO                     | INSERT — new or changed record
+    #   NO            | YES                    | EXPIRE — set expiration_timestamp + is_current=0
+    #   NO            | NO                     | ignore — already expired history
+    #
+    # Step 1 — add SCD2 columns to source_df
+    # Step 2 — identify NEW records  (md5 not in target at all)
+    # Step 3 — identify EXPIRED rows (active in target, md5 gone from source)
+    # Step 4 — MERGE: expire stale active rows (md5_hash + is_current=1 match)
+    # Step 5 — APPEND new_records_df (md5 uniqueness already guaranteed by Step 2)
     #
     # Partitioning (partition_cols non-empty):
-    #   Applied only on first-run CREATE; Delta respects it on subsequent appends/merges.
+    #   Applied only on first-run CREATE; Delta respects it on subsequent writes.
     # ══════════════════════════════════════════════════════════════════════════
 
-    print(f"\n[3/5] Writing into lh_silver.{qualified_target}")
-    print(f"  Strategy       : {'SCD Type 2' if is_scd2 else 'SCD Type 1'}")
+    print(f"\n[3/5] Writing into lh_silver.{qualified_target}  [strategy: SCD2 / md5-only]")
 
-    _OPEN_TS  = "9999-12-31 00:00:00"   # sentinel for active SCD2 records
-
+    _OPEN_TS     = "9999-12-31 00:00:00"   # sentinel for active records
     _merge_start = time.time()
     table_exists = spark.catalog.tableExists(qualified_target)
 
-    # ── Prepare SCD2 columns on the source before any write ──────────────────
-    if is_scd2:
-        # expiration of the *previous* version = ingestion_date − 1 day
-        _expiry_date = (
-            datetime.strptime(p_ingestion_date, "%Y-%m-%d") - timedelta(days=1)
-        ).strftime("%Y-%m-%d")
-        _expiry_ts_str = f"{_expiry_date} 00:00:00"
-
-        source_df = (
-            source_df
-            .withColumn("effective_timestamp",  F.lit(p_ingestion_date).cast(TimestampType()))
-            .withColumn("expiration_timestamp", F.lit(_OPEN_TS).cast(TimestampType()))
-        )
-        print(f"  SCD2 expiry ts : {_expiry_ts_str}  (previous-version close date)")
+    # ── Step 1: Add SCD2 columns to source ───────────────────────────────────
+    source_df = (
+        source_df
+        .withColumn("effective_timestamp",  F.lit(p_ingestion_timestamp).cast(TimestampType()))
+        .withColumn("expiration_timestamp", F.lit(_OPEN_TS).cast(TimestampType()))
+        .withColumn("is_current",           F.lit(1).cast(IntegerType()))
+    )
 
     if not table_exists:
         # ── First run: create table with full write ───────────────────────────
@@ -289,86 +248,67 @@ try:
         rows_updated  = 0
         print(f"  Created lh_silver.{qualified_target}")
 
-    elif is_scd2:
-        # ── SCD Type 2: two-step merge ────────────────────────────────────────
-        merge_condition        = " AND ".join([f"tgt.{pk} = src.{pk}" for pk in pk_cols])
-        active_merge_condition = (
-            merge_condition
-            + f" AND tgt.expiration_timestamp = CAST('{_OPEN_TS}' AS TIMESTAMP)"
-        )
-
-        # Step 1 — expire changed active records
-        (
-            DeltaTable.forName(spark, qualified_target).alias("tgt")
-            .merge(
-                source    = source_df.alias("src"),
-                condition = active_merge_condition,
-            )
-            .whenMatchedUpdate(
-                condition = "src.md5_hash IS DISTINCT FROM tgt.md5_hash",
-                set       = {"expiration_timestamp": F.lit(_expiry_ts_str).cast(TimestampType())},
-            )
-            .execute()
-        )
-        _step1_history  = (
-            DeltaTable.forName(spark, qualified_target)
-            .history(1).select("operationMetrics").collect()
-        )
-        _step1_metrics  = _step1_history[0]["operationMetrics"] if _step1_history else {}
-        rows_expired    = int(_step1_metrics.get("numTargetRowsUpdated", 0))
-        print(f"  Step 1 (expire)  : {rows_expired:,} records expired")
-
-        # Step 2 — insert new records and new versions of changed records.
-        # After Step 1 the expired records no longer have expiration_timestamp='9999-12-31',
-        # so they will NOT match active_merge_condition → treated as WHEN NOT MATCHED → INSERT.
-        (
-            DeltaTable.forName(spark, qualified_target).alias("tgt")
-            .merge(
-                source    = source_df.alias("src"),
-                condition = active_merge_condition,
-            )
-            .whenNotMatchedInsertAll()
-            .execute()
-        )
-        _step2_history = (
-            DeltaTable.forName(spark, qualified_target)
-            .history(1).select("operationMetrics").collect()
-        )
-        _step2_metrics = _step2_history[0]["operationMetrics"] if _step2_history else {}
-        rows_inserted  = int(_step2_metrics.get("numTargetRowsInserted", 0))
-        rows_updated   = rows_expired   # semantic alias: "updated" = expired + re-inserted
-
     else:
-        # ── SCD Type 1: standard MERGE ────────────────────────────────────────
-        merge_condition = " AND ".join([f"tgt.{pk} = src.{pk}" for pk in pk_cols])
-        update_set      = {col: f"src.{col}" for col in source_df.columns}
+        target_df = spark.table(qualified_target)
 
-        (
-            DeltaTable.forName(spark, qualified_target).alias("tgt")
-            .merge(
-                source    = source_df.alias("src"),
-                condition = merge_condition,
-            )
-            .whenMatchedUpdate(
-                # IS DISTINCT FROM handles NULLs: updates when hash changed OR one side is NULL
-                condition = "src.md5_hash IS DISTINCT FROM tgt.md5_hash",
-                set       = update_set,
-            )
-            .whenNotMatchedInsertAll()
-            .execute()
+        # ── Step 2: Identify NEW records ─────────────────────────────────────
+        # New = source rows whose md5_hash does not exist anywhere in target
+        # (checks full history, not just active rows, to avoid re-inserting
+        #  a record that was once active, expired, and now reappears with the
+        #  same hash — adjust to .filter(is_current==1) if re-activation
+        #  is desired in your business rules).
+        new_records_df = source_df.join(
+            target_df.select("md5_hash"),
+            on  = "md5_hash",
+            how = "left_anti",
         )
 
-        _history = (
-            DeltaTable.forName(spark, qualified_target)
-            .history(1).select("operationMetrics").collect()
+        # ── Step 3: Identify EXPIRED records ─────────────────────────────────
+        # Expired = active target rows (is_current=1) whose md5 is absent from source
+        expired_df = (
+            target_df
+            .filter(F.col("is_current") == 1)
+            .join(source_df.select("md5_hash"), on="md5_hash", how="left_anti")
+            .select("md5_hash")
         )
-        _metrics      = _history[0]["operationMetrics"] if _history else {}
-        rows_inserted = int(_metrics.get("numTargetRowsInserted", 0))
-        rows_updated  = int(_metrics.get("numTargetRowsUpdated",  0))
+
+        rows_inserted = new_records_df.count()
+        rows_updated  = expired_df.count()   # expired count doubles as "updated" for logging
+        print(f"  New records      : {rows_inserted:,}")
+        print(f"  Records to expire: {rows_updated:,}")
+
+        # ── Step 4: MERGE — expire stale active records ───────────────────────
+        # Match on md5_hash AND is_current=1 so already-expired history rows
+        # are never touched.
+        if rows_updated > 0:
+            (
+                DeltaTable.forName(spark, qualified_target).alias("tgt")
+                .merge(
+                    source    = expired_df.alias("src"),
+                    condition = "tgt.md5_hash = src.md5_hash AND tgt.is_current = 1",
+                )
+                .whenMatchedUpdate(set={
+                    "is_current":           F.lit(0).cast(IntegerType()),
+                    "expiration_timestamp": F.lit(p_ingestion_timestamp).cast(TimestampType()),
+                })
+                .execute()
+            )
+            print(f"  Step 4 (expire)  : {rows_updated:,} records expired")
+
+        # ── Step 5: APPEND new / changed records ──────────────────────────────
+        # Plain append is safe here — md5 uniqueness is guaranteed by Step 2.
+        if rows_inserted > 0:
+            (
+                new_records_df.write
+                .format("delta")
+                .mode("append")
+                .saveAsTable(qualified_target)
+            )
+            print(f"  Step 5 (append)  : {rows_inserted:,} new records appended")
 
     _merge_secs = round(time.time() - _merge_start, 6)
     print(f"  Rows inserted  : {rows_inserted:,}")
-    print(f"  Rows updated   : {rows_updated:,}")
+    print(f"  Rows expired   : {rows_updated:,}")
     print(f"  Merge duration : {_merge_secs}s")
 
 
@@ -405,7 +345,6 @@ try:
     print(f"  source          : {qualified_source}")
     print(f"  target          : lh_silver.{qualified_target}")
     print(f"  entity          : {entity_name}")
-    print(f"  pk_cols         : {pk_cols}")
     print(f"  source_rows     : {source_row_count:,}")
     print(f"  rows_inserted   : {rows_inserted:,}")
     print(f"  rows_updated    : {rows_updated:,}")
