@@ -178,6 +178,70 @@ GO
 
 
 -- ══════════════════════════════════════════════════════════════════════════════
+-- SEED DATA: source_load_control  (52 rows — EQ_Warehouse entities)
+-- Initial state: bronze loaded on 2026-04-13, silver pending.
+-- id is omitted — IDENTITY(1,1) auto-assigns.
+-- ══════════════════════════════════════════════════════════════════════════════
+
+INSERT INTO dbo.source_load_control
+    (source_name, entity_name, last_load_date, bronze_run_status, silver_run_status)
+VALUES
+('EQ_Warehouse', 'Accounting',                        '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'AccountingAccount',                 '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'AccountingDetail',                  '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'AccountingReporting_Group',         '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'AccountValue',                      '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Activity',                          '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'ActivityFinancial',                 '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'ActivityType',                      '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'AdditionalClient_Group',            '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'AdditionalInfo_Group',              '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Agent',                             '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'AgentContract',                     '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'AgentLicense_Group',                '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'AgentPrincipal_Group',              '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'AgentSummary_Group',                '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'AgentTraining',                     '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'CAPRepayment',                      '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'CAPStatusChange',                   '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Client',                            '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'CommissionLevelRank',               '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Company',                           '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Contract',                          '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'ContractDeposit_Group',             '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'ContractValue_Group',               '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'ExternalAccount_Group',             '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Options',                           '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Ratios',                            '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Hierarchy',                         '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Hierarchy_Bridge',                  '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Hierarchy_Option',                  '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Hierarchy_SuperHierarchy',          '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'HierarchyTerritory',                '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'IndexValue_Group',                  '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Investment',                        '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'InvestmentDetail',                  '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Note_Group',                        '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Product',                           '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'ProductStateApproval',              '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'ProductStateApprovalDisclosure',    '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'ProductStateVariation',             '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'ProductVariationDetail',            '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'RecurringPayment_Group',            '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Reinsurance_Group',                 '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'RenewalRate_Group',                 '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Requirement_Group',                 '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Rider_Group',                       '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'State',                             '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Surrender',                         '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'Territory',                         '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'TrainingCourse',                    '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'TrainingProduct_Group',             '2026-04-13 00:00:00', 'success', 'pending'),
+('EQ_Warehouse', 'TrainingState_Group',               '2026-04-13 00:00:00', 'success', 'pending');
+GO
+
+
+-- ══════════════════════════════════════════════════════════════════════════════
 -- SEED DATA: schema_config
 -- Sample mappings for Contract and Agent — extend per actual source schemas.
 -- Columns: id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
