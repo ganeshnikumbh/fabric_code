@@ -81,7 +81,7 @@ INSERT INTO dbo.ingestion_config
     (source_id, source_name, source_type, source_schema, entity_name, target_lakehouse, target_schema, target_table, load_type, watermark_column, watermark_type, batch_size, partition_by_column_names, is_scd2, active_flag)
 VALUES
 -- ── Reference / lookup tables (full load) ─────────────────────────────────
-(1,  'EQ_Warehouse', 'sqlserver', 'dbo', 'Date',                         'lh_bronze', 'bronze_eqwarehouse', 'date_base',                              'full',        NULL,               NULL,       NULL,   NULL, 0, 1),
+(1,  'EQ_Warehouse', 'sqlserver', 'dbo', 'Date',                         'lh_bronze', 'bronze_eqwarehouse', 'date_base',                              'full',        NULL,               NULL,       NULL,   NULL, 0, 0),
 (2,  'EQ_Warehouse', 'sqlserver', 'dbo', 'State',                        'lh_bronze', 'bronze_eqwarehouse', 'state_base',                             'full',        NULL,               NULL,       NULL,   NULL, 1, 1),
 (3,  'EQ_Warehouse', 'sqlserver', 'dbo', 'Company',                      'lh_bronze', 'bronze_eqwarehouse', 'company_base',                           'full',        NULL,               NULL,       NULL,   NULL, 1, 1),
 (4,  'EQ_Warehouse', 'sqlserver', 'dbo', 'ActivityType',                 'lh_bronze', 'bronze_eqwarehouse', 'activity_type_base',                     'full',        NULL,               NULL,       NULL,   NULL, 1, 1),
@@ -138,15 +138,15 @@ VALUES
 (51, 'EQ_Warehouse', 'sqlserver', 'dbo', 'Rider_Group',                  'lh_bronze', 'bronze_eqwarehouse', 'rider_group_base',                       'incremental', 'StartDate',        'datetime', 50000,  NULL, 1, 1),
 (52, 'EQ_Warehouse', 'sqlserver', 'dbo', 'Requirement_Group',            'lh_bronze', 'bronze_eqwarehouse', 'requirement_group_base',                 'incremental', 'StartDate',        'datetime', 50000,  NULL, 1, 1),
 (53, 'EQ_Warehouse', 'sqlserver', 'dbo', 'Note_Group',                   'lh_bronze', 'bronze_eqwarehouse', 'note_group_base',                        'incremental', 'NoteDate',         'datetime', 50000,  NULL, 0, 1),
-(54, 'EQ_Warehouse', 'sqlserver', 'dbo', 'LastProcessing',               'lh_bronze', 'bronze_eqwarehouse', 'last_processing_base',                   'full',        NULL,               NULL,       NULL,   NULL, 0, 1),
-(55, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_Client',                'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_client_base',                     'full',        NULL,               NULL,       NULL,   NULL, 0, 1),
-(56, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractClient',        'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_client_base',            'full',        NULL,               NULL,       NULL,   NULL, 0, 1),
-(57, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_Agent',                 'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_agent_base',                      'full',        NULL,               NULL,       NULL,   NULL, 0, 1),
-(58, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractTreaty',        'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_treaty_base',            'full',        NULL,               NULL,       NULL,   NULL, 0, 1),
-(59, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractRider',         'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_rider_base',             'full',        NULL,               NULL,       NULL,   NULL, 0, 1),
-(60, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractTrx',           'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_trx_base',               'full',        NULL,               NULL,       NULL,   NULL, 0, 1),
-(61, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractPrimarySegment','lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_primary_segment_base',   'full',        NULL,               NULL,       NULL,   NULL, 0, 1),
-(62, 'EQ_Warehouse', 'sqlserver', 'dbo', 'ref_Product',                  'lh_bronze', 'bronze_eqwarehouse', 'ref_product_base',                       'full',        NULL,               NULL,       NULL,   NULL, 0, 1);
+(54, 'EQ_Warehouse', 'sqlserver', 'dbo', 'LastProcessing',               'lh_bronze', 'bronze_eqwarehouse', 'last_processing_base',                   'full',        NULL,               NULL,       NULL,   NULL, 0, 0),
+(55, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_Client',                'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_client_base',                     'full',        NULL,               NULL,       NULL,   NULL, 0, 0),
+(56, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractClient',        'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_client_base',            'full',        NULL,               NULL,       NULL,   NULL, 0, 0),
+(57, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_Agent',                 'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_agent_base',                      'full',        NULL,               NULL,       NULL,   NULL, 0, 0),
+(58, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractTreaty',        'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_treaty_base',            'full',        NULL,               NULL,       NULL,   NULL, 0, 0),
+(59, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractRider',         'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_rider_base',             'full',        NULL,               NULL,       NULL,   NULL, 0, 0),
+(60, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractTrx',           'lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_trx_base',               'full',        NULL,               NULL,       NULL,   NULL, 0, 0),
+(61, 'EQ_Warehouse', 'sqlserver', 'dbo', 'vw_SEG_ContractPrimarySegment','lh_bronze', 'bronze_eqwarehouse', 'vw_seg_contract_primary_segment_base',   'full',        NULL,               NULL,       NULL,   NULL, 0, 0),
+(62, 'EQ_Warehouse', 'sqlserver', 'dbo', 'ref_Product',                  'lh_bronze', 'bronze_eqwarehouse', 'ref_product_base',                       'full',        NULL,               NULL,       NULL,   NULL, 0, 0);
 GO
 
 
