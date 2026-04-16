@@ -192,6 +192,10 @@ try:
     )
     print(f"  Replaced audit cols: {_cols_to_drop or '(none found — added fresh)'}")
 
+    # ── Deduplicate source on md5_hash before any SCD logic ──────────────────
+    source_df        = deduplicate_by_md5(source_df, label=p_source_table)  # noqa: F821  # type: ignore[name-defined]
+    source_row_count = source_df.count()
+
 
     # ══════════════════════════════════════════════════════════════════════════
     # SECTION 4 — Write / MERGE into Silver S1

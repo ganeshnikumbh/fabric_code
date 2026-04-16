@@ -619,6 +619,39 @@ def compute_md5_hash(df, hash_cols_ordered: list):
     return result_df
 
 
+def deduplicate_by_md5(df, label: str = ""):
+    """
+    Remove duplicate rows from a DataFrame based on the md5_hash column.
+
+    Retains one row per distinct md5_hash value (arbitrary row when duplicates
+    exist — row content is identical by definition since the hash is computed
+    from all business columns).  Logs the number of rows removed.
+
+    Parameters
+    ----------
+    df    : Input DataFrame.  Must contain an 'md5_hash' column.
+    label : Optional descriptive label printed in the log line (e.g. table name).
+
+    Returns
+    -------
+    DataFrame with duplicate md5_hash rows removed.
+
+    Example
+    -------
+    source_df = deduplicate_by_md5(source_df, label="client_base")
+    """
+    before  = df.count()
+    deduped = df.dropDuplicates(["md5_hash"])
+    after   = deduped.count()
+    removed = before - after
+    prefix  = f"[{label}] " if label else ""
+    if removed > 0:
+        print(f"  {prefix}Deduplication : {removed:,} duplicate(s) removed  ({before:,} → {after:,} rows)")
+    else:
+        print(f"  {prefix}Deduplication : no duplicates found  ({before:,} rows)")
+    return deduped
+
+
 def write_delta_create(
     df,
     qualified_target: str,
@@ -716,4 +749,5 @@ print("[nb_utils] Loaded — functions available: read_mssql_table, read_mssql_q
       "get_ingestion_config_schema, get_schema_config_schema, get_load_control_schema, "
       "ingestion_config_df_from_json, schema_config_df_from_json, load_control_df_from_json, "
       "build_col_maps, "
-      "validate_required_params, add_audit_columns, compute_md5_hash, write_delta_create")
+      "validate_required_params, add_audit_columns, compute_md5_hash, "
+      "deduplicate_by_md5, write_delta_create")
