@@ -33,7 +33,7 @@ import time
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.types import StringType, TimestampType, IntegerType
+from pyspark.sql.types import TimestampType, IntegerType
 from delta.tables import DeltaTable
 
 spark = SparkSession.builder.appName("nb_silver_s1_ingestion").getOrCreate()
@@ -70,9 +70,7 @@ _required = {
     "p_ingestion_config_json" : p_ingestion_config_json,
     "p_schema_config_json"    : p_schema_config_json,
 }
-_missing = [k for k, v in _required.items() if not str(v).strip()]
-if _missing:
-    raise ValueError(f"Required parameters not provided: {_missing}")
+validate_required_params(_required)  # noqa: F821  # type: ignore[name-defined]
 
 # Placeholders so except block can always reference them
 qualified_source = f"lh_bronze.{p_source_schema}.{p_source_table}"
@@ -184,13 +182,13 @@ try:
     if _cols_to_drop:
         source_df = source_df.drop(*_cols_to_drop)
 
-    source_df = (
-        source_df
-        .withColumn("ingestion_date",      F.lit(p_ingestion_date).cast("date"))
-        .withColumn("data_timestamp",      F.lit(p_ingestion_timestamp).cast(TimestampType()))
-        .withColumn("source_system",       F.lit(p_source_system).cast(StringType()))
-        .withColumn("ingestion_run_id",    F.lit(p_ingestion_run_id).cast(StringType()))
-        .withColumn("ingestion_timestamp", F.lit(p_ingestion_timestamp).cast(TimestampType()))
+    source_df = add_audit_columns(  # noqa: F821  # type: ignore[name-defined]
+        source_df,
+        ingestion_date      = p_ingestion_date,
+        data_timestamp      = p_ingestion_timestamp,
+        source_system       = p_source_system,
+        ingestion_run_id    = p_ingestion_run_id,
+        ingestion_timestamp = p_ingestion_timestamp,
     )
     print(f"  Replaced audit cols: {_cols_to_drop or '(none found — added fresh)'}")
 
@@ -242,19 +240,9 @@ try:
         if not table_exists:
             # First run — create table with full write
             print(f"  Target does not exist — creating via full write")
-            _writer = (
-                source_df.write
-                .format("delta")
-                .option("mergeSchema", "true")
-                .mode("overwrite")
-            )
-            if partition_cols:
-                _writer = _writer.partitionBy(*partition_cols)
-                print(f"  Partitioning by  : {partition_cols}")
-            _writer.saveAsTable(qualified_target)
+            write_delta_create(source_df, qualified_target, partition_cols, tbl_properties={"delta.enableChangeDataFeed": "true"})  # noqa: F821  # type: ignore[name-defined]
             rows_inserted = source_row_count
             rows_updated  = 0
-            print(f"  Created lh_silver.{qualified_target}")
 
         else:
             target_df = spark.table(qualified_target)
@@ -328,19 +316,9 @@ try:
         if not table_exists:
             # First run — create table with full write
             print(f"  Target does not exist — creating via full write")
-            _writer = (
-                source_df.write
-                .format("delta")
-                .option("mergeSchema", "true")
-                .mode("overwrite")
-            )
-            if partition_cols:
-                _writer = _writer.partitionBy(*partition_cols)
-                print(f"  Partitioning by  : {partition_cols}")
-            _writer.saveAsTable(qualified_target)
+            write_delta_create(source_df, qualified_target, partition_cols, tbl_properties={"delta.enableChangeDataFeed": "true"})  # noqa: F821  # type: ignore[name-defined]
             rows_inserted = source_row_count
             rows_updated  = 0
-            print(f"  Created lh_silver.{qualified_target}")
 
         else:
             target_df = spark.table(qualified_target)

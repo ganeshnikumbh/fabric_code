@@ -34,7 +34,6 @@ import time
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.types import StringType, TimestampType
 
 spark = SparkSession.builder.appName("nb_bronze_ingestion_v2").getOrCreate()
 spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
@@ -58,7 +57,6 @@ p_ingestion_config_json  = ""   # REQUIRED — full ingestion_config JSON array 
 p_schema_config_json     = ""   # REQUIRED — full schema_config JSON array for the source
                                 #            Pipeline expression: @variables('v_schema_config_json')
 p_ingestion_date         = ""   # e.g. "2025-04-09"     — pipeline run date
-p_data_timestamp              = ""   # e.g. "2025-04-08"     — business data date (full load only)
 p_source_system          = ""   # e.g. "EQ_Warehouse"
 p_ingestion_run_id       = ""   # UUID from pipeline
 p_ingestion_timestamp    = ""   # e.g. "2025-04-09T01:00:00Z"
@@ -74,9 +72,7 @@ _required = {
     "p_ingestion_run_id"      : p_ingestion_run_id,
     "p_ingestion_timestamp"   : p_ingestion_timestamp,
 }
-_missing = [k for k, v in _required.items() if not str(v).strip()]
-if _missing:
-    raise ValueError(f"Required parameters not provided: {_missing}")
+validate_required_params(_required)  # noqa: F821  # type: ignore[name-defined]
 
 # initialise placeholders so the except block can always reference them
 qualified_target = f"bronze_eqwarehouse.{p_target_table}"
@@ -91,7 +87,6 @@ print(f"  source_table      : {p_source_table}")
 print(f"  source_schema     : {p_source_schema}")
 print(f"  target_table      : {p_target_table}")
 print(f"  ingestion_date    : {p_ingestion_date}")
-print(f"  data_timestamp         : {p_data_timestamp}")
 print(f"  source_system     : {p_source_system}")
 print(f"  ingestion_run_id  : {p_ingestion_run_id}")
 print(f"  ingestion_timestamp: {p_ingestion_timestamp}")
@@ -154,8 +149,6 @@ try:
         )
 
     config           = config_row[0]
-    load_type        = (config["load_type"]        or "full").strip().lower()
-    watermark_column = (config["watermark_column"] or "").strip()
     source_id        = config["source_id"]
     source_schema    = (config["source_schema"]    or "").strip()
     target_schema    = (config["target_schema"]    or "bronze_eqwarehouse").strip()
@@ -164,8 +157,6 @@ try:
 
     print(f"  source_id        : {source_id}")
     print(f"  source_schema    : {source_schema or '(none)'}")
-    print(f"  load_type        : {load_type}")
-    print(f"  watermark_column : {watermark_column or '(none — full load)'}")
     print(f"  partition_cols   : {partition_cols or '(none)'}")
 
     # ── 3b. schema_config ────────────────────────────────────────────────────
@@ -227,94 +218,28 @@ try:
         for src_col in missing_in_source:
             select_exprs.append(F.lit(None).cast("string").alias(col_map[src_col]))
 
-    # ── Watermark passthrough ─────────────────────────────────────────────────
-    _WM_TEMP = "__wm_temp__"
-    _wm_needs_passthrough = False
-
-    if load_type != "full" and watermark_column:
-        if col_map_lower.get(watermark_column.lower()) is None:
-            actual_wm = source_columns_lower.get(watermark_column.lower())
-            if actual_wm is None:
-                print(
-                    f"  WARNING: watermark_column '{watermark_column}' not found in "
-                    f"source data — data_timestamp will fall back to ingestion_date"
-                )
-            else:
-                select_exprs.append(F.col(actual_wm).alias(_WM_TEMP))
-                _wm_needs_passthrough = True
-                print(
-                    f"  watermark_column '{watermark_column}' not in schema_config — "
-                    f"added as temp passthrough for data_timestamp derivation"
-                )
-
     transformed_df = source_df.select(*select_exprs)
-    print(f"  Columns after mapping : {len(transformed_df.columns) - int(_wm_needs_passthrough)} business columns")
+    print(f"  Columns after mapping : {len(transformed_df.columns)} business columns")
 
 
     # ══════════════════════════════════════════════════════════════════════════
-    # SECTION 5 — Load Type Logic (data_timestamp) + Audit Columns + MD5 Hash
+    # SECTION 5 — Audit Columns + MD5 Hash
     # ══════════════════════════════════════════════════════════════════════════
 
-    print(f"\n[4/5] Applying load_type logic  (load_type={load_type})")
-
-    # ── data_timestamp derivation ──────────────────────────────────────────────────
-    if load_type == "full":
-        if not p_data_timestamp or not p_data_timestamp.strip():
-            raise ValueError(
-                "load_type is 'full' but p_data_timestamp parameter is empty. "
-                "Provide p_data_timestamp from the pipeline."
-            )
-        data_timestamp_col = F.lit(p_data_timestamp).cast(TimestampType())
-        print(f"  data_timestamp source : pipeline parameter → {p_data_timestamp}")
-
-    else:  # incremental / cdc
-        wm_in_df = None
-        if watermark_column:
-            wm_in_df = col_map_lower.get(watermark_column.lower()) or (
-                _WM_TEMP if _wm_needs_passthrough else None
-            )
-
-        if wm_in_df and wm_in_df in transformed_df.columns:
-            data_timestamp_col = F.col(wm_in_df).cast(TimestampType())
-            wm_label = watermark_column if not _wm_needs_passthrough else f"{watermark_column} (passthrough)"
-            print(f"  data_timestamp source : watermark_column '{wm_label}' → col '{wm_in_df}' (cast to timestamp)")
-        else:
-            data_timestamp_col = F.lit(p_ingestion_timestamp).cast(TimestampType())
-            reason = "not configured in ingestion_config" if not watermark_column else f"'{watermark_column}' not found in source data"
-            print(f"  data_timestamp source : ingestion_timestamp (fallback — watermark_column {reason})")
+    print(f"\n[4/5] Applying audit columns and MD5 hash")
 
     # ── Audit columns ─────────────────────────────────────────────────────────
-    final_df = (
-        transformed_df
-        .withColumn("ingestion_date",      F.lit(p_ingestion_date).cast("date"))
-        .withColumn("data_timestamp",           data_timestamp_col)
-        .withColumn("source_system",       F.lit(p_source_system).cast(StringType()))
-        .withColumn("ingestion_run_id",    F.lit(p_ingestion_run_id).cast(StringType()))
-        .withColumn("ingestion_timestamp", F.lit(p_ingestion_timestamp).cast(TimestampType()))
+    final_df = add_audit_columns(  # noqa: F821  # type: ignore[name-defined]
+        transformed_df,
+        ingestion_date      = p_ingestion_date,
+        data_timestamp      = p_ingestion_timestamp,
+        source_system       = p_source_system,
+        ingestion_run_id    = p_ingestion_run_id,
+        ingestion_timestamp = p_ingestion_timestamp,
     )
 
-    if _wm_needs_passthrough:
-        final_df = final_df.drop(_WM_TEMP)
-        print(f"  Dropped temp passthrough column '{_WM_TEMP}'")
-
     # ── MD5 hash ──────────────────────────────────────────────────────────────
-    available_cols    = set(final_df.columns)
-    active_hash_cols  = [c for c in hash_cols_ordered if c in available_cols]
-    skipped_hash_cols = [c for c in hash_cols_ordered if c not in available_cols]
-
-    if skipped_hash_cols:
-        print(f"  WARNING: {skipped_hash_cols} flagged for hash but not in DataFrame — excluded")
-
-    if active_hash_cols:
-        concat_expr = F.concat_ws(
-            "|",
-            *[F.coalesce(F.col(c).cast(StringType()), F.lit("")) for c in active_hash_cols]
-        )
-        final_df = final_df.withColumn("md5_hash", F.md5(concat_expr))
-        print(f"  md5_hash : computed from {len(active_hash_cols)} columns in ordinal order")
-    else:
-        final_df = final_df.withColumn("md5_hash", F.lit(None).cast(StringType()))
-        print(f"  md5_hash : NULL (no columns flagged include_in_md5hash=true in schema_config)")
+    final_df = compute_md5_hash(final_df, hash_cols_ordered)  # noqa: F821  # type: ignore[name-defined]
 
     final_row_count = final_df.count()
     print(f"  Rows to write : {final_row_count:,}")
@@ -338,17 +263,7 @@ try:
 
     if not table_exists:
         print(f"  Action  : CREATE")
-        _writer = (
-            final_df.write
-            .format("delta")
-            .option("mergeSchema", "true")
-            .mode("overwrite")
-        )
-        if partition_cols:
-            _writer = _writer.partitionBy(*partition_cols)
-            print(f"  Partitioning by  : {partition_cols}")
-        _writer.saveAsTable(qualified_target)
-        print(f"  Created : lh_bronze.{qualified_target}")
+        write_delta_create(final_df, qualified_target, partition_cols)  # noqa: F821  # type: ignore[name-defined]
     else:
         print(f"  Action  : APPEND")
         (
@@ -372,17 +287,13 @@ try:
         rows_before    = rows_before,
         rows_after     = verified_count,
         execution_time = _write_secs,
-        message        = (
-            f"load_type={load_type} | source={p_source_table} | "
-            f"rows_written={final_row_count} | run_id={p_ingestion_run_id}"
-        ),
+        message        = f"source={p_source_table} | rows_written={final_row_count} | run_id={p_ingestion_run_id}",
     )
 
     print("\n" + "=" * 65)
     print("  nb_bronze_ingestion_v2 — COMPLETE")
     print(f"  source_table    : {p_source_table}")
     print(f"  target_table    : lh_bronze.{qualified_target}")
-    print(f"  load_type       : {load_type}")
     print(f"  rows_read       : {source_row_count:,}")
     print(f"  rows_written    : {final_row_count:,}")
     print(f"  rows_in_target  : {verified_count:,}")

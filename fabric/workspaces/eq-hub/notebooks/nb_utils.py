@@ -25,7 +25,7 @@ from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql.types import (
     StructType, StructField,
-    StringType, IntegerType,
+    StringType, IntegerType, TimestampType,
 )
 from typing import Optional
 import com.microsoft.sqlserver.jdbc.spark
@@ -510,6 +510,164 @@ def build_col_maps(mappings: list) -> tuple:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# DataFrame transformation utilities
+# Shared helpers used by nb_bronze_ingestion_v2 and nb_silver_s1_ingestion.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def validate_required_params(params: dict) -> None:
+    """
+    Raise ValueError listing all keys whose value is empty or whitespace-only.
+
+    Parameters
+    ----------
+    params : dict  {param_name: value} — typically the notebook's _required dict.
+
+    Example
+    -------
+    validate_required_params({
+        "p_source_table" : p_source_table,
+        "p_target_table" : p_target_table,
+    })
+    """
+    missing = [k for k, v in params.items() if not str(v).strip()]
+    if missing:
+        raise ValueError(f"Required parameters not provided: {missing}")
+
+
+def add_audit_columns(
+    df,
+    ingestion_date:      str,
+    data_timestamp,
+    source_system:       str,
+    ingestion_run_id:    str,
+    ingestion_timestamp: str,
+):
+    """
+    Append the five standard pipeline audit columns to a DataFrame.
+
+    Parameters
+    ----------
+    df                  : Input DataFrame.
+    ingestion_date      : Pipeline run date string, e.g. '2025-04-09'  → cast to date.
+    data_timestamp      : Business data timestamp.  Pass either:
+                            - a PySpark Column expression (e.g. derived from watermark), or
+                            - a plain string (e.g. p_ingestion_timestamp) → cast to timestamp.
+    source_system       : Source system name, e.g. 'EQ_Warehouse'.
+    ingestion_run_id    : Pipeline run UUID string.
+    ingestion_timestamp : Pipeline run timestamp string → cast to timestamp.
+
+    Returns
+    -------
+    DataFrame with audit columns appended:
+      ingestion_date, data_timestamp, source_system, ingestion_run_id, ingestion_timestamp
+    """
+    from pyspark.sql.column import Column as _Column
+    data_ts_col = (
+        data_timestamp
+        if isinstance(data_timestamp, _Column)
+        else F.lit(data_timestamp).cast(TimestampType())
+    )
+    return (
+        df
+        .withColumn("ingestion_date",      F.lit(ingestion_date).cast("date"))
+        .withColumn("data_timestamp",      data_ts_col)
+        .withColumn("source_system",       F.lit(source_system).cast(StringType()))
+        .withColumn("ingestion_run_id",    F.lit(ingestion_run_id).cast(StringType()))
+        .withColumn("ingestion_timestamp", F.lit(ingestion_timestamp).cast(TimestampType()))
+    )
+
+
+def compute_md5_hash(df, hash_cols_ordered: list):
+    """
+    Add an md5_hash column to a DataFrame by concatenating specified columns.
+
+    Columns are concatenated in the supplied order, pipe-delimited, with NULLs
+    coerced to empty string before hashing.  The hash runs fully distributed
+    via Spark's built-in md5() function.
+
+    If hash_cols_ordered is empty, or none of the columns exist in the DataFrame,
+    md5_hash is set to NULL.
+
+    Parameters
+    ----------
+    df                : Input DataFrame.
+    hash_cols_ordered : Ordered list of target column names to include in the hash.
+                        Typically build_col_maps()[2].
+
+    Returns
+    -------
+    DataFrame with md5_hash column appended.
+    """
+    available_cols    = set(df.columns)
+    active_hash_cols  = [c for c in hash_cols_ordered if c in available_cols]
+    skipped_hash_cols = [c for c in hash_cols_ordered if c not in available_cols]
+
+    if skipped_hash_cols:
+        print(f"  WARNING: {skipped_hash_cols} flagged for hash but not in DataFrame — excluded")
+
+    if active_hash_cols:
+        concat_expr = F.concat_ws(
+            "|",
+            *[F.coalesce(F.col(c).cast(StringType()), F.lit("")) for c in active_hash_cols],
+        )
+        result_df = df.withColumn("md5_hash", F.md5(concat_expr))
+        print(f"  md5_hash : computed from {len(active_hash_cols)} columns in ordinal order")
+    else:
+        result_df = df.withColumn("md5_hash", F.lit(None).cast(StringType()))
+        print(f"  md5_hash : NULL (no columns flagged include_in_md5hash=true in schema_config)")
+
+    return result_df
+
+
+def write_delta_create(
+    df,
+    qualified_target: str,
+    partition_cols:   list = None,
+    tbl_properties:   dict = None,
+) -> None:
+    """
+    Write a DataFrame to a new Delta table, optionally partitioned and with
+    Delta table properties (e.g. Change Data Feed).
+
+    Uses overwrite + mergeSchema — safe on first run and idempotent if the
+    target already exists and needs a full refresh.
+
+    Parameters
+    ----------
+    df               : DataFrame to persist.
+    qualified_target : Fully qualified table name, e.g. 'bronze_eqwarehouse.client_base'.
+    partition_cols   : Optional list of column names to partition by.
+    tbl_properties   : Optional dict of Delta table properties to set at creation time.
+                       Keys and values are passed as .option() entries on the writer.
+                       Example: {"delta.enableChangeDataFeed": "true"}
+
+    Example
+    -------
+    write_delta_create(
+        df               = final_df,
+        qualified_target = "silver_s1.client_base",
+        partition_cols   = ["ingestion_date"],
+        tbl_properties   = {"delta.enableChangeDataFeed": "true"},
+    )
+    """
+    _writer = (
+        df.write
+        .format("delta")
+        .option("mergeSchema", "true")
+        .mode("overwrite")
+    )
+    if partition_cols:
+        _writer = _writer.partitionBy(*partition_cols)
+        print(f"  Partitioning by  : {partition_cols}")
+    if tbl_properties:
+        for _k, _v in tbl_properties.items():
+            _writer = _writer.option(_k, _v)
+        print(f"  Table properties : {tbl_properties}")
+    _writer.saveAsTable(qualified_target)
+    print(f"  Created : {qualified_target}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # FabricLogger wrapper
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -557,4 +715,5 @@ print("[nb_utils] Loaded — functions available: read_mssql_table, read_mssql_q
       "upsert_load_control, log_fabric_operation, "
       "get_ingestion_config_schema, get_schema_config_schema, get_load_control_schema, "
       "ingestion_config_df_from_json, schema_config_df_from_json, load_control_df_from_json, "
-      "build_col_maps")
+      "build_col_maps, "
+      "validate_required_params, add_audit_columns, compute_md5_hash, write_delta_create")
