@@ -175,7 +175,7 @@ try:
     # These columns are carried through from bronze but represent the bronze run —
     # silver has its own run identity, date, and system context.
     _BRONZE_AUDIT_COLS = {
-        "ingestion_date", "data_date", "source_system",
+        "ingestion_date", "data_timestamp", "source_system",
         "ingestion_run_id", "ingestion_timestamp",
     }
     _cols_to_drop = [c for c in source_df.columns if c in _BRONZE_AUDIT_COLS]
