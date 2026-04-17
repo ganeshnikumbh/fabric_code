@@ -1,0 +1,2 @@
+# Allow JSON schema files in this directory — overrides the repo-root *.json rule
+!*.json

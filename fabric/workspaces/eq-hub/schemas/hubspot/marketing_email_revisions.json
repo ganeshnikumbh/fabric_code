@@ -1,0 +1,15 @@
+{
+  "table_name": "marketing_email_revisions",
+  "description": "HubSpot marketing email revisions — GET /marketing/v3/emails/{emailId}/revisions",
+  "source_path": "results",
+  "has_pagination": true,
+  "context_fields": ["email_id"],
+  "fields": [
+    {"column": "revision_id",       "source": "id",           "type": "string"},
+    {"column": "updated_at",        "source": "updatedAt",    "type": "string"},
+    {"column": "user_id",           "source": "user.id",      "type": "string"},
+    {"column": "user_email",        "source": "user.email",   "type": "string"},
+    {"column": "user_full_name",    "source": "user.fullName","type": "string"},
+    {"column": "email_object_json", "source": "object",       "type": "json"}
+  ]
+}

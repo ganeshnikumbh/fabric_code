@@ -76,6 +76,7 @@ checkpoints/
 *.xlsx
 *.xls
 *.json
+# Schema JSON files are tracked via fabric/workspaces/eq-hub/schemas/hubspot/.gitignore
 !**/dataflows/*.pq                         # exception — dataflow M code is source-controlled
 data/
 local_data/

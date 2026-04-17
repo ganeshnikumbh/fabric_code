@@ -1,0 +1,30 @@
+{
+  "table_name": "marketing_events",
+  "description": "HubSpot marketing events — GET /marketing/marketing-events/{period}. Schema derived from API response (no OpenAPI spec available).",
+  "source_path": "results",
+  "has_pagination": true,
+  "context_fields": ["period"],
+  "fields": [
+    {"column": "object_id",         "source": "objectId",         "type": "string"},
+    {"column": "external_event_id", "source": "externalEventId",  "type": "string"},
+    {"column": "event_name",        "source": "eventName",        "type": "string"},
+    {"column": "event_type",        "source": "eventType",        "type": "string"},
+    {"column": "event_status",      "source": "eventStatus",      "type": "string"},
+    {"column": "event_status_v2",   "source": "eventStatusV2",    "type": "string"},
+    {"column": "start_date_time",   "source": "startDateTime",    "type": "string"},
+    {"column": "end_date_time",     "source": "endDateTime",      "type": "string"},
+    {"column": "event_organizer",   "source": "eventOrganizer",   "type": "string"},
+    {"column": "event_description", "source": "eventDescription", "type": "string"},
+    {"column": "event_url",         "source": "eventUrl",         "type": "string"},
+    {"column": "event_cancelled",   "source": "eventCancelled",   "type": "boolean"},
+    {"column": "event_completed",   "source": "eventCompleted",   "type": "boolean"},
+    {"column": "registrants",       "source": "registrants",      "type": "integer"},
+    {"column": "attendees",         "source": "attendees",        "type": "integer"},
+    {"column": "cancellations",     "source": "cancellations",    "type": "integer"},
+    {"column": "no_shows",          "source": "noShows",          "type": "integer"},
+    {"column": "app_info_id",       "source": "appInfo.id",       "type": "string"},
+    {"column": "app_info_name",     "source": "appInfo.name",     "type": "string"},
+    {"column": "created_at",        "source": "createdAt",        "type": "string"},
+    {"column": "updated_at",        "source": "updatedAt",        "type": "string"}
+  ]
+}
