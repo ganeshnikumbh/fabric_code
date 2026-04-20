@@ -1,0 +1,21 @@
+{
+  "table_name": "crm_owners",
+  "description": "HubSpot CRM owners — GET /crm/v3/owners/",
+  "source_path": "results",
+  "has_pagination": true,
+  "context_fields": [],
+  "fields": [
+    {"column": "id",                          "source": "id",                       "type": "string"},
+    {"column": "email",                       "source": "email",                    "type": "string"},
+    {"column": "first_name",                  "source": "firstName",                "type": "string"},
+    {"column": "last_name",                   "source": "lastName",                 "type": "string"},
+    {"column": "type",                        "source": "type",                     "type": "string"},
+    {"column": "user_id",                     "source": "userId",                   "type": "integer"},
+    {"column": "user_id_including_inactive",  "source": "userIdIncludingInactive",  "type": "integer"},
+    {"column": "created_at",                  "source": "createdAt",                "type": "string"},
+    {"column": "updated_at",                  "source": "updatedAt",                "type": "string"},
+    {"column": "archived",                    "source": "archived",                 "type": "boolean"},
+    {"column": "teams_json",                  "source": "teams",                    "type": "json"}
+  ]
+}
+

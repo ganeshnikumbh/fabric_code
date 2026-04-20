@@ -268,3 +268,90 @@ GO
 --   source_column_name = 'N/A'  (pipeline audit cols)  → 0  (305 rows)
 --   all mapped source columns                           → 1   (610 rows)
 GO
+
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- SEED DATA: ingestion_config  (14 rows — HubSpot source)
+-- source_ids 63–76; source_type = api; target = lh_landing.hubspot.*
+-- entity_name matches p_table_name used in nb_ingest_hubspot_landing_v2
+-- ══════════════════════════════════════════════════════════════════════════════
+
+INSERT INTO dbo.ingestion_config
+    (source_id, source_name, source_type, source_schema, entity_name,
+     target_lakehouse, target_schema, target_table,
+     load_type, watermark_column, watermark_type, batch_size, partition_by_column_names,
+     is_scd2, api_endpoint, api_method, active_flag)
+VALUES
+-- ── Marketing ─────────────────────────────────────────────────────────────────
+(63, 'HubSpot', 'api', NULL, 'marketing_events',
+     'lh_landing', 'hubspot', 'marketing_events',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/marketing/marketing-events/{period}',           'GET', 1),
+
+(64, 'HubSpot', 'api', NULL, 'marketing_emails',
+     'lh_landing', 'hubspot', 'marketing_emails',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/marketing/v3/emails/',                          'GET', 1),
+
+-- ── Events ────────────────────────────────────────────────────────────────────
+(65, 'HubSpot', 'api', NULL, 'events_event_types',
+     'lh_landing', 'hubspot', 'events_event_types',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/events/v3/events/event-types',                  'GET', 1),
+
+-- ── CRM Objects ───────────────────────────────────────────────────────────────
+(66, 'HubSpot', 'api', NULL, 'crm_object_type_contacts',
+     'lh_landing', 'hubspot', 'crm_contacts',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/crm/objects/2025-09/contacts',                  'GET', 1),
+
+(67, 'HubSpot', 'api', NULL, 'crm_object_type_companies',
+     'lh_landing', 'hubspot', 'crm_companies',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/crm/objects/2025-09/companies',                 'GET', 1),
+
+(68, 'HubSpot', 'api', NULL, 'crm_object_type_deals',
+     'lh_landing', 'hubspot', 'crm_deals',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/crm/objects/2025-09/deals',                     'GET', 1),
+
+(69, 'HubSpot', 'api', NULL, 'crm_object_type_tickets',
+     'lh_landing', 'hubspot', 'crm_tickets',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/crm/objects/2025-09/tickets',                   'GET', 1),
+
+(70, 'HubSpot', 'api', NULL, 'crm_object_type_products',
+     'lh_landing', 'hubspot', 'crm_products',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/crm/objects/2025-09/products',                  'GET', 1),
+
+(71, 'HubSpot', 'api', NULL, 'crm_object_type_line_items',
+     'lh_landing', 'hubspot', 'crm_line_items',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/crm/objects/2025-09/line_items',                'GET', 1),
+
+(72, 'HubSpot', 'api', NULL, 'crm_object_type_quotes',
+     'lh_landing', 'hubspot', 'crm_quotes',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/crm/objects/2025-09/quotes',                    'GET', 1),
+
+(73, 'HubSpot', 'api', NULL, 'crm_object_type_calls',
+     'lh_landing', 'hubspot', 'crm_calls',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/crm/objects/2025-09/calls',                     'GET', 1),
+
+(74, 'HubSpot', 'api', NULL, 'crm_object_type_meetings',
+     'lh_landing', 'hubspot', 'crm_meetings',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/crm/objects/2025-09/meetings',                  'GET', 1),
+
+(75, 'HubSpot', 'api', NULL, 'crm_object_type_notes',
+     'lh_landing', 'hubspot', 'crm_notes',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/crm/objects/2025-09/notes',                     'GET', 1),
+
+(76, 'HubSpot', 'api', NULL, 'crm_object_type_tasks',
+     'lh_landing', 'hubspot', 'crm_tasks',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/crm/objects/2025-09/tasks',                     'GET', 1);
+GO

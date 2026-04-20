@@ -10,13 +10,18 @@
 #   The pipeline handles pagination (passing after-cursor to successive Web calls).
 #
 # p_table_name values and their targets:
-#   marketing_events            → hubspot.marketing_events      (schema: marketing_events.json)
-#   marketing_emails            → hubspot.marketing_emails      (schema: marketing_emails.json)
-#   events_event_types          → hubspot.events_event_types    (schema: events_event_types.json)
-#   crm_object_type_contacts    → hubspot.crm_contacts          (schema: crm_objects.json)
-#   crm_object_type_companies   → hubspot.crm_companies         (schema: crm_objects.json)
-#   crm_object_type_deals       → hubspot.crm_deals             (schema: crm_objects.json)
-#   crm_object_type_<any>       → hubspot.crm_<any>             (schema: crm_objects.json)
+#   marketing_events               → hubspot.marketing_events           (schema: marketing_events.json)
+#   marketing_emails               → hubspot.marketing_emails           (schema: marketing_emails.json)
+#   events_event_types             → hubspot.events_event_types         (schema: events_event_types.json)
+#   crm_owners                     → hubspot.crm_owners                 (schema: crm_owners.json)
+#   crm_object_type_contacts       → hubspot.crm_contacts               (schema: crm_objects.json)
+#   crm_object_type_companies      → hubspot.crm_companies              (schema: crm_objects.json)
+#   crm_object_type_deals          → hubspot.crm_deals                  (schema: crm_objects.json)
+#   crm_object_type_<any>          → hubspot.crm_<any>                  (schema: crm_objects.json)
+#   crm_properties_type_contacts   → hubspot.crm_contacts_properties    (schema: crm_properties.json)
+#   crm_properties_type_<any>      → hubspot.crm_<any>_properties       (schema: crm_properties.json)
+#   crm_pipelines_type_deals       → hubspot.crm_deals_pipelines        (schema: crm_pipelines.json)
+#   crm_pipelines_type_<any>       → hubspot.crm_<any>_pipelines        (schema: crm_pipelines.json)
 #
 # Parameters:
 #   p_api_response   — JSON string of the API response (one page), from Web activity
@@ -123,7 +128,7 @@ def _build_spark_schema(fields, context_keys=None):
 # SECTION 2 — Resolve Table Config from p_table_name
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Static table map for non-CRM routes
+# Static table map for non-parameterised routes
 _TABLE_MAP = {
     "marketing_events": {
         "schema_name":     "marketing_events",
@@ -143,6 +148,12 @@ _TABLE_MAP = {
         "results_path":    "eventTypes",
         "is_string_array": True,
     },
+    "crm_owners": {
+        "schema_name":     "crm_owners",
+        "target_table":    "crm_owners",
+        "results_path":    "results",
+        "is_string_array": False,
+    },
 }
 
 # Parse context JSON (may be empty)
@@ -157,7 +168,21 @@ if p_table_name.startswith("crm_object_type_"):
     _target_table = f"crm_{_obj_type}"
     _results_path = "results"
     _is_str_array = False
-    _context.setdefault("object_type", _obj_type)   # auto-inject if not in p_context_json
+    _context.setdefault("object_type", _obj_type)
+elif p_table_name.startswith("crm_properties_type_"):
+    _obj_type     = p_table_name[len("crm_properties_type_"):]
+    _schema_name  = "crm_properties"
+    _target_table = f"crm_{_obj_type}_properties"
+    _results_path = "results"
+    _is_str_array = False
+    _context.setdefault("object_type", _obj_type)
+elif p_table_name.startswith("crm_pipelines_type_"):
+    _obj_type     = p_table_name[len("crm_pipelines_type_"):]
+    _schema_name  = "crm_pipelines"
+    _target_table = f"crm_{_obj_type}_pipelines"
+    _results_path = "results"
+    _is_str_array = False
+    _context.setdefault("object_type", _obj_type)
 elif p_table_name in _TABLE_MAP:
     _cfg          = _TABLE_MAP[p_table_name]
     _schema_name  = _cfg["schema_name"]
@@ -167,7 +192,8 @@ elif p_table_name in _TABLE_MAP:
 else:
     raise ValueError(
         f"Unknown p_table_name '{p_table_name}'. "
-        "Expected: marketing_events | marketing_emails | events_event_types | crm_object_type_<objectType>"
+        "Expected: marketing_events | marketing_emails | events_event_types | crm_owners | "
+        "crm_object_type_<objectType> | crm_properties_type_<objectType> | crm_pipelines_type_<objectType>"
     )
 
 _qualified = f"{_TARGET_SCHEMA}.{_target_table}"

@@ -1,0 +1,17 @@
+{
+  "table_name": "crm_pipelines",
+  "description": "HubSpot CRM pipelines — GET /crm/v3/pipelines/{objectType}. Table name is overridden to crm_{objectType}_pipelines at runtime.",
+  "source_path": "results",
+  "has_pagination": false,
+  "context_fields": ["object_type"],
+  "fields": [
+    {"column": "id",            "source": "id",           "type": "string"},
+    {"column": "label",         "source": "label",        "type": "string"},
+    {"column": "display_order", "source": "displayOrder", "type": "integer"},
+    {"column": "created_at",    "source": "createdAt",    "type": "string"},
+    {"column": "updated_at",    "source": "updatedAt",    "type": "string"},
+    {"column": "archived",      "source": "archived",     "type": "boolean"},
+    {"column": "archived_at",   "source": "archivedAt",   "type": "string"},
+    {"column": "stages_json",   "source": "stages",       "type": "json"}
+  ]
+}
