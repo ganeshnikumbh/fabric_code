@@ -144,10 +144,10 @@ fact_df = (
         "left",
     )
 
-    # product_training_key — join on training_code
+    # product_training_key — join on training_course_id (cast to string = dim training_code)
     .join(
         pt_lookup.alias("dpt"),
-        F.col("at.training_code") == F.col("dpt.lkp_training_code"),
+        F.col("at.training_course_id").cast("string") == F.col("dpt.lkp_training_code"),
         "left",
     )
 

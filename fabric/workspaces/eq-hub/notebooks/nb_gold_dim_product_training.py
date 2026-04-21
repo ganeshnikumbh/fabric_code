@@ -96,15 +96,14 @@ p   = p_df.alias("p")
 s   = s_df.alias("s")
 
 # ── Build the cross-product of (course × product group × state group) ──────
-# Join assumption (verify!):
-#   tpg.training_product_group_key = tc.training_course_id
-#   tsg.training_state_group_key   = tc.training_course_id
+# training_product_group_key and training_state_group_key are FK columns in
+# training_course_base that match the same-named columns in the group tables.
 joined_df = (
     tc
-    .join(tpg, F.col("tpg.training_product_group_key") == F.col("tc.training_course_id"), "left")
-    .join(tsg, F.col("tsg.training_state_group_key")   == F.col("tc.training_course_id"), "left")
-    .join(p,   F.col("p.product_id")                   == F.col("tpg.product_id"),         "left")
-    .join(s,   F.col("s.state_code")                   == F.col("tsg.state_code"),          "left")
+    .join(tpg, F.col("tpg.training_product_group_key") == F.col("tc.training_product_group_key"), "left")
+    .join(tsg, F.col("tsg.training_state_group_key")   == F.col("tc.training_state_group_key"),   "left")
+    .join(p,   F.col("p.product_id")                   == F.col("tpg.product_id"),                "left")
+    .join(s,   F.col("s.state_code")                   == F.col("tsg.state_code"),                "left")
 )
 
 
@@ -112,15 +111,15 @@ gold_df = (
     joined_df
     # ── Surrogate key ──────────────────────────────────────────────────────
     .withColumn("product_training_key", make_surrogate_key(  # noqa: F821  # type: ignore[name-defined]
-        F.col("tc.training_code"),
-        F.col("tc.training_name"),
+        F.col("tc.training_course_id"),
+        F.col("tc.course_name"),
         F.col("tpg.product_id"),
         F.col("tsg.state_code"),
     ))
-    # ── Business key ───────────────────────────────────────────────────────
-    .withColumn("training_code",  F.col("tc.training_code").cast("string"))
+    # ── Business key: training_course_id cast to STRING ────────────────────
+    .withColumn("training_code",  F.col("tc.training_course_id").cast("string"))
     # ── Training course attributes ─────────────────────────────────────────
-    .withColumn("training_name",  F.col("tc.training_name").cast("string"))
+    .withColumn("training_name",  F.col("tc.course_name").cast("string"))
     .withColumn("context",        F.col("tc.context").cast("string"))
     .withColumn("description",    F.col("tc.description").cast("string"))
     # ── Product association ─────────────────────────────────────────────────
