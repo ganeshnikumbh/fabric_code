@@ -1,10 +1,11 @@
 # Notebook: nb_gold_fact_agent_training_event
 # Layer:    Gold
 # Purpose:  Full-refresh load of gold.fact_agent_training_event from
-#           lh_silver.dbo.agent_training_base_current (SCD2 _current view).
+#           lh_silver.silver_s2.agent_training_base_current (SCD2 _current view).
 #
 # FK resolution strategy (joins to gold dimension tables):
-#   agent_key            → gold.dim_agent          on agent_number (is_current)
+#   agent_key            → lh_silver.silver_s2.agent_base_current to resolve agent_number
+#                          from agent_id, then → lh_gold.gold.dim_agent on agent_number
 #   product_training_key → gold.dim_product_training on training_code
 #                          NOTE: dim_product_training has compound grain
 #                          (course × product × state).  If agent_training_base
@@ -52,8 +53,8 @@ _required = {
 }
 validate_required_params(_required)  # noqa: F821  # type: ignore[name-defined]
 
-_SOURCE_VIEW  = "lh_silver.dbo.agent_training_base_current"
-_TARGET_TABLE = "gold.fact_agent_training_event"
+_SOURCE_VIEW  = "lh_silver.silver_s2.agent_training_base_current"
+_TARGET_TABLE = "lh_gold.gold.fact_agent_training_event"
 
 print("=" * 65)
 print("  nb_gold_fact_agent_training_event — START")
@@ -72,15 +73,17 @@ print("=" * 65)
 print("\n[1/4] Reading source and dimension tables")
 
 src_df         = spark.table(_SOURCE_VIEW)
-dim_agent_df   = spark.table("gold.dim_agent")
-dim_pt_df      = spark.table("gold.dim_product_training")
-dim_date_df    = spark.table("gold.dim_date")
+agent_base_df  = spark.table("lh_silver.silver_s2.agent_base_current")
+dim_agent_df   = spark.table("lh_gold.gold.dim_agent")
+dim_pt_df      = spark.table("lh_gold.gold.dim_product_training")
+dim_date_df    = spark.table("lh_gold.gold.dim_date")
 
 source_count = src_df.count()
 print(f"  {_SOURCE_VIEW:<50} : {source_count:,}")
-print(f"  gold.dim_agent                                     : {dim_agent_df.count():,}")
-print(f"  gold.dim_product_training                          : {dim_pt_df.count():,}")
-print(f"  gold.dim_date                                      : {dim_date_df.count():,}")
+print(f"  lh_silver.silver_s2.agent_base_current             : {agent_base_df.count():,}")
+print(f"  lh_gold.gold.dim_agent                             : {dim_agent_df.count():,}")
+print(f"  lh_gold.gold.dim_product_training                  : {dim_pt_df.count():,}")
+print(f"  lh_gold.gold.dim_date                              : {dim_date_df.count():,}")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -124,12 +127,22 @@ date_lookup = (
     )
 )
 
-# ── Prepare source: derive date columns and natural keys ────────────────────────
+# ── Prepare source: derive date columns; enrich with agent_number from silver ───
+# agent_training_base has agent_id (INT) but not agent_number.
+# Join to agent_base_current to resolve agent_number before looking up dim_agent.
 
 src_prepared = (
     src_df
-    .withColumn("completion_date",  F.col("completion_timestamp").cast("date"))
-    .withColumn("expiration_date",  F.col("expiration_timestamp").cast("date"))
+    .withColumn("completion_date", F.col("completion_timestamp").cast("date"))
+    .withColumn("expiration_date", F.col("expiration_timestamp").cast("date"))
+    .join(
+        agent_base_df.select(
+            F.col("agent_id").alias("ab_agent_id"),
+            F.col("agent_number").alias("ab_agent_number"),
+        ),
+        F.col("agent_id") == F.col("ab_agent_id"),
+        "left",
+    )
 )
 
 # ── Join to dimensions ─────────────────────────────────────────────────────────
@@ -137,10 +150,10 @@ src_prepared = (
 fact_df = (
     src_prepared.alias("at")
 
-    # agent_key — join on agent_number
+    # agent_key — join on agent_number resolved from agent_base_current
     .join(
         agent_lookup.alias("da"),
-        F.col("at.agent_number") == F.col("da.lkp_agent_number"),
+        F.col("at.ab_agent_number") == F.col("da.lkp_agent_number"),
         "left",
     )
 

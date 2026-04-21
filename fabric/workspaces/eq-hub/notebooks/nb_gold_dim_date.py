@@ -1,6 +1,6 @@
 # Notebook: nb_gold_dim_date
 # Layer:    Gold
-# Purpose:  Full-refresh load of gold.dim_date from lh_silver.dbo.date_base.
+# Purpose:  Full-refresh load of gold.dim_date from lh_silver.silver_s2.date_base.
 #           Derives fiscal_year, fiscal_quarter, is_quarter_end from calendar
 #           attributes (fiscal year assumed to start 1-Jul — confirm with business).
 #
@@ -40,8 +40,8 @@ _required = {
 }
 validate_required_params(_required)  # noqa: F821  # type: ignore[name-defined]
 
-_SOURCE_VIEW  = "lh_silver.dbo.date_base"
-_TARGET_TABLE = "gold.dim_date"
+_SOURCE_VIEW  = "lh_silver.silver_s2.date_base"
+_TARGET_TABLE = "lh_gold.gold.dim_date"
 
 print("=" * 65)
 print("  nb_gold_dim_date — START")

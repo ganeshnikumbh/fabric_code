@@ -4,11 +4,11 @@
 #           Grain: one row per distinct (training course × product × state).
 #
 # Source joins:
-#   tc   = lh_silver.dbo.training_course_base_current        (driving)
-#   tpg  = lh_silver.dbo.training_product_group_base_current
-#   tsg  = lh_silver.dbo.training_state_group_base_current
-#   p    = lh_silver.dbo.product_base_current
-#   s    = lh_silver.dbo.state_base_current
+#   tc   = lh_silver.silver_s2.training_course_base_current        (driving)
+#   tpg  = lh_silver.silver_s2.training_product_group_base_current
+#   tsg  = lh_silver.silver_s2.training_state_group_base_current
+#   p    = lh_silver.silver_s2.product_base_current
+#   s    = lh_silver.silver_s2.state_base_current
 #
 # ⚠  Open items (confirm before deploying — see mapping doc open items #4–6):
 #   - Join key assumption: tpg.training_product_group_key = tc.training_course_id
@@ -52,7 +52,7 @@ _required = {
 }
 validate_required_params(_required)  # noqa: F821  # type: ignore[name-defined]
 
-_TARGET_TABLE = "gold.dim_product_training"
+_TARGET_TABLE = "lh_gold.gold.dim_product_training"
 
 print("=" * 65)
 print("  nb_gold_dim_product_training — START")
@@ -69,11 +69,11 @@ print("=" * 65)
 
 print("\n[1/3] Reading silver source views")
 
-tc_df  = spark.table("lh_silver.dbo.training_course_base_current")
-tpg_df = spark.table("lh_silver.dbo.training_product_group_base_current")
-tsg_df = spark.table("lh_silver.dbo.training_state_group_base_current")
-p_df   = spark.table("lh_silver.dbo.product_base_current")
-s_df   = spark.table("lh_silver.dbo.state_base_current")
+tc_df  = spark.table("lh_silver.silver_s2.training_course_base_current")
+tpg_df = spark.table("lh_silver.silver_s2.training_product_group_base_current").filter(F.col("is_required") == True)  # noqa: E712
+tsg_df = spark.table("lh_silver.silver_s2.training_state_group_base_current").filter(F.col("is_required") == True)   # noqa: E712
+p_df   = spark.table("lh_silver.silver_s2.product_base_current")
+s_df   = spark.table("lh_silver.silver_s2.state_base_current")
 
 print(f"  training_course_base_current        : {tc_df.count():,}")
 print(f"  training_product_group_base_current : {tpg_df.count():,}")

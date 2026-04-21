@@ -1,7 +1,7 @@
 # Notebook: nb_gold_dim_agent
 # Layer:    Gold
 # Purpose:  Full-refresh load of gold.dim_agent from
-#           lh_silver.dbo.agent_base_current (SCD2 _current view).
+#           lh_silver.silver_s2.agent_base_current (SCD2 _current view).
 #
 #           agency_name is NOT available in agent_base; the column is written
 #           as NULL until the source join path is confirmed (see open item #3 in
@@ -44,8 +44,8 @@ _required = {
 }
 validate_required_params(_required)  # noqa: F821  # type: ignore[name-defined]
 
-_SOURCE_VIEW  = "lh_silver.dbo.agent_base_current"
-_TARGET_TABLE = "gold.dim_agent"
+_SOURCE_VIEW  = "lh_silver.silver_s2.agent_base_current"
+_TARGET_TABLE = "lh_gold.gold.dim_agent"
 
 print("=" * 65)
 print("  nb_gold_dim_agent — START")
