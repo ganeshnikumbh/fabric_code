@@ -71,23 +71,10 @@ print(f"  Source rows : {source_count:,}")
 print("\n[2/3] Applying transformations")
 
 
-def _make_sk(*col_exprs):
-    """First 15 hex chars of MD5 over pipe-delimited NULLs-as-empty → BIGINT."""
-    return (
-        F.conv(
-            F.substring(
-                F.md5(F.concat_ws("|", *[F.coalesce(e.cast("string"), F.lit("")) for e in col_exprs])),
-                1, 15,
-            ),
-            16, 10,
-        ).cast("long")
-    )
-
-
 gold_df = (
     src_df
     # ── Surrogate key ──────────────────────────────────────────────────────
-    .withColumn("date_key", _make_sk(
+    .withColumn("date_key", make_surrogate_key(  # noqa: F821  # type: ignore[name-defined]
         F.col("calendar_timestamp"),
         F.col("day_of_month"),
         F.col("day_of_week"),

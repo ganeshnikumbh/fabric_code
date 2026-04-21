@@ -170,19 +170,11 @@ fact_df = (
 
 gold_df = (
     fact_df
-    .withColumn("agent_training_event_key",
-        F.conv(
-            F.substring(
-                F.md5(F.concat_ws("|",
-                    F.coalesce(F.col("at.agent_id").cast("string"),            F.lit("")),
-                    F.coalesce(F.col("at.training_course_id").cast("string"),  F.lit("")),
-                    F.coalesce(F.col("at.completion_timestamp").cast("string"), F.lit("")),
-                )),
-                1, 15,
-            ),
-            16, 10,
-        ).cast("long")
-    )
+    .withColumn("agent_training_event_key", make_surrogate_key(  # noqa: F821  # type: ignore[name-defined]
+        F.col("at.agent_id"),
+        F.col("at.training_course_id"),
+        F.col("at.completion_timestamp"),
+    ))
     .withColumn("agent_key",            F.col("da.resolved_agent_key"))
     .withColumn("product_training_key", F.col("dpt.resolved_product_training_key"))
     .withColumn("completion_date_key",  F.col("dd_comp.resolved_date_key"))

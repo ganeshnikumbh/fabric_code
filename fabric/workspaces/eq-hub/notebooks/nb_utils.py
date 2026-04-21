@@ -660,6 +660,46 @@ def deduplicate_by_md5(df, label: str = ""):
     return deduped
 
 
+def make_surrogate_key(*col_exprs):
+    """
+    Compute a deterministic BIGINT surrogate key from one or more Column expressions.
+
+    Algorithm:
+      1. Coerce each expression to STRING, replacing NULL with empty string.
+      2. Concatenate with pipe delimiter.
+      3. Take the MD5 digest (32 hex chars).
+      4. Take the first 15 hex characters (60 bits — fits safely in BIGINT).
+      5. Convert hex string to decimal, cast to LONG (BIGINT).
+
+    Parameters
+    ----------
+    *col_exprs : One or more PySpark Column expressions (F.col(...), literals, etc.)
+                 passed in the desired hashing order.  The order is significant —
+                 changing it will produce a different key for the same data.
+
+    Returns
+    -------
+    PySpark Column expression that evaluates to BIGINT.
+
+    Example
+    -------
+    df = df.withColumn("agent_key", make_surrogate_key(
+        F.col("agent_number"),
+        F.col("display_name"),
+        F.col("agent_type"),
+    ))
+    """
+    return (
+        F.conv(
+            F.substring(
+                F.md5(F.concat_ws("|", *[F.coalesce(e.cast("string"), F.lit("")) for e in col_exprs])),
+                1, 15,
+            ),
+            16, 10,
+        ).cast("long")
+    )
+
+
 def write_delta_create(
     df,
     qualified_target: str,

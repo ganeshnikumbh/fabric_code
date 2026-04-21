@@ -75,24 +75,11 @@ print(f"  Source rows : {source_count:,}")
 print("\n[2/3] Applying transformations")
 
 
-def _make_sk(*col_exprs):
-    """First 15 hex chars of MD5 over pipe-delimited NULLs-as-empty → BIGINT."""
-    return (
-        F.conv(
-            F.substring(
-                F.md5(F.concat_ws("|", *[F.coalesce(e.cast("string"), F.lit("")) for e in col_exprs])),
-                1, 15,
-            ),
-            16, 10,
-        ).cast("long")
-    )
-
-
 gold_df = (
     src_df
     # ── Surrogate key ──────────────────────────────────────────────────────
     # Input: all agent business columns (excludes audit + SCD2 metadata cols)
-    .withColumn("agent_key", _make_sk(
+    .withColumn("agent_key", make_surrogate_key(  # noqa: F821  # type: ignore[name-defined]
         F.col("agent_number"),
         F.col("display_name"),
         F.col("agent_type"),
@@ -116,12 +103,7 @@ gold_df = (
     # ── Agency context — NOT IN agent_base; NULL until source confirmed ────
     .withColumn("agency_name", F.lit(None).cast("string"))
     # ── FK to future dim_client ────────────────────────────────────────────
-    .withColumn("agent_client_key",
-        F.conv(
-            F.substring(F.md5(F.coalesce(F.col("client_id").cast("string"), F.lit(""))), 1, 15),
-            16, 10,
-        ).cast("long")
-    )
+    .withColumn("agent_client_key", make_surrogate_key(F.col("client_id")))  # noqa: F821  # type: ignore[name-defined]
     # ── SCD2 tracking (carried from silver) ────────────────────────────────
     .withColumn("effective_timestamp",  F.col("effective_timestamp").cast("timestamp"))
     .withColumn("expiration_timestamp", F.col("expiration_timestamp").cast("timestamp"))

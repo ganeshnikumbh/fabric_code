@@ -108,23 +108,10 @@ joined_df = (
 )
 
 
-def _make_sk(*col_exprs):
-    """First 15 hex chars of MD5 over pipe-delimited NULLs-as-empty → BIGINT."""
-    return (
-        F.conv(
-            F.substring(
-                F.md5(F.concat_ws("|", *[F.coalesce(e.cast("string"), F.lit("")) for e in col_exprs])),
-                1, 15,
-            ),
-            16, 10,
-        ).cast("long")
-    )
-
-
 gold_df = (
     joined_df
     # ── Surrogate key ──────────────────────────────────────────────────────
-    .withColumn("product_training_key", _make_sk(
+    .withColumn("product_training_key", make_surrogate_key(  # noqa: F821  # type: ignore[name-defined]
         F.col("tc.training_code"),
         F.col("tc.training_name"),
         F.col("tpg.product_id"),
@@ -137,15 +124,7 @@ gold_df = (
     .withColumn("context",        F.col("tc.context").cast("string"))
     .withColumn("description",    F.col("tc.description").cast("string"))
     # ── Product association ─────────────────────────────────────────────────
-    .withColumn("product_key",
-        F.conv(
-            F.substring(
-                F.md5(F.coalesce(F.col("tpg.product_id").cast("string"), F.lit(""))),
-                1, 15,
-            ),
-            16, 10,
-        ).cast("long")
-    )
+    .withColumn("product_key", make_surrogate_key(F.col("tpg.product_id")))  # noqa: F821  # type: ignore[name-defined]
     .withColumn("product_name",   F.col("p.product_name").cast("string"))
     # ── State association ───────────────────────────────────────────────────
     .withColumn("state_code",     F.col("tsg.state_code").cast("string"))
