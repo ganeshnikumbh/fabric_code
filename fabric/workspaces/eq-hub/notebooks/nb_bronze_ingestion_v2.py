@@ -154,10 +154,12 @@ try:
     target_schema    = (config["target_schema"]    or "bronze_eqwarehouse").strip()
     qualified_target = f"{target_schema}.{p_target_table}"
     partition_cols   = [c.strip() for c in (config["partition_by_column_names"] or "").split(",") if c.strip()]
+    src_busn_asst    = (config["src_busn_asst"] or "").strip() or None
 
     print(f"  source_id        : {source_id}")
     print(f"  source_schema    : {source_schema or '(none)'}")
     print(f"  partition_cols   : {partition_cols or '(none)'}")
+    print(f"  src_busn_asst    : {src_busn_asst or '(none)'}")
 
     # ── 3b. schema_config ────────────────────────────────────────────────────
     schema_config_df = schema_config_df_from_json(p_schema_config_json)  # noqa: F821  # type: ignore[name-defined]
@@ -236,6 +238,7 @@ try:
         source_system       = p_source_system,
         ingestion_run_id    = p_ingestion_run_id,
         ingestion_timestamp = p_ingestion_timestamp,
+        src_busn_asst       = src_busn_asst,
     )
 
     # ── MD5 hash ──────────────────────────────────────────────────────────────

@@ -135,8 +135,10 @@ try:
         [c.strip() for c in (ic_config["partition_by_column_names"] or "").split(",") if c.strip()]
         if ic_config else []
     )
+    src_busn_asst  = ((ic_config["src_busn_asst"] or "").strip() or None) if ic_config else None
     print(f"  is_scd2              : {is_scd2}")
     print(f"  partition_cols       : {partition_cols or '(none)'}")
+    print(f"  src_busn_asst        : {src_busn_asst or '(none)'}")
 
     # ══════════════════════════════════════════════════════════════════════════
     # SECTION 3 — Read Source Data from lh_bronze
@@ -174,9 +176,11 @@ try:
     # ── Drop bronze audit columns and replace with silver-run values ──────────
     # These columns are carried through from bronze but represent the bronze run —
     # silver has its own run identity, date, and system context.
+    # src_busn_asst is included so it is re-applied from ingestion_config,
+    # ensuring consistency even if bronze was written before this column existed.
     _BRONZE_AUDIT_COLS = {
         "ingestion_date", "data_timestamp", "source_system",
-        "ingestion_run_id", "ingestion_timestamp",
+        "ingestion_run_id", "ingestion_timestamp", "src_busn_asst",
     }
     _cols_to_drop = [c for c in source_df.columns if c in _BRONZE_AUDIT_COLS]
     if _cols_to_drop:
@@ -189,6 +193,7 @@ try:
         source_system       = p_source_system,
         ingestion_run_id    = p_ingestion_run_id,
         ingestion_timestamp = p_ingestion_timestamp,
+        src_busn_asst       = src_busn_asst,
     )
     print(f"  Replaced audit cols: {_cols_to_drop or '(none found — added fresh)'}")
 

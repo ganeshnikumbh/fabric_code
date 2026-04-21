@@ -114,7 +114,7 @@ def get_ingestion_config(jdbc_url: str) -> DataFrame:
         "SELECT source_id, source_name, source_type, source_schema, entity_name, "
         "       target_lakehouse, target_schema, target_table, "
         "       load_type, watermark_column, watermark_type, batch_size, "
-        "       partition_by_column_names, is_scd2 "
+        "       partition_by_column_names, is_scd2, src_busn_asst "
         "FROM dbo.ingestion_config "
         "WHERE active_flag = 1"
     )
@@ -134,7 +134,7 @@ def get_ingestion_config_by_source(jdbc_url: str, source_name: str) -> DataFrame
         f"SELECT source_id, source_name, source_type, source_schema, entity_name, "
         f"       target_lakehouse, target_schema, target_table, "
         f"       load_type, watermark_column, watermark_type, batch_size, "
-        f"       partition_by_column_names, is_scd2 "
+        f"       partition_by_column_names, is_scd2, src_busn_asst "
         f"FROM dbo.ingestion_config "
         f"WHERE LOWER(source_name) = LOWER('{source_name}') "
         f"  AND active_flag = 1"
@@ -153,7 +153,7 @@ def get_ingestion_config_for_entity(
     df = read_mssql_query(
         jdbc_url,
         f"SELECT TOP 1 source_id, source_schema, load_type, watermark_column, watermark_type, "
-        f"             batch_size, partition_by_column_names, is_scd2 "
+        f"             batch_size, partition_by_column_names, is_scd2, src_busn_asst "
         f"FROM dbo.ingestion_config "
         f"WHERE LOWER(entity_name)  = LOWER('{source_table}') "
         f"  AND LOWER(target_table) = LOWER('{target_table}') "
@@ -374,6 +374,7 @@ def get_ingestion_config_schema() -> StructType:
         StructField("batch_size",                IntegerType(), nullable=True),
         StructField("partition_by_column_names", StringType(),  nullable=True),
         StructField("is_scd2",                   IntegerType(), nullable=True),
+        StructField("src_busn_asst",             StringType(),  nullable=True),
     ])
 
 
@@ -541,9 +542,10 @@ def add_audit_columns(
     source_system:       str,
     ingestion_run_id:    str,
     ingestion_timestamp: str,
+    src_busn_asst:       str = None,
 ):
     """
-    Append the five standard pipeline audit columns to a DataFrame.
+    Append the standard pipeline audit columns to a DataFrame.
 
     Parameters
     ----------
@@ -555,11 +557,15 @@ def add_audit_columns(
     source_system       : Source system name, e.g. 'EQ_Warehouse'.
     ingestion_run_id    : Pipeline run UUID string.
     ingestion_timestamp : Pipeline run timestamp string → cast to timestamp.
+    src_busn_asst       : Business assistant / source grouping tag from ingestion_config
+                          (e.g. 'elic').  Written to every bronze and silver row so that
+                          downstream consumers can partition or filter by business unit.
 
     Returns
     -------
     DataFrame with audit columns appended:
-      ingestion_date, data_timestamp, source_system, ingestion_run_id, ingestion_timestamp
+      ingestion_date, data_timestamp, source_system, ingestion_run_id,
+      ingestion_timestamp, src_busn_asst
     """
     from pyspark.sql.column import Column as _Column
     data_ts_col = (
@@ -567,14 +573,16 @@ def add_audit_columns(
         if isinstance(data_timestamp, _Column)
         else F.lit(data_timestamp).cast(TimestampType())
     )
-    return (
+    result = (
         df
         .withColumn("ingestion_date",      F.lit(ingestion_date).cast("date"))
         .withColumn("data_timestamp",      data_ts_col)
         .withColumn("source_system",       F.lit(source_system).cast(StringType()))
         .withColumn("ingestion_run_id",    F.lit(ingestion_run_id).cast(StringType()))
         .withColumn("ingestion_timestamp", F.lit(ingestion_timestamp).cast(TimestampType()))
+        .withColumn("src_busn_asst",       F.lit(src_busn_asst).cast(StringType()))
     )
+    return result
 
 
 def compute_md5_hash(df, hash_cols_ordered: list):
