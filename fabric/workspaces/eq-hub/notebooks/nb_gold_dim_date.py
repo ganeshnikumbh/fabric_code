@@ -73,21 +73,10 @@ print("\n[2/3] Applying transformations")
 
 gold_df = (
     src_df
-    # ── Surrogate key ──────────────────────────────────────────────────────
-    .withColumn("date_key", make_surrogate_key(  # noqa: F821  # type: ignore[name-defined]
-        F.col("calendar_timestamp"),
-        F.col("day_of_month"),
-        F.col("day_of_week"),
-        F.col("day_name"),
-        F.col("week_of_year"),
-        F.col("month"),
-        F.col("month_name"),
-        F.col("quarter"),
-        F.col("year"),
-        F.col("is_weekday"),
-        F.col("is_holiday"),
-        F.col("is_last_day_of_month"),
-    ))
+    # ── Surrogate key — YYYYMMDD integer (e.g. 20250409) ──────────────────
+    .withColumn("date_key",
+        F.date_format(F.col("calendar_timestamp").cast("date"), "yyyyMMdd").cast("long")
+    )
     # ── Natural key ────────────────────────────────────────────────────────
     .withColumn("calendar_date",   F.col("calendar_timestamp").cast("date"))
     # ── Day attributes ─────────────────────────────────────────────────────
