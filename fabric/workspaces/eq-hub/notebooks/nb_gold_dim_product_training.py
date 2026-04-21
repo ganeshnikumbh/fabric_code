@@ -125,27 +125,21 @@ gold_df = (
     # ── Product association ─────────────────────────────────────────────────
     .withColumn("product_key", make_surrogate_key(F.col("tpg.product_id")))  # noqa: F821  # type: ignore[name-defined]
     .withColumn("product_name",   F.col("p.product_name").cast("string"))
-    # ── State association ───────────────────────────────────────────────────
-    .withColumn("state_code",     F.col("tsg.state_code").cast("string"))
-    .withColumn("state_name",     F.col("s.state_name").cast("string"))
-    # ── Pipeline audit ─────────────────────────────────────────────────────
-    .withColumn("src_busn_asst",       F.lit(p_src_busn_asst).cast("string"))
-    .withColumn("ingestion_date",      F.lit(p_ingestion_date).cast("date"))
-    .withColumn("ingestion_timestamp", F.lit(p_ingestion_timestamp).cast("timestamp"))
     # ── Select final gold columns in DDL order ─────────────────────────────
+    # state_code exists in both tsg and s after the join — reference tsg explicitly.
     .select(
-        "product_training_key",
-        "training_code",
-        "training_name",
-        "context",
-        "description",
-        "product_key",
-        "product_name",
-        "state_code",
-        "state_name",
-        "src_busn_asst",
-        "ingestion_date",
-        "ingestion_timestamp",
+        F.col("product_training_key"),
+        F.col("training_code"),
+        F.col("training_name"),
+        F.col("context"),
+        F.col("description"),
+        F.col("product_key"),
+        F.col("product_name"),
+        F.col("tsg.state_code").cast("string").alias("state_code"),
+        F.col("s.state_name").cast("string").alias("state_name"),
+        F.lit(p_src_busn_asst).cast("string").alias("src_busn_asst"),
+        F.lit(p_ingestion_date).cast("date").alias("ingestion_date"),
+        F.lit(p_ingestion_timestamp).cast("timestamp").alias("ingestion_timestamp"),
     )
 )
 
