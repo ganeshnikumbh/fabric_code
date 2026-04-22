@@ -7,13 +7,15 @@
 --                 ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at
 -- ============================================================
 
--- [01] Territory (7 columns)
+-- [01] Territory (4 columns)
 INSERT INTO schema_config
     (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
 VALUES
   (   1, 'EQ_Warehouse', 'Territory'                                 , 'territory_base', 'TerritoryPK'                               , 'territory_id'                              , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  (   2, 'EQ_Warehouse', 'Territory'                                 , 'territory_base', 'TerritoryName'                             , 'territory_name'                            , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE());
+  (   2, 'EQ_Warehouse', 'Territory'                                 , 'territory_base', 'TerritoryName'                             , 'territory_name'                            , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
+  (   3, 'EQ_Warehouse', 'Territory'                                 , 'territory_base', 'ClientFK'                                  , 'client_id'                                 , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
+  (   4, 'EQ_Warehouse', 'Territory'                                 , 'territory_base', 'TerritoryActive'                           , 'is_territory_active'                       , 'BOOLEAN'             ,   4, 1, 0, 1, GETUTCDATE());
 
 -- [02] HierarchyTerritory (8 columns)
 INSERT INTO schema_config
@@ -61,7 +63,7 @@ VALUES
   (  43, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'hierarchy_bridge_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE()),
   (  44, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'hierarchy_bridge_base', 'StopDate'                                  , 'stop_timestamp'                            , 'TIMESTAMP'           ,  10, 1, 0, 1, GETUTCDATE());
 
--- [06] Hierarchy (10 columns)
+-- [06] Hierarchy (5 columns)
 INSERT INTO schema_config
     (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
@@ -69,7 +71,8 @@ VALUES
   (  51, 'EQ_Warehouse', 'Hierarchy'                                 , 'hierarchy_base', 'HierarchyPK'                               , 'hierarchy_id'                              , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
   (  52, 'EQ_Warehouse', 'Hierarchy'                                 , 'hierarchy_base', 'HierarchySetKey'                           , 'hierarchy_set_key'                         , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
   (  53, 'EQ_Warehouse', 'Hierarchy'                                 , 'hierarchy_base', 'AgentContractFK'                           , 'agent_contract_id'                         , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  (  54, 'EQ_Warehouse', 'Hierarchy'                                 , 'hierarchy_base', 'ReverseLevel'                              , 'reverse_level'                             , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE());
+  (  54, 'EQ_Warehouse', 'Hierarchy'                                 , 'hierarchy_base', 'Level'                                     , 'level'                                     , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE()),
+  (  55, 'EQ_Warehouse', 'Hierarchy'                                 , 'hierarchy_base', 'ReverseLevel'                              , 'reverse_level'                             , 'INT'                 ,   5, 1, 0, 1, GETUTCDATE());
 
 -- [07] CommissionLevelRank (8 columns)
 INSERT INTO schema_config
@@ -233,20 +236,23 @@ VALUES
   ( 204, 'EQ_Warehouse', 'IndexValue_Group'                          , 'index_value_group_base', 'IndexValue'                                , 'index_value'                               , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE()),
   ( 205, 'EQ_Warehouse', 'IndexValue_Group'                          , 'index_value_group_base', 'Change'                                    , 'change_amount'                             , 'DECIMAL(18,4)'       ,   7, 1, 0, 1, GETUTCDATE());
 
--- [18] ExternalAccount_Group (14 columns)
+-- [18] ExternalAccount_Group (12 columns)
 INSERT INTO schema_config
     (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
 VALUES
   ( 211, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'ExternalAccountGroupPK'                    , 'external_account_group_id'                 , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
   ( 212, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'ExternalAccountGroupKey'                   , 'external_account_group_key'                , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 213, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'ExternalCompanyName'                       , 'external_company_name'                     , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 214, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'AccountType'                               , 'account_type'                              , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 215, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'AccountNumber'                             , 'account_number'                            , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 216, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'Status'                                    , 'status'                                    , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 217, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'Active'                                    , 'is_active'                                 , 'BOOLEAN'             ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 218, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 219, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE());
+  ( 213, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'ExternalAccountType'                       , 'external_account_type'                     , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
+  ( 214, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'Company'                                   , 'company_name'                              , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
+  ( 215, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'RoutingNumber'                             , 'routing_number'                            , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
+  ( 216, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'AccountNumber'                             , 'account_number'                            , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
+  ( 217, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'VerificationCode'                          , 'verification_code'                         , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
+  ( 218, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'VerificationResponse'                      , 'verification_response'                     , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
+  ( 219, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'VerificationDate'                          , 'verification_timestamp'                    , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE()),
+  ( 220, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'Active'                                    , 'is_active'                                 , 'BOOLEAN'             ,  10, 1, 0, 1, GETUTCDATE()),
+  ( 221, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,  11, 1, 0, 1, GETUTCDATE()),
+  ( 222, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,  12, 1, 0, 1, GETUTCDATE());
 
 -- [19] ContractValue_Group (13 columns)
 INSERT INTO schema_config
@@ -767,35 +773,43 @@ VALUES
   ( 705, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'ProductPK'                                 , 'product_id'                                , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
   ( 706, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'ProductName'                               , 'product_name'                              , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
   ( 707, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'MarketingName'                             , 'marketing_name'                            , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 708, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'ProductType'                               , 'product_type'                              , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 709, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'CUSIPNumber'                               , 'cusip_number'                              , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 710, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'Context'                                   , 'product_context'                           , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 711, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'GLLOB'                                     , 'gl_line_of_business'                       , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 712, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'Status'                                    , 'status'                                    , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 713, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE());
+  ( 708, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'AltMarketingName'                          , 'alt_marketing_name'                        , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
+  ( 709, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'GroupName'                                 , 'group_name'                                , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
+  ( 710, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'AgentCommStatementAbbr'                    , 'agent_comm_statement_abbr'                 , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
+  ( 711, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'GLAbbr'                                    , 'gl_abbr'                                   , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
+  ( 712, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'GLLOB'                                     , 'gl_line_of_business'                       , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
+  ( 713, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'Context'                                   , 'product_context'                           , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE()),
+  ( 714, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'ProductType'                               , 'product_type'                              , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
+  ( 715, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'CUSIPNumber'                               , 'cusip_number'                              , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE()),
+  ( 716, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'SortOrder'                                 , 'sort_order'                                , 'INT'                 ,  12, 1, 0, 1, GETUTCDATE()),
+  ( 717, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,  13, 1, 0, 1, GETUTCDATE()),
+  ( 718, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'Status'                                    , 'status'                                    , 'STRING'              ,  14, 1, 0, 1, GETUTCDATE());
 
--- [51] Agent (20 columns)
+-- [51] Agent (18 columns)
 INSERT INTO schema_config
     (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
 VALUES
   ( 719, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AgentPK'                                   , 'agent_id'                                  , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 720, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AgentNumber'                               , 'agent_number'                              , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 721, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'DisplayName'                               , 'display_name'                              , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 722, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'NPN'                                       , 'national_producer_number'                  , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 723, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'NASD'                                      , 'nasd_finra_number'                         , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 724, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AgentType'                                 , 'agent_type'                                , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 725, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'Status'                                    , 'status'                                    , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 726, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'HireDate'                                  , 'hire_date'                                 , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 727, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'TerminationDate'                           , 'termination_date'                          , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 728, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'ClientFK'                                  , 'client_id'                                 , 'INT'                 ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 729, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AddressGroupFK'                            , 'address_group_id'                          , 'INT'                 ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 730, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AdditionalInfoGroupFK'                     , 'additional_info_group_id'                  , 'INT'                 ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 731, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 732, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'StartTimestamp'                            , 'start_timestamp'                           , 'TIMESTAMP'           ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 733, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'EndTimestamp'                              , 'end_timestamp'                             , 'TIMESTAMP'           ,  15, 1, 0, 1, GETUTCDATE());
+  ( 720, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'SourceKey'                                 , 'source_key'                                , 'BIGINT'              ,   2, 1, 0, 1, GETUTCDATE()),
+  ( 721, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'ClientFK'                                  , 'client_id'                                 , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
+  ( 722, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'DisplayName'                               , 'display_name'                              , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
+  ( 723, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AgentNumber'                               , 'agent_number'                              , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
+  ( 724, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'NoteGroupKey'                              , 'note_group_key'                            , 'INT'                 ,   6, 1, 0, 1, GETUTCDATE()),
+  ( 725, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'RequirementGroupKey'                       , 'requirement_group_key'                     , 'INT'                 ,   7, 1, 0, 1, GETUTCDATE()),
+  ( 726, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AgentLicenseGroupKey'                      , 'agent_license_group_key'                   , 'INT'                 ,   8, 1, 0, 1, GETUTCDATE()),
+  ( 727, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AgentPrincipalGroupKey'                    , 'agent_principal_group_key'                 , 'INT'                 ,   9, 1, 0, 1, GETUTCDATE()),
+  ( 728, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AgentSummaryGroupKey'                      , 'agent_summary_group_key'                   , 'INT'                 ,  10, 1, 0, 1, GETUTCDATE()),
+  ( 729, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'NPN'                                       , 'national_producer_number'                  , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE()),
+  ( 730, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'NASD'                                      , 'nasd_finra_number'                         , 'STRING'              ,  12, 1, 0, 1, GETUTCDATE()),
+  ( 731, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AgentType'                                 , 'agent_type'                                , 'STRING'              ,  13, 1, 0, 1, GETUTCDATE()),
+  ( 732, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'HireDate'                                  , 'hire_date'                                 , 'TIMESTAMP'           ,  14, 1, 0, 1, GETUTCDATE()),
+  ( 733, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'TerminationDate'                           , 'termination_date'                          , 'TIMESTAMP'           ,  15, 1, 0, 1, GETUTCDATE()),
+  ( 734, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'Status'                                    , 'status'                                    , 'STRING'              ,  16, 1, 0, 1, GETUTCDATE()),
+  ( 735, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,  17, 1, 0, 1, GETUTCDATE()),
+  ( 736, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,  18, 1, 0, 1, GETUTCDATE());
 
--- [52] Client (39 columns)
+-- [52] Client (38 columns)
 INSERT INTO schema_config
     (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
@@ -817,38 +831,82 @@ VALUES
   ( 753, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Email'                                     , 'email_address'                             , 'STRING'              ,  15, 1, 0, 1, GETUTCDATE()),
   ( 754, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Fax'                                       , 'fax_number'                                , 'STRING'              ,  16, 1, 0, 1, GETUTCDATE()),
   ( 755, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'BirthDate'                                 , 'birth_date'                                , 'TIMESTAMP'           ,  17, 1, 0, 1, GETUTCDATE()),
-  ( 756, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'DeathDate'                                 , 'death_date'                                , 'TIMESTAMP'           ,  18, 1, 0, 1, GETUTCDATE()),
+  ( 756, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'DateOfDeath'                               , 'date_of_death'                             , 'TIMESTAMP'           ,  18, 1, 0, 1, GETUTCDATE()),
   ( 757, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Status'                                    , 'status'                                    , 'STRING'              ,  19, 1, 0, 1, GETUTCDATE()),
   ( 758, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'PayPreference'                             , 'pay_preference'                            , 'STRING'              ,  20, 1, 0, 1, GETUTCDATE()),
-  ( 759, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'ExternalAccountGroupFK'                    , 'external_account_group_id'                 , 'INT'                 ,  21, 1, 0, 1, GETUTCDATE()),
-  ( 760, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Address1'                                  , 'address_line_1'                            , 'STRING'              ,  22, 1, 0, 1, GETUTCDATE()),
-  ( 761, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Address2'                                  , 'address_line_2'                            , 'STRING'              ,  23, 1, 0, 1, GETUTCDATE()),
-  ( 762, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'City'                                      , 'city'                                      , 'STRING'              ,  24, 1, 0, 1, GETUTCDATE()),
-  ( 763, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'State'                                     , 'state_code'                                , 'STRING'              ,  25, 1, 0, 1, GETUTCDATE()),
-  ( 764, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'ZipCode'                                   , 'zip_code'                                  , 'STRING'              ,  26, 1, 0, 1, GETUTCDATE()),
-  ( 765, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'County'                                    , 'county'                                    , 'STRING'              ,  27, 1, 0, 1, GETUTCDATE()),
-  ( 766, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'CountryCode'                               , 'country_code'                              , 'STRING'              ,  28, 1, 0, 1, GETUTCDATE()),
-  ( 767, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'AdditionalInfoGroupFK'                     , 'additional_info_group_id'                  , 'INT'                 ,  29, 1, 0, 1, GETUTCDATE()),
-  ( 768, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'VerificationDetails'                       , 'verification_details'                      , 'STRING'              ,  30, 1, 0, 1, GETUTCDATE()),
-  ( 769, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'NoNewBusiness'                             , 'no_new_business_indicator'                 , 'BOOLEAN'             ,  31, 1, 0, 1, GETUTCDATE()),
-  ( 770, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,  32, 1, 0, 1, GETUTCDATE()),
-  ( 771, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'StartTimestamp'                            , 'start_timestamp'                           , 'TIMESTAMP'           ,  33, 1, 0, 1, GETUTCDATE()),
-  ( 772, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'EndTimestamp'                              , 'end_timestamp'                             , 'TIMESTAMP'           ,  34, 1, 0, 1, GETUTCDATE());
+  ( 759, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'ExternalAccountGroupKey'                   , 'external_account_group_key'                , 'INT'                 ,  21, 1, 0, 1, GETUTCDATE()),
+  ( 760, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'AddressLine1'                              , 'address_line_1'                            , 'STRING'              ,  22, 1, 0, 1, GETUTCDATE()),
+  ( 761, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'AddressLine2'                              , 'address_line_2'                            , 'STRING'              ,  23, 1, 0, 1, GETUTCDATE()),
+  ( 762, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'AddressLine3'                              , 'address_line_3'                            , 'STRING'              ,  24, 1, 0, 1, GETUTCDATE()),
+  ( 763, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'AddressLine4'                              , 'address_line_4'                            , 'STRING'              ,  25, 1, 0, 1, GETUTCDATE()),
+  ( 764, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'City'                                      , 'city'                                      , 'STRING'              ,  26, 1, 0, 1, GETUTCDATE()),
+  ( 765, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'State'                                     , 'state_code'                                , 'STRING'              ,  27, 1, 0, 1, GETUTCDATE()),
+  ( 766, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'ZipCode'                                   , 'zip_code'                                  , 'STRING'              ,  28, 1, 0, 1, GETUTCDATE()),
+  ( 767, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'County'                                    , 'county'                                    , 'STRING'              ,  29, 1, 0, 1, GETUTCDATE()),
+  ( 768, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Country'                                   , 'country_code'                              , 'STRING'              ,  30, 1, 0, 1, GETUTCDATE()),
+  ( 769, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'AdditionalInfoGroupKey'                    , 'additional_info_group_key'                 , 'INT'                 ,  31, 1, 0, 1, GETUTCDATE()),
+  ( 770, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Verification'                              , 'verification_details'                      , 'STRING'              ,  32, 1, 0, 1, GETUTCDATE()),
+  ( 771, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'NoNewBusinessInd'                          , 'is_no_new_business'                        , 'BOOLEAN'             ,  33, 1, 0, 1, GETUTCDATE()),
+  ( 772, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,  34, 1, 0, 1, GETUTCDATE()),
+  ( 773, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,  35, 1, 0, 1, GETUTCDATE()),
+  ( 774, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,  36, 1, 0, 1, GETUTCDATE());
 
--- [53] Contract (14 columns)
+-- [53] Contract (51 columns)
 INSERT INTO schema_config
     (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
 VALUES
   ( 778, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ContractPK'                                , 'contract_id'                               , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
   ( 779, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ContractNumber'                            , 'contract_number'                           , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 780, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ProductFK'                                 , 'product_id'                                , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 781, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'AgentFK'                                   , 'agent_id'                                  , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 782, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'IssueDate'                                 , 'issue_date'                                , 'TIMESTAMP'           ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 783, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'Status'                                    , 'status_code'                               , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 784, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'StatusDate'                                , 'status_date'                               , 'TIMESTAMP'           ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 785, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'PlanCode'                                  , 'plan_code'                                 , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 786, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'StateCode'                                 , 'issue_state_code'                          , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE());
+  ( 780, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'HierarchyGroupKey'                         , 'hierarchy_group_key'                       , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
+  ( 781, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ContractValueGroupKey'                     , 'contract_value_group_key'                  , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE()),
+  ( 782, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'SurrenderFK'                               , 'surrender_id'                              , 'INT'                 ,   5, 1, 0, 1, GETUTCDATE()),
+  ( 783, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ProductFK'                                 , 'product_id'                                , 'INT'                 ,   6, 1, 0, 1, GETUTCDATE()),
+  ( 784, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'OwnerFK'                                   , 'owner_client_id'                           , 'INT'                 ,   7, 1, 0, 1, GETUTCDATE()),
+  ( 785, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'Owner2FK'                                  , 'owner_2_client_id'                         , 'INT'                 ,   8, 1, 0, 1, GETUTCDATE()),
+  ( 786, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'AnnuitantInsuredFK'                        , 'annuitant_insured_client_id'               , 'INT'                 ,   9, 1, 0, 1, GETUTCDATE()),
+  ( 787, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'AnnuitantInsured2FK'                       , 'annuitant_insured_2_client_id'             , 'INT'                 ,  10, 1, 0, 1, GETUTCDATE()),
+  ( 788, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'AdditionalClientGroupKey'                  , 'additional_client_group_key'               , 'INT'                 ,  11, 1, 0, 1, GETUTCDATE()),
+  ( 789, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ContractDepositGroupKey'                   , 'contract_deposit_group_key'                , 'INT'                 ,  12, 1, 0, 1, GETUTCDATE()),
+  ( 790, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'RiderGroupKey'                             , 'rider_group_key'                           , 'INT'                 ,  13, 1, 0, 1, GETUTCDATE()),
+  ( 791, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'NoteGroupKey'                              , 'note_group_key'                            , 'INT'                 ,  14, 1, 0, 1, GETUTCDATE()),
+  ( 792, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'RequirementGroupKey'                       , 'requirement_group_key'                     , 'INT'                 ,  15, 1, 0, 1, GETUTCDATE()),
+  (2001, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ReinsuranceGroupKey'                       , 'reinsurance_group_key'                     , 'INT'                 ,  16, 1, 0, 1, GETUTCDATE()),
+  (2002, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'RecurringPaymentGroupKey'                  , 'recurring_payment_group_key'               , 'INT'                 ,  17, 1, 0, 1, GETUTCDATE()),
+  (2003, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ApplicationReceivedDate'                   , 'application_received_timestamp'            , 'TIMESTAMP'           ,  18, 1, 0, 1, GETUTCDATE()),
+  (2004, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ApplicationSignedDate'                     , 'application_signed_timestamp'              , 'TIMESTAMP'           ,  19, 1, 0, 1, GETUTCDATE()),
+  (2005, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'EffectiveDate'                             , 'effective_timestamp'                       , 'TIMESTAMP'           ,  20, 1, 0, 1, GETUTCDATE()),
+  (2006, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'IssueDate'                                 , 'issue_timestamp'                           , 'TIMESTAMP'           ,  21, 1, 0, 1, GETUTCDATE()),
+  (2007, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'IssueState'                                , 'issue_state_code'                          , 'STRING'              ,  22, 1, 0, 1, GETUTCDATE()),
+  (2008, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'IssueAge'                                  , 'issue_age'                                 , 'INT'                 ,  23, 1, 0, 1, GETUTCDATE()),
+  (2009, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'AttainedAge'                               , 'attained_age'                              , 'INT'                 ,  24, 1, 0, 1, GETUTCDATE()),
+  (2010, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ContractStatus'                            , 'contract_status_code'                      , 'STRING'              ,  25, 1, 0, 1, GETUTCDATE()),
+  (2011, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'CostBasis'                                 , 'cost_basis'                                , 'DECIMAL(18,4)'       ,  26, 1, 0, 1, GETUTCDATE()),
+  (2012, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'RecoveredCostBasis'                        , 'recovered_cost_basis'                      , 'DECIMAL(18,4)'       ,  27, 1, 0, 1, GETUTCDATE()),
+  (2013, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'QualInd'                                   , 'qual_ind'                                  , 'STRING'              ,  28, 1, 0, 1, GETUTCDATE()),
+  (2014, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'QualType'                                  , 'qual_type'                                 , 'STRING'              ,  29, 1, 0, 1, GETUTCDATE()),
+  (2015, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'Option'                                    , 'contract_option'                           , 'STRING'              ,  30, 1, 0, 1, GETUTCDATE()),
+  (2016, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'CertainPeriod'                             , 'certain_period'                            , 'INT'                 ,  31, 1, 0, 1, GETUTCDATE()),
+  (2017, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'MECStatus'                                 , 'mec_status_code'                           , 'STRING'              ,  32, 1, 0, 1, GETUTCDATE()),
+  (2018, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'RelatedContractNumber'                     , 'related_contract_number'                   , 'STRING'              ,  33, 1, 0, 1, GETUTCDATE()),
+  (2019, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'SpousalContinuationInd'                    , 'is_spousal_continuation'                   , 'BOOLEAN'             ,  34, 1, 0, 1, GETUTCDATE()),
+  (2020, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'SupplementalContractInd'                   , 'is_supplemental_contract'                  , 'BOOLEAN'             ,  35, 1, 0, 1, GETUTCDATE()),
+  (2021, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'QDROInd'                                   , 'is_qdro'                                   , 'BOOLEAN'             ,  36, 1, 0, 1, GETUTCDATE()),
+  (2022, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'RiderClaimInd'                             , 'is_rider_claim'                            , 'BOOLEAN'             ,  37, 1, 0, 1, GETUTCDATE()),
+  (2023, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ROTHConversionInd'                         , 'is_roth_conversion'                        , 'BOOLEAN'             ,  38, 1, 0, 1, GETUTCDATE()),
+  (2024, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'InternalReplacementInd'                    , 'is_internal_replacement'                   , 'BOOLEAN'             ,  39, 1, 0, 1, GETUTCDATE()),
+  (2025, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'PartialTaxConversionInd'                   , 'is_partial_tax_conversion'                 , 'BOOLEAN'             ,  40, 1, 0, 1, GETUTCDATE()),
+  (2026, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'WaiverInEffectInd'                         , 'is_waiver_in_effect'                       , 'BOOLEAN'             ,  41, 1, 0, 1, GETUTCDATE()),
+  (2027, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'EDeliveryInd'                              , 'is_e_delivery'                             , 'BOOLEAN'             ,  42, 1, 0, 1, GETUTCDATE()),
+  (2028, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ClassCode'                                 , 'class_code'                                , 'STRING'              ,  43, 1, 0, 1, GETUTCDATE()),
+  (2029, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'UnderwritingClass'                         , 'underwriting_class'                        , 'STRING'              ,  44, 1, 0, 1, GETUTCDATE()),
+  (2030, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'UnderwritingDate'                          , 'underwriting_timestamp'                    , 'TIMESTAMP'           ,  45, 1, 0, 1, GETUTCDATE()),
+  (2031, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'CoverageRatio'                             , 'coverage_ratio'                            , 'DECIMAL(18,4)'       ,  46, 1, 0, 1, GETUTCDATE()),
+  (2032, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ContractEndDate'                           , 'contract_end_timestamp'                    , 'TIMESTAMP'           ,  47, 1, 0, 1, GETUTCDATE()),
+  (2033, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'FundingCompanyFK'                          , 'funding_company_id'                        , 'INT'                 ,  48, 1, 0, 1, GETUTCDATE()),
+  (2034, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'SourceKey'                                 , 'source_key'                                , 'BIGINT'              ,  49, 1, 0, 1, GETUTCDATE()),
+  (2035, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,  50, 1, 0, 1, GETUTCDATE()),
+  (2036, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,  51, 1, 0, 1, GETUTCDATE());
 
 -- [54] vw_SEG_ContractClient (12 columns)
 INSERT INTO schema_config
@@ -980,7 +1038,7 @@ VALUES
   ( 909, 'EQ_Warehouse', 'vw_SEG_Client'                             , 'vw_seg_client_base', 'State'                                     , 'state_code'                                , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
   ( 910, 'EQ_Warehouse', 'vw_SEG_Client'                             , 'vw_seg_client_base', 'ZipCode'                                   , 'zip_code'                                  , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE());
 
--- Total: 915 column mappings across 61 source tables
+-- Total: ~1000 column mappings across 61 source tables (EQ_Warehouse) + HubSpot
 
 
 -- ============================================================
