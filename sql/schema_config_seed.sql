@@ -908,137 +908,8 @@ VALUES
   (2035, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,  50, 1, 0, 1, GETUTCDATE()),
   (2036, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,  51, 1, 0, 1, GETUTCDATE());
 
--- [54] vw_SEG_ContractClient (12 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  ( 793, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'vw_seg_contract_client_base', 'ContractPK'                                , 'contract_id'                               , 'INT'                 ,   1, 1, 0, 1, GETUTCDATE()),
-  ( 794, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'vw_seg_contract_client_base', 'ClientFK'                                  , 'client_id'                                 , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 795, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'vw_seg_contract_client_base', 'RoleName'                                  , 'client_role_name'                          , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 796, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'vw_seg_contract_client_base', 'Relationship'                              , 'relationship_to_insured'                   , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 797, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'vw_seg_contract_client_base', 'AllocationPercent'                         , 'share_percentage'                          , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 798, 'EQ_Warehouse', 'vw_SEG_ContractClient'                     , 'vw_seg_contract_client_base', 'Status'                                    , 'status'                                    , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE());
-
--- [55] vw_SEG_ContractTreaty (12 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  ( 804, 'EQ_Warehouse', 'vw_SEG_ContractTreaty'                     , 'vw_seg_contract_treaty_base', 'ContractPK'                                , 'contract_id'                               , 'INT'                 ,   1, 1, 0, 1, GETUTCDATE()),
-  ( 805, 'EQ_Warehouse', 'vw_SEG_ContractTreaty'                     , 'vw_seg_contract_treaty_base', 'TreatyPK'                                  , 'treaty_id'                                 , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 806, 'EQ_Warehouse', 'vw_SEG_ContractTreaty'                     , 'vw_seg_contract_treaty_base', 'ContractNumber'                            , 'contract_number'                           , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 807, 'EQ_Warehouse', 'vw_SEG_ContractTreaty'                     , 'vw_seg_contract_treaty_base', 'TreatyName'                                , 'treaty_name'                               , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 808, 'EQ_Warehouse', 'vw_SEG_ContractTreaty'                     , 'vw_seg_contract_treaty_base', 'TreatyDescription'                         , 'treaty_description'                        , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 809, 'EQ_Warehouse', 'vw_SEG_ContractTreaty'                     , 'vw_seg_contract_treaty_base', 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 810, 'EQ_Warehouse', 'vw_SEG_ContractTreaty'                     , 'vw_seg_contract_treaty_base', 'Status'                                    , 'status'                                    , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE());
-
--- [56] vw_SEG_ContractRider (28 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  ( 816, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'RiderGroupKey'                             , 'rider_group_id'                            , 'INT'                 ,   1, 1, 0, 1, GETUTCDATE()),
-  ( 817, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'IBREligibilityDate'                        , 'ibr_eligibility_date'                      , 'TIMESTAMP'           ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 818, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'IBRStartDate'                              , 'ibr_start_date'                            , 'TIMESTAMP'           ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 819, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'ABR'                                       , 'abr_stop_date'                             , 'TIMESTAMP'           ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 820, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'ABR-TI'                                    , 'abr_ti_stop_date'                          , 'TIMESTAMP'           ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 821, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'AVGuarRider'                               , 'av_guar_rider_stop_date'                   , 'TIMESTAMP'           ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 822, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'IBR'                                       , 'ibr_stop_date'                             , 'TIMESTAMP'           ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 823, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'IBR-SD'                                    , 'ibr_sd_stop_date'                          , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 824, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'IBR-ST'                                    , 'ibr_st_stop_date'                          , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 825, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'InflationRider'                            , 'inflation_rider_stop_date'                 , 'TIMESTAMP'           ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 826, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'LIQ'                                       , 'liq_stop_date'                             , 'TIMESTAMP'           ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 827, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'LongevityRider'                            , 'longevity_rider_stop_date'                 , 'TIMESTAMP'           ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 828, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'LTCRider'                                  , 'ltc_rider_stop_date'                       , 'TIMESTAMP'           ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 829, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'MVA'                                       , 'mva_stop_date'                             , 'TIMESTAMP'           ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 830, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'NFRider'                                   , 'nf_rider_stop_date'                        , 'TIMESTAMP'           ,  15, 1, 0, 1, GETUTCDATE()),
-  ( 831, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'NursingHomeWaiver'                         , 'nursing_home_waiver_stop_date'             , 'TIMESTAMP'           ,  16, 1, 0, 1, GETUTCDATE()),
-  ( 832, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'OP'                                        , 'op_stop_date'                              , 'TIMESTAMP'           ,  17, 1, 0, 1, GETUTCDATE()),
-  ( 833, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'ROP'                                       , 'rop_stop_date'                             , 'TIMESTAMP'           ,  18, 1, 0, 1, GETUTCDATE()),
-  ( 834, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'SR'                                        , 'sr_stop_date'                              , 'TIMESTAMP'           ,  19, 1, 0, 1, GETUTCDATE()),
-  ( 835, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'TIR'                                       , 'tir_stop_date'                             , 'TIMESTAMP'           ,  20, 1, 0, 1, GETUTCDATE()),
-  ( 836, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'WellnessCredits'                           , 'wellness_credits_stop_date'                , 'TIMESTAMP'           ,  21, 1, 0, 1, GETUTCDATE()),
-  ( 837, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'WellnessRider'                             , 'wellness_rider_stop_date'                  , 'TIMESTAMP'           ,  22, 1, 0, 1, GETUTCDATE()),
-  ( 838, 'EQ_Warehouse', 'vw_SEG_ContractRider'                      , 'vw_seg_contract_rider_base', 'WSC'                                       , 'wsc_stop_date'                             , 'TIMESTAMP'           ,  23, 1, 0, 1, GETUTCDATE());
-
--- [57] ref_Product (15 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  ( 845, 'EQ_Warehouse', 'ref_Product'                               , 'ref_product_base', 'ProductPK'                                 , 'product_id'                                , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 846, 'EQ_Warehouse', 'ref_Product'                               , 'ref_product_base', 'ProductName'                               , 'product_name'                              , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 847, 'EQ_Warehouse', 'ref_Product'                               , 'ref_product_base', 'MarketingName'                             , 'marketing_name'                            , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 848, 'EQ_Warehouse', 'ref_Product'                               , 'ref_product_base', 'ProductType'                               , 'product_type'                              , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 849, 'EQ_Warehouse', 'ref_Product'                               , 'ref_product_base', 'CUSIPNumber'                               , 'cusip_number'                              , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 850, 'EQ_Warehouse', 'ref_Product'                               , 'ref_product_base', 'Context'                                   , 'product_context'                           , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 851, 'EQ_Warehouse', 'ref_Product'                               , 'ref_product_base', 'GLLOB'                                     , 'gl_line_of_business'                       , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 852, 'EQ_Warehouse', 'ref_Product'                               , 'ref_product_base', 'Status'                                    , 'status'                                    , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 853, 'EQ_Warehouse', 'ref_Product'                               , 'ref_product_base', 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,  9, 1, 0, 1, GETUTCDATE());
-
--- [58] vw_SEG_ContractTrx (14 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  ( 859, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'vw_seg_contract_trx_base', 'TrxPK'                                     , 'trx_id'                                    , 'BIGINT'              ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 860, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'vw_seg_contract_trx_base', 'ContractPK'                                , 'contract_id'                               , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 861, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'vw_seg_contract_trx_base', 'ContractNumber'                            , 'contract_number'                           , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 862, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'vw_seg_contract_trx_base', 'TrxType'                                   , 'trx_type_code'                             , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 863, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'vw_seg_contract_trx_base', 'TrxDescription'                            , 'trx_description'                           , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 864, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'vw_seg_contract_trx_base', 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 865, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'vw_seg_contract_trx_base', 'ProcessDate'                               , 'process_date'                              , 'TIMESTAMP'           ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 866, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'vw_seg_contract_trx_base', 'Amount'                                    , 'trx_amount'                                , 'DECIMAL(18,4)'       ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 867, 'EQ_Warehouse', 'vw_SEG_ContractTrx'                        , 'vw_seg_contract_trx_base', 'Status'                                    , 'trx_status'                                , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE());
-
--- [59] vw_SEG_ContractPrimarySegment (12 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  ( 873, 'EQ_Warehouse', 'vw_SEG_ContractPrimarySegment'             , 'vw_seg_contract_primary_segment_base', 'ContractPK'                                , 'contract_id'                               , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 874, 'EQ_Warehouse', 'vw_SEG_ContractPrimarySegment'             , 'vw_seg_contract_primary_segment_base', 'SegmentPK'                                 , 'segment_id'                                , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 875, 'EQ_Warehouse', 'vw_SEG_ContractPrimarySegment'             , 'vw_seg_contract_primary_segment_base', 'ContractNumber'                            , 'contract_number'                           , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 876, 'EQ_Warehouse', 'vw_SEG_ContractPrimarySegment'             , 'vw_seg_contract_primary_segment_base', 'SegmentNumber'                             , 'segment_number'                            , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 877, 'EQ_Warehouse', 'vw_SEG_ContractPrimarySegment'             , 'vw_seg_contract_primary_segment_base', 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 878, 'EQ_Warehouse', 'vw_SEG_ContractPrimarySegment'             , 'vw_seg_contract_primary_segment_base', 'CostBasis'                                 , 'cost_basis'                                , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 879, 'EQ_Warehouse', 'vw_SEG_ContractPrimarySegment'             , 'vw_seg_contract_primary_segment_base', 'FreeAmount'                                , 'free_amount'                               , 'DECIMAL(18,4)'       ,   7, 1, 0, 1, GETUTCDATE());
-
--- [60] vw_SEG_Agent (15 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  ( 885, 'EQ_Warehouse', 'vw_SEG_Agent'                              , 'vw_seg_agent_base', 'AgentPK'                                   , 'agent_id'                                  , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 886, 'EQ_Warehouse', 'vw_SEG_Agent'                              , 'vw_seg_agent_base', 'AgentNumber'                               , 'agent_number'                              , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 887, 'EQ_Warehouse', 'vw_SEG_Agent'                              , 'vw_seg_agent_base', 'DisplayName'                               , 'display_name'                              , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 888, 'EQ_Warehouse', 'vw_SEG_Agent'                              , 'vw_seg_agent_base', 'NPN'                                       , 'npn_number'                                , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 889, 'EQ_Warehouse', 'vw_SEG_Agent'                              , 'vw_seg_agent_base', 'NASD'                                      , 'nasd_number'                               , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 890, 'EQ_Warehouse', 'vw_SEG_Agent'                              , 'vw_seg_agent_base', 'AgentType'                                 , 'agent_type'                                , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 891, 'EQ_Warehouse', 'vw_SEG_Agent'                              , 'vw_seg_agent_base', 'Status'                                    , 'status'                                    , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 892, 'EQ_Warehouse', 'vw_SEG_Agent'                              , 'vw_seg_agent_base', 'HireDate'                                  , 'hire_date'                                 , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 893, 'EQ_Warehouse', 'vw_SEG_Agent'                              , 'vw_seg_agent_base', 'TerminationDate'                           , 'termination_date'                          , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 894, 'EQ_Warehouse', 'vw_SEG_Agent'                              , 'vw_seg_agent_base', 'ClientFK'                                  , 'client_id'                                 , 'INT'                 ,  10, 1, 0, 1, GETUTCDATE());
-
--- [61] vw_SEG_Client (16 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  ( 900, 'EQ_Warehouse', 'vw_SEG_Client'                             , 'vw_seg_client_base', 'ClientPK'                                  , 'client_id'                                 , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 901, 'EQ_Warehouse', 'vw_SEG_Client'                             , 'vw_seg_client_base', 'SourceKey'                                 , 'source_key'                                , 'BIGINT'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 902, 'EQ_Warehouse', 'vw_SEG_Client'                             , 'vw_seg_client_base', 'DisplayName'                               , 'display_name'                              , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 903, 'EQ_Warehouse', 'vw_SEG_Client'                             , 'vw_seg_client_base', 'FirstName'                                 , 'first_name'                                , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 904, 'EQ_Warehouse', 'vw_SEG_Client'                             , 'vw_seg_client_base', 'LastName'                                  , 'last_name'                                 , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 905, 'EQ_Warehouse', 'vw_SEG_Client'                             , 'vw_seg_client_base', 'Email'                                     , 'email_address'                             , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 906, 'EQ_Warehouse', 'vw_SEG_Client'                             , 'vw_seg_client_base', 'Phone'                                     , 'phone_number'                              , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 907, 'EQ_Warehouse', 'vw_SEG_Client'                             , 'vw_seg_client_base', 'BirthDate'                                 , 'birth_date'                                , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 908, 'EQ_Warehouse', 'vw_SEG_Client'                             , 'vw_seg_client_base', 'Status'                                    , 'status'                                    , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 909, 'EQ_Warehouse', 'vw_SEG_Client'                             , 'vw_seg_client_base', 'State'                                     , 'state_code'                                , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 910, 'EQ_Warehouse', 'vw_SEG_Client'                             , 'vw_seg_client_base', 'ZipCode'                                   , 'zip_code'                                  , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE());
-
--- Total: ~1000 column mappings across 61 source tables (EQ_Warehouse) + HubSpot
+-- Total: column mappings across EQ_Warehouse source tables (IDs 1-792) + HubSpot (IDs 911-1085)
+-- EQ_ODS base table mappings start at ID 3001 (see section below)
 
 
 -- ============================================================
@@ -1313,3 +1184,393 @@ VALUES
   (1085, 'HubSpot', 'crm_tasks', 'crm_tasks', 'N/A',                 'object_type',            'STRING',   9, 0, 0, 1, GETUTCDATE());
 
 -- Total HubSpot: 175 column mappings across 14 landing tables (IDs 911–1085)
+
+
+-- ============================================================
+-- EQ_ODS source — schema_config seed data
+-- IDs 3001–3286  (286 rows across 15 base tables)
+-- source_name     = 'EQ_ODS'
+-- source_schema   = 'seg_editsolutions' (except ref_Product=dbo, ProductStructure=seg_engine)
+-- target_schema   = 'seg_editsolutions' in lh_landing
+-- Naming rules applied:
+--   PK/FK suffix → _id   |   CT suffix → _code   |   Ind suffix → is_xxx
+-- ============================================================
+
+-- ── [O01] ref_Product  (EQ_ODS.dbo — 9 cols, IDs 3001-3009) ────────────────
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3001, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'ProductPK',             'product_id',                'INT',     1, 0, 1, 1, GETUTCDATE()),
+  (3002, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'Product',               'product_name',              'STRING',  2, 1, 0, 1, GETUTCDATE()),
+  (3003, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'SecondSaleProduct',     'is_second_sale',            'BOOLEAN', 3, 1, 0, 1, GETUTCDATE()),
+  (3004, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'ProductGroupName',      'product_group_name',        'STRING',  4, 1, 0, 1, GETUTCDATE()),
+  (3005, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'AgentCommStatmentAbbr', 'agent_comm_statement_abbr', 'STRING',  5, 1, 0, 1, GETUTCDATE()),
+  (3006, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'GLAbbr',                'gl_abbr',                   'STRING',  6, 1, 0, 1, GETUTCDATE()),
+  (3007, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'GLLOB',                 'gl_line_of_business',       'STRING',  7, 1, 0, 1, GETUTCDATE()),
+  (3008, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'MarketingName',         'marketing_name',            'STRING',  8, 1, 0, 1, GETUTCDATE()),
+  (3009, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'CUSIPNumber',           'cusip_number',              'STRING',  9, 1, 0, 1, GETUTCDATE());
+
+-- ── [O02] ContractClient  (25 cols, IDs 3010-3034) ──────────────────────────
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3010, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'ContractClientPK',            'contract_client_id',             'INT',            1, 0, 1, 1, GETUTCDATE()),
+  (3011, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'ClientRoleFK',                'client_role_id',                 'INT',            2, 1, 0, 1, GETUTCDATE()),
+  (3012, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'SegmentFK',                   'segment_id',                     'INT',            3, 1, 0, 1, GETUTCDATE()),
+  (3013, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'IssueAge',                    'issue_age',                      'INT',            4, 1, 0, 1, GETUTCDATE()),
+  (3014, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'EffectiveDate',               'effective_date',                 'TIMESTAMP',      5, 1, 0, 1, GETUTCDATE()),
+  (3015, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'TerminationDate',             'termination_date',               'TIMESTAMP',      6, 1, 0, 1, GETUTCDATE()),
+  (3016, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'RelationshipToInsuredCT',     'relationship_to_insured_code',   'STRING',         7, 1, 0, 1, GETUTCDATE()),
+  (3017, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'TelephoneAuthorizationCT',    'telephone_authorization_code',   'STRING',         8, 1, 0, 1, GETUTCDATE()),
+  (3018, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'ClassCT',                     'class_code',                     'STRING',         9, 1, 0, 1, GETUTCDATE()),
+  (3019, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'FlatExtra',                   'flat_extra',                     'DECIMAL(18,4)', 10, 1, 0, 1, GETUTCDATE()),
+  (3020, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'FlatExtraAge',                'flat_extra_age',                 'INT',           11, 1, 0, 1, GETUTCDATE()),
+  (3021, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'FlatExtraDur',                'flat_extra_duration',            'INT',           12, 1, 0, 1, GETUTCDATE()),
+  (3022, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'PercentExtra',                'percent_extra',                  'DECIMAL(18,4)', 13, 1, 0, 1, GETUTCDATE()),
+  (3023, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'PercentExtraAge',             'percent_extra_age',              'INT',           14, 1, 0, 1, GETUTCDATE()),
+  (3024, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'PercentExtraDur',             'percent_extra_duration',         'INT',           15, 1, 0, 1, GETUTCDATE()),
+  (3025, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'TableRatingCT',               'table_rating_code',              'STRING',        16, 1, 0, 1, GETUTCDATE()),
+  (3026, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'DisbursementAddressTypeCT',   'disbursement_address_type_code', 'STRING',        17, 1, 0, 1, GETUTCDATE()),
+  (3027, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'CorrespondenceAddressTypeCT', 'correspondence_address_type_code','STRING',       18, 1, 0, 1, GETUTCDATE()),
+  (3028, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'PendingClassChangeInd',       'is_pending_class_change',        'BOOLEAN',       19, 1, 0, 1, GETUTCDATE()),
+  (3029, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'PayorOfCT',                   'payor_of_code',                  'STRING',        20, 1, 0, 1, GETUTCDATE()),
+  (3030, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'RatedGenderCT',               'rated_gender_code',              'STRING',        21, 1, 0, 1, GETUTCDATE()),
+  (3031, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'UnderwritingClassCT',         'underwriting_class_code',        'STRING',        22, 1, 0, 1, GETUTCDATE()),
+  (3032, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'TerminationReasonCT',         'termination_reason_code',        'STRING',        23, 1, 0, 1, GETUTCDATE()),
+  (3033, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'EDeliveryIndicator',          'is_edelivery',                   'BOOLEAN',       24, 1, 0, 1, GETUTCDATE()),
+  (3034, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'OverrideStatus',              'override_status',                'STRING',        25, 1, 0, 1, GETUTCDATE());
+
+-- ── [O03] ClientRole  (10 cols, IDs 3035-3044) ──────────────────────────────
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3035, 'EQ_ODS', 'ClientRole', 'client_role_base', 'ClientRolePK',                   'client_role_id',                    'INT',        1, 0, 1, 1, GETUTCDATE()),
+  (3036, 'EQ_ODS', 'ClientRole', 'client_role_base', 'ClientDetailFK',                 'client_detail_id',                  'INT',        2, 1, 0, 1, GETUTCDATE()),
+  (3037, 'EQ_ODS', 'ClientRole', 'client_role_base', 'AgentFK',                        'agent_id',                          'INT',        3, 1, 0, 1, GETUTCDATE()),
+  (3038, 'EQ_ODS', 'ClientRole', 'client_role_base', 'PreferenceFK',                   'preference_id',                     'INT',        4, 1, 0, 1, GETUTCDATE()),
+  (3039, 'EQ_ODS', 'ClientRole', 'client_role_base', 'TaxProfileFK',                   'tax_profile_id',                    'INT',        5, 1, 0, 1, GETUTCDATE()),
+  (3040, 'EQ_ODS', 'ClientRole', 'client_role_base', 'RoleTypeCT',                     'role_type_code',                    'STRING',     6, 1, 0, 1, GETUTCDATE()),
+  (3041, 'EQ_ODS', 'ClientRole', 'client_role_base', 'NewIssuesEligibilityStatusCT',   'new_issues_eligibility_status_code','STRING',     7, 1, 0, 1, GETUTCDATE()),
+  (3042, 'EQ_ODS', 'ClientRole', 'client_role_base', 'NewIssuesEligibilityStartDate',  'new_issues_eligibility_start_date', 'TIMESTAMP',  8, 1, 0, 1, GETUTCDATE()),
+  (3043, 'EQ_ODS', 'ClientRole', 'client_role_base', 'ReferenceID',                    'reference_id',                      'STRING',     9, 1, 0, 1, GETUTCDATE()),
+  (3044, 'EQ_ODS', 'ClientRole', 'client_role_base', 'OverrideStatus',                 'override_status',                   'STRING',    10, 1, 0, 1, GETUTCDATE());
+
+-- ── [O04] ClientDetail  (26 cols, IDs 3045-3070) ────────────────────────────
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3045, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'ClientDetailPK',           'client_detail_id',              'INT',        1, 0, 1, 1, GETUTCDATE()),
+  (3046, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'ClientIdentification',     'client_identification',         'STRING',     2, 1, 0, 1, GETUTCDATE()),
+  (3047, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'TaxIdentification',        'tax_identification',            'STRING',     3, 1, 0, 1, GETUTCDATE()),
+  (3048, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'LastName',                 'last_name',                     'STRING',     4, 1, 0, 1, GETUTCDATE()),
+  (3049, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'FirstName',                'first_name',                    'STRING',     5, 1, 0, 1, GETUTCDATE()),
+  (3050, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'MiddleName',               'middle_name',                   'STRING',     6, 1, 0, 1, GETUTCDATE()),
+  (3051, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'NamePrefix',               'name_prefix',                   'STRING',     7, 1, 0, 1, GETUTCDATE()),
+  (3052, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'NameSuffix',               'name_suffix',                   'STRING',     8, 1, 0, 1, GETUTCDATE()),
+  (3053, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'CorporateName',            'corporate_name',                'STRING',     9, 1, 0, 1, GETUTCDATE()),
+  (3054, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'BirthDate',                'birth_date',                    'TIMESTAMP', 10, 1, 0, 1, GETUTCDATE()),
+  (3055, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'MothersMaidenName',        'mothers_maiden_name',           'STRING',    11, 1, 0, 1, GETUTCDATE()),
+  (3056, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'Occupation',               'occupation',                    'STRING',    12, 1, 0, 1, GETUTCDATE()),
+  (3057, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'DateOfDeath',              'date_of_death',                 'TIMESTAMP', 13, 1, 0, 1, GETUTCDATE()),
+  (3058, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'Operator',                 'operator',                      'STRING',    14, 1, 0, 1, GETUTCDATE()),
+  (3059, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'MaintDateTime',            'maint_datetime',                'TIMESTAMP', 15, 1, 0, 1, GETUTCDATE()),
+  (3060, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'GenderCT',                 'gender_code',                   'STRING',    16, 1, 0, 1, GETUTCDATE()),
+  (3061, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'TrustTypeCT',              'trust_type_code',               'STRING',    17, 1, 0, 1, GETUTCDATE()),
+  (3062, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'StatusCT',                 'status_code',                   'STRING',    18, 1, 0, 1, GETUTCDATE()),
+  (3063, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'PrivacyInd',               'is_privacy',                    'BOOLEAN',   19, 1, 0, 1, GETUTCDATE()),
+  (3064, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'LastOFACCheckDate',        'last_ofac_check_date',          'TIMESTAMP', 20, 1, 0, 1, GETUTCDATE()),
+  (3065, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'StateOfDeathCT',           'state_of_death_code',           'STRING',    21, 1, 0, 1, GETUTCDATE()),
+  (3066, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'ResidentStateAtDeathCT',   'resident_state_at_death_code',  'STRING',    22, 1, 0, 1, GETUTCDATE()),
+  (3067, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'ProofOfDeathReceivedDate', 'proof_of_death_received_date',  'TIMESTAMP', 23, 1, 0, 1, GETUTCDATE()),
+  (3068, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'CaseTrackingProcess',      'case_tracking_process',         'STRING',    24, 1, 0, 1, GETUTCDATE()),
+  (3069, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'NotificationReceivedDate', 'notification_received_date',    'TIMESTAMP', 25, 1, 0, 1, GETUTCDATE()),
+  (3070, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'OverrideStatus',           'override_status',               'STRING',    26, 1, 0, 1, GETUTCDATE());
+
+-- ── [O05] ContractClientAllocation  (6 cols, IDs 3071-3076) ─────────────────
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3071, 'EQ_ODS', 'ContractClientAllocation', 'contract_client_allocation_base', 'ContractClientAllocationPK', 'contract_client_allocation_id', 'INT',            1, 0, 1, 1, GETUTCDATE()),
+  (3072, 'EQ_ODS', 'ContractClientAllocation', 'contract_client_allocation_base', 'ContractClientFK',           'contract_client_id',            'INT',            2, 1, 0, 1, GETUTCDATE()),
+  (3073, 'EQ_ODS', 'ContractClientAllocation', 'contract_client_allocation_base', 'AllocationPercent',          'allocation_percent',            'DECIMAL(18,4)',  3, 1, 0, 1, GETUTCDATE()),
+  (3074, 'EQ_ODS', 'ContractClientAllocation', 'contract_client_allocation_base', 'AllocationDollars',          'allocation_dollars',            'DECIMAL(18,4)',  4, 1, 0, 1, GETUTCDATE()),
+  (3075, 'EQ_ODS', 'ContractClientAllocation', 'contract_client_allocation_base', 'SplitEqual',                 'is_split_equal',                'BOOLEAN',        5, 1, 0, 1, GETUTCDATE()),
+  (3076, 'EQ_ODS', 'ContractClientAllocation', 'contract_client_allocation_base', 'OverrideStatus',             'override_status',               'STRING',         6, 1, 0, 1, GETUTCDATE());
+
+-- ── [O06] Segment  (73 cols, IDs 3077-3149) ─────────────────────────────────
+-- Source for both vw_SEG_ContractPrimarySegment (SegmentFK IS NULL) and
+-- vw_SEG_ContractRiderSegment (SegmentFK IS NOT NULL) — same table, different filters.
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3077, 'EQ_ODS', 'Segment', 'segment_base', 'SegmentPK',                   'segment_id',                     'INT',            1, 0, 1, 1, GETUTCDATE()),
+  (3078, 'EQ_ODS', 'Segment', 'segment_base', 'SegmentFK',                   'parent_segment_id',              'INT',            2, 1, 0, 1, GETUTCDATE()),
+  (3079, 'EQ_ODS', 'Segment', 'segment_base', 'ProductStructureFK',          'product_structure_id',           'INT',            3, 1, 0, 1, GETUTCDATE()),
+  (3080, 'EQ_ODS', 'Segment', 'segment_base', 'ContractNumber',              'contract_number',                'STRING',         4, 1, 0, 1, GETUTCDATE()),
+  (3081, 'EQ_ODS', 'Segment', 'segment_base', 'EffectiveDate',               'effective_date',                 'TIMESTAMP',      5, 1, 0, 1, GETUTCDATE()),
+  (3082, 'EQ_ODS', 'Segment', 'segment_base', 'Amount',                      'amount',                         'DECIMAL(18,4)',  6, 1, 0, 1, GETUTCDATE()),
+  (3083, 'EQ_ODS', 'Segment', 'segment_base', 'QualNonQualCT',               'qual_non_qual_code',             'STRING',         7, 1, 0, 1, GETUTCDATE()),
+  (3084, 'EQ_ODS', 'Segment', 'segment_base', 'ExchangeInd',                 'is_exchange',                    'BOOLEAN',        8, 1, 0, 1, GETUTCDATE()),
+  (3085, 'EQ_ODS', 'Segment', 'segment_base', 'CostBasis',                   'cost_basis',                     'DECIMAL(18,4)',  9, 1, 0, 1, GETUTCDATE()),
+  (3086, 'EQ_ODS', 'Segment', 'segment_base', 'RecoveredCostBasis',          'recovered_cost_basis',           'DECIMAL(18,4)', 10, 1, 0, 1, GETUTCDATE()),
+  (3087, 'EQ_ODS', 'Segment', 'segment_base', 'TerminationDate',             'termination_date',               'TIMESTAMP',     11, 1, 0, 1, GETUTCDATE()),
+  (3088, 'EQ_ODS', 'Segment', 'segment_base', 'StatusChangeDate',            'status_change_date',             'TIMESTAMP',     12, 1, 0, 1, GETUTCDATE()),
+  (3089, 'EQ_ODS', 'Segment', 'segment_base', 'SegmentNameCT',               'segment_name_code',              'STRING',        13, 1, 0, 1, GETUTCDATE()),
+  (3090, 'EQ_ODS', 'Segment', 'segment_base', 'SegmentStatusCT',             'segment_status_code',            'STRING',        14, 1, 0, 1, GETUTCDATE()),
+  (3091, 'EQ_ODS', 'Segment', 'segment_base', 'OptionCodeCT',                'option_code',                    'STRING',        15, 1, 0, 1, GETUTCDATE()),
+  (3092, 'EQ_ODS', 'Segment', 'segment_base', 'IssueStateCT',                'issue_state_code',               'STRING',        16, 1, 0, 1, GETUTCDATE()),
+  (3093, 'EQ_ODS', 'Segment', 'segment_base', 'QualifiedTypeCT',             'qualified_type_code',            'STRING',        17, 1, 0, 1, GETUTCDATE()),
+  (3094, 'EQ_ODS', 'Segment', 'segment_base', 'QuoteDate',                   'quote_date',                     'TIMESTAMP',     18, 1, 0, 1, GETUTCDATE()),
+  (3095, 'EQ_ODS', 'Segment', 'segment_base', 'Charges',                     'charges',                        'DECIMAL(18,4)', 19, 1, 0, 1, GETUTCDATE()),
+  (3096, 'EQ_ODS', 'Segment', 'segment_base', 'Loads',                       'loads',                          'DECIMAL(18,4)', 20, 1, 0, 1, GETUTCDATE()),
+  (3097, 'EQ_ODS', 'Segment', 'segment_base', 'Fees',                        'fees',                           'DECIMAL(18,4)', 21, 1, 0, 1, GETUTCDATE()),
+  (3098, 'EQ_ODS', 'Segment', 'segment_base', 'TaxReportingGroup',           'tax_reporting_group',            'STRING',        22, 1, 0, 1, GETUTCDATE()),
+  (3099, 'EQ_ODS', 'Segment', 'segment_base', 'IssueDate',                   'issue_date',                     'TIMESTAMP',     23, 1, 0, 1, GETUTCDATE()),
+  (3100, 'EQ_ODS', 'Segment', 'segment_base', 'CashWithAppInd',              'is_cash_with_app',               'BOOLEAN',       24, 1, 0, 1, GETUTCDATE()),
+  (3101, 'EQ_ODS', 'Segment', 'segment_base', 'WaiverInEffect',              'is_waiver_in_effect',            'BOOLEAN',       25, 1, 0, 1, GETUTCDATE()),
+  (3102, 'EQ_ODS', 'Segment', 'segment_base', 'FreeAmountRemaining',         'free_amount_remaining',          'DECIMAL(18,4)', 26, 1, 0, 1, GETUTCDATE()),
+  (3103, 'EQ_ODS', 'Segment', 'segment_base', 'FreeAmount',                  'free_amount',                    'DECIMAL(18,4)', 27, 1, 0, 1, GETUTCDATE()),
+  (3104, 'EQ_ODS', 'Segment', 'segment_base', 'DateInEffect',                'date_in_effect',                 'TIMESTAMP',     28, 1, 0, 1, GETUTCDATE()),
+  (3105, 'EQ_ODS', 'Segment', 'segment_base', 'CreationOperator',            'creation_operator',              'STRING',        29, 1, 0, 1, GETUTCDATE()),
+  (3106, 'EQ_ODS', 'Segment', 'segment_base', 'CreationDate',                'creation_date',                  'TIMESTAMP',     30, 1, 0, 1, GETUTCDATE()),
+  (3107, 'EQ_ODS', 'Segment', 'segment_base', 'LastAnniversaryDate',         'last_anniversary_date',          'TIMESTAMP',     31, 1, 0, 1, GETUTCDATE()),
+  (3108, 'EQ_ODS', 'Segment', 'segment_base', 'ApplicationSignedDate',       'application_signed_date',        'TIMESTAMP',     32, 1, 0, 1, GETUTCDATE()),
+  (3109, 'EQ_ODS', 'Segment', 'segment_base', 'ApplicationReceivedDate',     'application_received_date',      'TIMESTAMP',     33, 1, 0, 1, GETUTCDATE()),
+  (3110, 'EQ_ODS', 'Segment', 'segment_base', 'SavingsPercent',              'savings_percent',                'DECIMAL(18,4)', 34, 1, 0, 1, GETUTCDATE()),
+  (3111, 'EQ_ODS', 'Segment', 'segment_base', 'AnnualInsuranceAmount',       'annual_insurance_amount',        'DECIMAL(18,4)', 35, 1, 0, 1, GETUTCDATE()),
+  (3112, 'EQ_ODS', 'Segment', 'segment_base', 'AnnualInvestmentAmount',      'annual_investment_amount',       'DECIMAL(18,4)', 36, 1, 0, 1, GETUTCDATE()),
+  (3113, 'EQ_ODS', 'Segment', 'segment_base', 'DismembermentPercent',        'dismemberment_percent',          'DECIMAL(18,4)', 37, 1, 0, 1, GETUTCDATE()),
+  (3114, 'EQ_ODS', 'Segment', 'segment_base', 'PolicyDeliveryDate',          'policy_delivery_date',           'TIMESTAMP',     38, 1, 0, 1, GETUTCDATE()),
+  (3115, 'EQ_ODS', 'Segment', 'segment_base', 'WaiveFreeLookIndicator',      'is_waive_free_look',             'BOOLEAN',       39, 1, 0, 1, GETUTCDATE()),
+  (3116, 'EQ_ODS', 'Segment', 'segment_base', 'FreeLookDaysOverride',        'free_look_days_override',        'INT',           40, 1, 0, 1, GETUTCDATE()),
+  (3117, 'EQ_ODS', 'Segment', 'segment_base', 'FreeLookEndDate',             'free_look_end_date',             'TIMESTAMP',     41, 1, 0, 1, GETUTCDATE()),
+  (3118, 'EQ_ODS', 'Segment', 'segment_base', 'PointInScaleIndicator',       'is_point_in_scale',              'BOOLEAN',       42, 1, 0, 1, GETUTCDATE()),
+  (3119, 'EQ_ODS', 'Segment', 'segment_base', 'ChargeDeductDivisionInd',     'is_charge_deduct_division',      'BOOLEAN',       43, 1, 0, 1, GETUTCDATE()),
+  (3120, 'EQ_ODS', 'Segment', 'segment_base', 'DialableSalesLoadPercentage', 'dialable_sales_load_percentage', 'DECIMAL(18,4)', 44, 1, 0, 1, GETUTCDATE()),
+  (3121, 'EQ_ODS', 'Segment', 'segment_base', 'ChargeDeductAmount',          'charge_deduct_amount',           'DECIMAL(18,4)', 45, 1, 0, 1, GETUTCDATE()),
+  (3122, 'EQ_ODS', 'Segment', 'segment_base', 'RiderNumber',                 'rider_number',                   'INT',           46, 1, 0, 1, GETUTCDATE()),
+  (3123, 'EQ_ODS', 'Segment', 'segment_base', 'CommitmentIndicator',         'is_commitment',                  'BOOLEAN',       47, 1, 0, 1, GETUTCDATE()),
+  (3124, 'EQ_ODS', 'Segment', 'segment_base', 'CommitmentAmount',            'commitment_amount',              'DECIMAL(18,4)', 48, 1, 0, 1, GETUTCDATE()),
+  (3125, 'EQ_ODS', 'Segment', 'segment_base', 'ChargeCodeStatus',            'charge_code_status',             'STRING',        49, 1, 0, 1, GETUTCDATE()),
+  (3126, 'EQ_ODS', 'Segment', 'segment_base', 'ROTHConvInd',                 'is_roth_conversion',             'BOOLEAN',       50, 1, 0, 1, GETUTCDATE()),
+  (3127, 'EQ_ODS', 'Segment', 'segment_base', 'DateOfDeathValue',            'date_of_death_value',            'DECIMAL(18,4)', 51, 1, 0, 1, GETUTCDATE()),
+  (3128, 'EQ_ODS', 'Segment', 'segment_base', 'SuppOriginalContractNumber',  'supp_original_contract_number',  'STRING',        52, 1, 0, 1, GETUTCDATE()),
+  (3129, 'EQ_ODS', 'Segment', 'segment_base', 'OpenClaimEndDate',            'open_claim_end_date',            'TIMESTAMP',     53, 1, 0, 1, GETUTCDATE()),
+  (3130, 'EQ_ODS', 'Segment', 'segment_base', 'AnnuitizationValue',          'annuitization_value',            'DECIMAL(18,4)', 54, 1, 0, 1, GETUTCDATE()),
+  (3131, 'EQ_ODS', 'Segment', 'segment_base', 'CasetrackingOptionCT',        'casetracking_option_code',       'STRING',        55, 1, 0, 1, GETUTCDATE()),
+  (3132, 'EQ_ODS', 'Segment', 'segment_base', 'PrintLine1',                  'print_line_1',                   'STRING',        56, 1, 0, 1, GETUTCDATE()),
+  (3133, 'EQ_ODS', 'Segment', 'segment_base', 'PrintLine2',                  'print_line_2',                   'STRING',        57, 1, 0, 1, GETUTCDATE()),
+  (3134, 'EQ_ODS', 'Segment', 'segment_base', 'TotalActiveBeneficiaries',    'total_active_beneficiaries',     'INT',           58, 1, 0, 1, GETUTCDATE()),
+  (3135, 'EQ_ODS', 'Segment', 'segment_base', 'RemainingBeneficiaries',      'remaining_beneficiaries',        'INT',           59, 1, 0, 1, GETUTCDATE()),
+  (3136, 'EQ_ODS', 'Segment', 'segment_base', 'SettlementAmount',            'settlement_amount',              'DECIMAL(18,4)', 60, 1, 0, 1, GETUTCDATE()),
+  (3137, 'EQ_ODS', 'Segment', 'segment_base', 'LastSettlementValDate',       'last_settlement_val_date',       'TIMESTAMP',     61, 1, 0, 1, GETUTCDATE()),
+  (3138, 'EQ_ODS', 'Segment', 'segment_base', 'ContractTypeCT',              'contract_type_code',             'STRING',        62, 1, 0, 1, GETUTCDATE()),
+  (3139, 'EQ_ODS', 'Segment', 'segment_base', 'TotalFaceAmount',             'total_face_amount',              'DECIMAL(18,4)', 63, 1, 0, 1, GETUTCDATE()),
+  (3140, 'EQ_ODS', 'Segment', 'segment_base', 'IncomeStartDate',             'income_start_date',              'TIMESTAMP',     64, 1, 0, 1, GETUTCDATE()),
+  (3141, 'EQ_ODS', 'Segment', 'segment_base', 'IncomeStartAge',              'income_start_age',               'INT',           65, 1, 0, 1, GETUTCDATE()),
+  (3142, 'EQ_ODS', 'Segment', 'segment_base', 'ExtendedIncomePeriodDate',    'extended_income_period_date',    'TIMESTAMP',     66, 1, 0, 1, GETUTCDATE()),
+  (3143, 'EQ_ODS', 'Segment', 'segment_base', 'BenefitBase',                 'benefit_base',                   'DECIMAL(18,4)', 67, 1, 0, 1, GETUTCDATE()),
+  (3144, 'EQ_ODS', 'Segment', 'segment_base', 'BenefitBaseLastValDate',      'benefit_base_last_val_date',     'TIMESTAMP',     68, 1, 0, 1, GETUTCDATE()),
+  (3145, 'EQ_ODS', 'Segment', 'segment_base', 'IncomeWDAmount',              'income_wd_amount',               'DECIMAL(18,4)', 69, 1, 0, 1, GETUTCDATE()),
+  (3146, 'EQ_ODS', 'Segment', 'segment_base', 'RemainingIncomeWDAmount',     'remaining_income_wd_amount',     'DECIMAL(18,4)', 70, 1, 0, 1, GETUTCDATE()),
+  (3147, 'EQ_ODS', 'Segment', 'segment_base', 'SysGainAccum',                'sys_gain_accum',                 'DECIMAL(18,4)', 71, 1, 0, 1, GETUTCDATE()),
+  (3148, 'EQ_ODS', 'Segment', 'segment_base', 'BillScheduleFK',              'bill_schedule_id',               'INT',           72, 1, 0, 1, GETUTCDATE()),
+  (3149, 'EQ_ODS', 'Segment', 'segment_base', 'FirstNotifyDate',             'first_notify_date',              'TIMESTAMP',     73, 1, 0, 1, GETUTCDATE());
+
+-- ── [O07] Agent (ODS)  (18 cols, IDs 3150-3167) ─────────────────────────────
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3150, 'EQ_ODS', 'Agent', 'agent_ods_base', 'AgentPK',                      'agent_id',                        'INT',        1, 0, 1, 1, GETUTCDATE()),
+  (3151, 'EQ_ODS', 'Agent', 'agent_ods_base', 'CompanyFK',                    'company_id',                      'INT',        2, 1, 0, 1, GETUTCDATE()),
+  (3152, 'EQ_ODS', 'Agent', 'agent_ods_base', 'HireDate',                     'hire_date',                       'TIMESTAMP',  3, 1, 0, 1, GETUTCDATE()),
+  (3153, 'EQ_ODS', 'Agent', 'agent_ods_base', 'TerminationDate',              'termination_date',                'TIMESTAMP',  4, 1, 0, 1, GETUTCDATE()),
+  (3154, 'EQ_ODS', 'Agent', 'agent_ods_base', 'AgentStatusCT',                'agent_status_code',               'STRING',     5, 1, 0, 1, GETUTCDATE()),
+  (3155, 'EQ_ODS', 'Agent', 'agent_ods_base', 'AgentTypeCT',                  'agent_type_code',                 'STRING',     6, 1, 0, 1, GETUTCDATE()),
+  (3156, 'EQ_ODS', 'Agent', 'agent_ods_base', 'WithholdingStatus',            'withholding_status',              'STRING',     7, 1, 0, 1, GETUTCDATE()),
+  (3157, 'EQ_ODS', 'Agent', 'agent_ods_base', 'Department',                   'department',                      'STRING',     8, 1, 0, 1, GETUTCDATE()),
+  (3158, 'EQ_ODS', 'Agent', 'agent_ods_base', 'Region',                       'region',                          'STRING',     9, 1, 0, 1, GETUTCDATE()),
+  (3159, 'EQ_ODS', 'Agent', 'agent_ods_base', 'Branch',                       'branch',                          'STRING',    10, 1, 0, 1, GETUTCDATE()),
+  (3160, 'EQ_ODS', 'Agent', 'agent_ods_base', 'NPN',                          'npn',                             'STRING',    11, 1, 0, 1, GETUTCDATE()),
+  (3161, 'EQ_ODS', 'Agent', 'agent_ods_base', 'IntDebitBalStatusCT',          'int_debit_bal_status_code',       'STRING',    12, 1, 0, 1, GETUTCDATE()),
+  (3162, 'EQ_ODS', 'Agent', 'agent_ods_base', 'HoldCommStatus',               'hold_comm_status',                'STRING',    13, 1, 0, 1, GETUTCDATE()),
+  (3163, 'EQ_ODS', 'Agent', 'agent_ods_base', 'Operator',                     'operator',                        'STRING',    14, 1, 0, 1, GETUTCDATE()),
+  (3164, 'EQ_ODS', 'Agent', 'agent_ods_base', 'MaintDateTime',                'maint_datetime',                  'TIMESTAMP', 15, 1, 0, 1, GETUTCDATE()),
+  (3165, 'EQ_ODS', 'Agent', 'agent_ods_base', 'DisbursementAddressTypeCT',    'disbursement_address_type_code',  'STRING',    16, 1, 0, 1, GETUTCDATE()),
+  (3166, 'EQ_ODS', 'Agent', 'agent_ods_base', 'CorrespondenceAddressTypeCT',  'correspondence_address_type_code','STRING',    17, 1, 0, 1, GETUTCDATE()),
+  (3167, 'EQ_ODS', 'Agent', 'agent_ods_base', 'RehireEligibleDate',           'rehire_eligible_date',            'TIMESTAMP', 18, 1, 0, 1, GETUTCDATE());
+
+-- ── [O08] ContractTreaty  (20 cols, IDs 3168-3187) ──────────────────────────
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3168, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'ContractTreatyPK',        'contract_treaty_id',         'INT',            1, 0, 1, 1, GETUTCDATE()),
+  (3169, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'SegmentFK',               'segment_id',                 'INT',            2, 1, 0, 1, GETUTCDATE()),
+  (3170, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'TreatyFK',                'treaty_id',                  'INT',            3, 1, 0, 1, GETUTCDATE()),
+  (3171, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'ReinsuranceIndicatorCT',  'reinsurance_indicator_code', 'STRING',         4, 1, 0, 1, GETUTCDATE()),
+  (3172, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'EffectiveDate',           'effective_date',             'TIMESTAMP',      5, 1, 0, 1, GETUTCDATE()),
+  (3173, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'ReinsuranceClassCT',      'reinsurance_class_code',     'STRING',         6, 1, 0, 1, GETUTCDATE()),
+  (3174, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'RetentionAmount',         'retention_amount',           'DECIMAL(18,4)',  7, 1, 0, 1, GETUTCDATE()),
+  (3175, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'PoolPercentage',          'pool_percentage',            'DECIMAL(18,4)',  8, 1, 0, 1, GETUTCDATE()),
+  (3176, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'ReinsuranceTypeCT',       'reinsurance_type_code',      'STRING',         9, 1, 0, 1, GETUTCDATE()),
+  (3177, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'TableRatingCT',           'table_rating_code',          'STRING',        10, 1, 0, 1, GETUTCDATE()),
+  (3178, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'FlatExtra',               'flat_extra',                 'DECIMAL(18,4)', 11, 1, 0, 1, GETUTCDATE()),
+  (3179, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'FlatExtraAge',            'flat_extra_age',             'INT',           12, 1, 0, 1, GETUTCDATE()),
+  (3180, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'FlatExtraDuration',       'flat_extra_duration',        'INT',           13, 1, 0, 1, GETUTCDATE()),
+  (3181, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'PercentExtra',            'percent_extra',              'DECIMAL(18,4)', 14, 1, 0, 1, GETUTCDATE()),
+  (3182, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'PercentExtraAge',         'percent_extra_age',          'INT',           15, 1, 0, 1, GETUTCDATE()),
+  (3183, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'PercentExtraDuration',    'percent_extra_duration',     'INT',           16, 1, 0, 1, GETUTCDATE()),
+  (3184, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'MaxReinsuranceAmount',    'max_reinsurance_amount',     'DECIMAL(18,4)', 17, 1, 0, 1, GETUTCDATE()),
+  (3185, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'TreatyOverrideInd',       'is_treaty_override',         'BOOLEAN',       18, 1, 0, 1, GETUTCDATE()),
+  (3186, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'PolicyOverrideInd',       'is_policy_override',         'BOOLEAN',       19, 1, 0, 1, GETUTCDATE()),
+  (3187, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'Status',                  'status',                     'STRING',        20, 1, 0, 1, GETUTCDATE());
+
+-- ── [O09] Treaty  (10 cols, IDs 3188-3197) ──────────────────────────────────
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3188, 'EQ_ODS', 'Treaty', 'treaty_base', 'TreatyPK',             'treaty_id',              'INT',            1, 0, 1, 1, GETUTCDATE()),
+  (3189, 'EQ_ODS', 'Treaty', 'treaty_base', 'TreatyGroupFK',        'treaty_group_id',        'INT',            2, 1, 0, 1, GETUTCDATE()),
+  (3190, 'EQ_ODS', 'Treaty', 'treaty_base', 'StartDate',            'start_date',             'TIMESTAMP',      3, 1, 0, 1, GETUTCDATE()),
+  (3191, 'EQ_ODS', 'Treaty', 'treaty_base', 'StopDate',             'stop_date',              'TIMESTAMP',      4, 1, 0, 1, GETUTCDATE()),
+  (3192, 'EQ_ODS', 'Treaty', 'treaty_base', 'SettlementPeriod',     'settlement_period',      'INT',            5, 1, 0, 1, GETUTCDATE()),
+  (3193, 'EQ_ODS', 'Treaty', 'treaty_base', 'PaymentModeCT',        'payment_mode_code',      'STRING',         6, 1, 0, 1, GETUTCDATE()),
+  (3194, 'EQ_ODS', 'Treaty', 'treaty_base', 'CalculationModeCT',    'calculation_mode_code',  'STRING',         7, 1, 0, 1, GETUTCDATE()),
+  (3195, 'EQ_ODS', 'Treaty', 'treaty_base', 'LastCheckDate',        'last_check_date',        'TIMESTAMP',      8, 1, 0, 1, GETUTCDATE()),
+  (3196, 'EQ_ODS', 'Treaty', 'treaty_base', 'ReinsurerBalance',     'reinsurer_balance',      'DECIMAL(18,4)',  9, 1, 0, 1, GETUTCDATE()),
+  (3197, 'EQ_ODS', 'Treaty', 'treaty_base', 'CoinsurancePercentage','coinsurance_percentage', 'DECIMAL(18,4)', 10, 1, 0, 1, GETUTCDATE());
+
+-- ── [O10] TreatyGroup  (2 cols, IDs 3198-3199) ──────────────────────────────
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3198, 'EQ_ODS', 'TreatyGroup', 'treaty_group_base', 'TreatyGroupPK',     'treaty_group_id',     'INT',    1, 0, 1, 1, GETUTCDATE()),
+  (3199, 'EQ_ODS', 'TreatyGroup', 'treaty_group_base', 'TreatyGroupNumber', 'treaty_group_number', 'STRING', 2, 1, 0, 1, GETUTCDATE());
+
+-- ── [O11] EDITTrx  (38 cols, IDs 3200-3237) ─────────────────────────────────
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3200, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'EDITTrxPK',                    'edit_trx_id',                    'BIGINT',         1, 0, 1, 1, GETUTCDATE()),
+  (3201, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'ClientSetupFK',                'client_setup_id',                'INT',            2, 1, 0, 1, GETUTCDATE()),
+  (3202, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'EffectiveDate',                'effective_date',                 'TIMESTAMP',      3, 1, 0, 1, GETUTCDATE()),
+  (3203, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'Status',                       'status',                         'STRING',         4, 1, 0, 1, GETUTCDATE()),
+  (3204, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'PendingStatus',                'pending_status',                 'STRING',         5, 1, 0, 1, GETUTCDATE()),
+  (3205, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'SequenceNumber',               'sequence_number',                'INT',            6, 1, 0, 1, GETUTCDATE()),
+  (3206, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'TaxYear',                      'tax_year',                       'INT',            7, 1, 0, 1, GETUTCDATE()),
+  (3207, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'TrxAmount',                    'trx_amount',                     'DECIMAL(18,4)',  8, 1, 0, 1, GETUTCDATE()),
+  (3208, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'DueDate',                      'due_date',                       'TIMESTAMP',      9, 1, 0, 1, GETUTCDATE()),
+  (3209, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'TransactionTypeCT',            'transaction_type_code',          'STRING',        10, 1, 0, 1, GETUTCDATE()),
+  (3210, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'TrxIsRescheduledInd',          'is_trx_rescheduled',             'BOOLEAN',       11, 1, 0, 1, GETUTCDATE()),
+  (3211, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'ReapplyEDITTrxFK',             'reapply_edit_trx_id',            'BIGINT',        12, 1, 0, 1, GETUTCDATE()),
+  (3212, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'CommissionStatus',             'commission_status',              'STRING',        13, 1, 0, 1, GETUTCDATE()),
+  (3213, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'LookBackInd',                  'is_look_back',                   'BOOLEAN',       14, 1, 0, 1, GETUTCDATE()),
+  (3214, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'OriginatingTrxFK',             'originating_trx_id',             'BIGINT',        15, 1, 0, 1, GETUTCDATE()),
+  (3215, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'NoCorrespondenceInd',          'is_no_correspondence',           'BOOLEAN',       16, 1, 0, 1, GETUTCDATE()),
+  (3216, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'NoAccountingInd',              'is_no_accounting',               'BOOLEAN',       17, 1, 0, 1, GETUTCDATE()),
+  (3217, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'NoCommissionInd',              'is_no_commission',               'BOOLEAN',       18, 1, 0, 1, GETUTCDATE()),
+  (3218, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'MaintDateTime',                'maint_datetime',                 'TIMESTAMP',     19, 1, 0, 1, GETUTCDATE()),
+  (3219, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'Operator',                     'operator',                       'STRING',        20, 1, 0, 1, GETUTCDATE()),
+  (3220, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'NotificationAmount',           'notification_amount',            'DECIMAL(18,4)', 21, 1, 0, 1, GETUTCDATE()),
+  (3221, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'NotificationAmountReceived',   'notification_amount_received',   'DECIMAL(18,4)', 22, 1, 0, 1, GETUTCDATE()),
+  (3222, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'TransferTypeCT',               'transfer_type_code',             'STRING',        23, 1, 0, 1, GETUTCDATE()),
+  (3223, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'AdvanceNotificationOverride',  'advance_notification_override',  'INT',           24, 1, 0, 1, GETUTCDATE()),
+  (3224, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'AccountingPeriod',             'accounting_period',              'STRING',        25, 1, 0, 1, GETUTCDATE()),
+  (3225, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'ReinsuranceStatus',            'reinsurance_status',             'STRING',        26, 1, 0, 1, GETUTCDATE()),
+  (3226, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'BonusCommissionAmount',        'bonus_commission_amount',        'DECIMAL(18,4)', 27, 1, 0, 1, GETUTCDATE()),
+  (3227, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'ExcessBonusCommissionAmount',  'excess_bonus_commission_amount', 'DECIMAL(18,4)', 28, 1, 0, 1, GETUTCDATE()),
+  (3228, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'DateContributionExcess',       'date_contribution_excess',       'TIMESTAMP',     29, 1, 0, 1, GETUTCDATE()),
+  (3229, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'TransferUnitsType',            'transfer_units_type',            'STRING',        30, 1, 0, 1, GETUTCDATE()),
+  (3230, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'NoCheckEFT',                   'is_no_check_eft',                'BOOLEAN',       31, 1, 0, 1, GETUTCDATE()),
+  (3231, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'InterestProceedsOverride',     'interest_proceeds_override',     'DECIMAL(18,4)', 32, 1, 0, 1, GETUTCDATE()),
+  (3232, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'NewPolicyNumber',              'new_policy_number',              'STRING',        33, 1, 0, 1, GETUTCDATE()),
+  (3233, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'ReversalReasonCodeCT',         'reversal_reason_code',           'STRING',        34, 1, 0, 1, GETUTCDATE()),
+  (3234, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'CheckAdjustmentFK',            'check_adjustment_id',            'INT',           35, 1, 0, 1, GETUTCDATE()),
+  (3235, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'TrxPercent',                   'trx_percent',                    'DECIMAL(18,4)', 36, 1, 0, 1, GETUTCDATE()),
+  (3236, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'OriginalAccountingPeriod',     'original_accounting_period',     'STRING',        37, 1, 0, 1, GETUTCDATE()),
+  (3237, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'BGA',                          'bga',                            'STRING',        38, 1, 0, 1, GETUTCDATE());
+
+-- ── [O12] ClientSetup  (4 cols, IDs 3238-3241) ──────────────────────────────
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3238, 'EQ_ODS', 'ClientSetup', 'client_setup_base', 'ClientSetupPK',      'client_setup_id',      'INT', 1, 0, 1, 1, GETUTCDATE()),
+  (3239, 'EQ_ODS', 'ClientSetup', 'client_setup_base', 'ClientRoleFK',       'client_role_id',       'INT', 2, 1, 0, 1, GETUTCDATE()),
+  (3240, 'EQ_ODS', 'ClientSetup', 'client_setup_base', 'ContractSetupFK',    'contract_setup_id',    'INT', 3, 1, 0, 1, GETUTCDATE()),
+  (3241, 'EQ_ODS', 'ClientSetup', 'client_setup_base', 'ContractClientFK',   'contract_client_id',   'INT', 4, 1, 0, 1, GETUTCDATE());
+
+-- ── [O13] EDITTrxHistory  (13 cols, IDs 3242-3254) ──────────────────────────
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3242, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'EDITTrxHistoryPK',          'edit_trx_history_id',         'BIGINT',    1, 0, 1, 1, GETUTCDATE()),
+  (3243, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'EDITTrxFK',                 'edit_trx_id',                 'BIGINT',    2, 1, 0, 1, GETUTCDATE()),
+  (3244, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'CycleDate',                 'cycle_date',                  'TIMESTAMP', 3, 1, 0, 1, GETUTCDATE()),
+  (3245, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'OriginalProcessDateTime',   'original_process_datetime',   'TIMESTAMP', 4, 1, 0, 1, GETUTCDATE()),
+  (3246, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'AccountingPendingStatus',   'accounting_pending_status',   'STRING',    5, 1, 0, 1, GETUTCDATE()),
+  (3247, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'ControlNumber',             'control_number',              'STRING',    6, 1, 0, 1, GETUTCDATE()),
+  (3248, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'ReleaseDate',               'release_date',                'TIMESTAMP', 7, 1, 0, 1, GETUTCDATE()),
+  (3249, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'ReturnDate',                'return_date',                 'TIMESTAMP', 8, 1, 0, 1, GETUTCDATE()),
+  (3250, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'CorrespondenceTypeCT',      'correspondence_type_code',    'STRING',    9, 1, 0, 1, GETUTCDATE()),
+  (3251, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'ProcessID',                 'process_id',                  'STRING',   10, 1, 0, 1, GETUTCDATE()),
+  (3252, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'RealTimeInd',               'is_real_time',                'BOOLEAN',  11, 1, 0, 1, GETUTCDATE()),
+  (3253, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'AddressTypeCT',             'address_type_code',           'STRING',   12, 1, 0, 1, GETUTCDATE()),
+  (3254, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'ProcessDateTime',           'process_datetime',            'TIMESTAMP',13, 1, 0, 1, GETUTCDATE());
+
+-- ── [O14] FinancialHistory  (27 cols, IDs 3255-3281) ────────────────────────
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3255, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'FinancialHistoryPK',        'financial_history_id',       'BIGINT',         1, 0, 1, 1, GETUTCDATE()),
+  (3256, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'EDITTrxHistoryFK',          'edit_trx_history_id',        'BIGINT',         2, 1, 0, 1, GETUTCDATE()),
+  (3257, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'GrossAmount',               'gross_amount',               'DECIMAL(18,4)',  3, 1, 0, 1, GETUTCDATE()),
+  (3258, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'NetAmount',                 'net_amount',                 'DECIMAL(18,4)',  4, 1, 0, 1, GETUTCDATE()),
+  (3259, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'CheckAmount',               'check_amount',               'DECIMAL(18,4)',  5, 1, 0, 1, GETUTCDATE()),
+  (3260, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'FreeAmount',                'free_amount',                'DECIMAL(18,4)',  6, 1, 0, 1, GETUTCDATE()),
+  (3261, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'TaxableBenefit',            'taxable_benefit',            'DECIMAL(18,4)',  7, 1, 0, 1, GETUTCDATE()),
+  (3262, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'DisbursementSourceCT',      'disbursement_source_code',   'STRING',         8, 1, 0, 1, GETUTCDATE()),
+  (3263, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'Liability',                 'liability',                  'DECIMAL(18,4)',  9, 1, 0, 1, GETUTCDATE()),
+  (3264, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'CommissionableAmount',      'commissionable_amount',      'DECIMAL(18,4)', 10, 1, 0, 1, GETUTCDATE()),
+  (3265, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'MaxCommissionAmount',       'max_commission_amount',      'DECIMAL(18,4)', 11, 1, 0, 1, GETUTCDATE()),
+  (3266, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'CostBasis',                 'cost_basis',                 'DECIMAL(18,4)', 12, 1, 0, 1, GETUTCDATE()),
+  (3267, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'AccumulatedValue',          'accumulated_value',          'DECIMAL(18,4)', 13, 1, 0, 1, GETUTCDATE()),
+  (3268, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'SurrenderValue',            'surrender_value',            'DECIMAL(18,4)', 14, 1, 0, 1, GETUTCDATE()),
+  (3269, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'GuarAccumulatedValue',      'guar_accumulated_value',     'DECIMAL(18,4)', 15, 1, 0, 1, GETUTCDATE()),
+  (3270, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'PriorDueDate',              'prior_due_date',             'TIMESTAMP',     16, 1, 0, 1, GETUTCDATE()),
+  (3271, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'PriorExtractDate',          'prior_extract_date',         'TIMESTAMP',     17, 1, 0, 1, GETUTCDATE()),
+  (3272, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'PriorFixedAmount',          'prior_fixed_amount',         'DECIMAL(18,4)', 18, 1, 0, 1, GETUTCDATE()),
+  (3273, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'PrevComplexChangeValue',    'prev_complex_change_value',  'DECIMAL(18,4)', 19, 1, 0, 1, GETUTCDATE()),
+  (3274, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'TaxableIndicator',          'is_taxable',                 'BOOLEAN',       20, 1, 0, 1, GETUTCDATE()),
+  (3275, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'NetAmountAtRisk',           'net_amount_at_risk',         'DECIMAL(18,4)', 21, 1, 0, 1, GETUTCDATE()),
+  (3276, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'DistributionCodeCT',        'distribution_code',          'STRING',        22, 1, 0, 1, GETUTCDATE()),
+  (3277, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'NetIncomeAttributable',     'net_income_attributable',    'DECIMAL(18,4)', 23, 1, 0, 1, GETUTCDATE()),
+  (3278, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'InterestProceeds',          'interest_proceeds',          'DECIMAL(18,4)', 24, 1, 0, 1, GETUTCDATE()),
+  (3279, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'PriorInitialCYAccumValue',  'prior_initial_cy_accum_value','DECIMAL(18,4)',25, 1, 0, 1, GETUTCDATE()),
+  (3280, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'InsuranceInforce',          'insurance_inforce',          'DECIMAL(18,4)', 26, 1, 0, 1, GETUTCDATE()),
+  (3281, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'SevenPayRate',              'seven_pay_rate',             'DECIMAL(18,4)', 27, 1, 0, 1, GETUTCDATE());
+
+-- ── [O15] ProductStructure (SEG_ENGINE)  (4 cols, IDs 3282-3285) ────────────
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (3282, 'EQ_ODS', 'ProductStructure', 'product_structure_base', 'ProductStructurePK',    'product_structure_id',    'INT',    1, 0, 1, 1, GETUTCDATE()),
+  (3283, 'EQ_ODS', 'ProductStructure', 'product_structure_base', 'MarketingPackageName',  'marketing_package_name',  'STRING', 2, 1, 0, 1, GETUTCDATE()),
+  (3284, 'EQ_ODS', 'ProductStructure', 'product_structure_base', 'BusinessContractName',  'business_contract_name',  'STRING', 3, 1, 0, 1, GETUTCDATE()),
+  (3285, 'EQ_ODS', 'ProductStructure', 'product_structure_base', 'ProductTypeCT',         'product_type_code',       'STRING', 4, 1, 0, 1, GETUTCDATE());
+
+-- Total EQ_ODS: 285 column mappings across 15 base tables (IDs 3001-3285)
