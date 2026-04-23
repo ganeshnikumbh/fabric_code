@@ -82,7 +82,7 @@ INSERT INTO dbo.ingestion_config
     (source_id, source_name, source_type, source_schema, entity_name, target_lakehouse, target_schema, target_table, load_type, watermark_column, watermark_type, batch_size, partition_by_column_names, is_scd2, active_flag, src_busn_asst)
 VALUES
 -- ── Reference / lookup tables (full load) ─────────────────────────────────
-(1,  'EQ_Warehouse', 'sqlserver', 'dbo', 'Date',                         'lh_bronze', 'bronze_eqwarehouse', 'date_base',                              'full',        NULL,               NULL,       NULL,   NULL, 0, 0, 'elic'),
+(1,  'EQ_Warehouse', 'sqlserver', 'dbo', 'Date',                         'lh_bronze', 'bronze_eqwarehouse', 'date_base',                              'full',        NULL,               NULL,       NULL,   NULL, 0, 1, 'elic'),
 (2,  'EQ_Warehouse', 'sqlserver', 'dbo', 'State',                        'lh_bronze', 'bronze_eqwarehouse', 'state_base',                             'full',        NULL,               NULL,       NULL,   NULL, 1, 1, 'elic'),
 (3,  'EQ_Warehouse', 'sqlserver', 'dbo', 'Company',                      'lh_bronze', 'bronze_eqwarehouse', 'company_base',                           'full',        NULL,               NULL,       NULL,   NULL, 1, 1, 'elic'),
 (4,  'EQ_Warehouse', 'sqlserver', 'dbo', 'ActivityType',                 'lh_bronze', 'bronze_eqwarehouse', 'activity_type_base',                     'full',        NULL,               NULL,       NULL,   NULL, 1, 1, 'elic'),
@@ -133,8 +133,8 @@ VALUES
 (46, 'EQ_Warehouse', 'sqlserver', 'dbo', 'RenewalRate_Group',            'lh_bronze', 'bronze_eqwarehouse', 'renewal_rate_group_base',                'incremental', 'RateEffectiveDate','datetime', 50000,  NULL, 0, 1, 'elic'),
 (47, 'EQ_Warehouse', 'sqlserver', 'dbo', 'CAPRepayment',                 'lh_bronze', 'bronze_eqwarehouse', 'cap_repayment_base',                     'incremental', 'RepaymentDate',    'datetime', 50000,  NULL, 1, 1, 'elic'),
 (48, 'EQ_Warehouse', 'sqlserver', 'dbo', 'CAPStatusChange',              'lh_bronze', 'bronze_eqwarehouse', 'cap_status_change_base',                 'incremental', 'ChangeDate',       'datetime', 50000,  NULL, 1, 1, 'elic'),
-(49, 'EQ_Warehouse', 'sqlserver', 'dbo', 'hedge.Ratios',                 'lh_bronze', 'bronze_eqwarehouse', 'hedge_ratios_base',                      'incremental', 'RatioDate',        'datetime', 50000,  NULL, 0, 1, 'elic'),  -- already SCD2 in source
-(50, 'EQ_Warehouse', 'sqlserver', 'dbo', 'hedge.Options',                'lh_bronze', 'bronze_eqwarehouse', 'hedge_options_base',                     'incremental', 'OptionDate',       'datetime', 50000,  NULL, 0, 1, 'elic'),
+(49, 'EQ_Warehouse', 'sqlserver', 'hedge', 'Ratios',                 'lh_bronze', 'bronze_eqwarehouse', 'hedge_ratios_base',                      'incremental', 'RatioDate',        'datetime', 50000,  NULL, 0, 1, 'elic'),  -- already SCD2 in source
+(50, 'EQ_Warehouse', 'sqlserver', 'hedge', 'Options',                'lh_bronze', 'bronze_eqwarehouse', 'hedge_options_base',                     'incremental', 'OptionDate',       'datetime', 50000,  NULL, 0, 1, 'elic'),
 -- ── Remaining groups ──────────────────────────────────────────────────────
 (51, 'EQ_Warehouse', 'sqlserver', 'dbo', 'Rider_Group',                  'lh_bronze', 'bronze_eqwarehouse', 'rider_group_base',                       'incremental', 'StartDate',        'datetime', 50000,  NULL, 1, 1, 'elic'),
 (52, 'EQ_Warehouse', 'sqlserver', 'dbo', 'Requirement_Group',            'lh_bronze', 'bronze_eqwarehouse', 'requirement_group_base',                 'incremental', 'StartDate',        'datetime', 50000,  NULL, 1, 1, 'elic'),
@@ -148,7 +148,7 @@ VALUES
 (59, 'EQ_ODS', 'sqlserver', 'seg_editsolutions', 'Segment',                  'lh_landing', 'seg_editsolutions', 'segment_base',                    'full', NULL, NULL, NULL, NULL, 0, 1, 'elic'),
 (60, 'EQ_ODS', 'sqlserver', 'seg_editsolutions', 'Agent',                    'lh_landing', 'seg_editsolutions', 'agent_ods_base',                  'full', NULL, NULL, NULL, NULL, 0, 1, 'elic'),
 (61, 'EQ_ODS', 'sqlserver', 'seg_editsolutions', 'ContractTreaty',           'lh_landing', 'seg_editsolutions', 'contract_treaty_base',            'full', NULL, NULL, NULL, NULL, 0, 1, 'elic'),
-(62, 'EQ_ODS', 'sqlserver', 'dbo',               'ref_Product',              'lh_landing', 'seg_editsolutions', 'ref_product_base',                'full', NULL, NULL, NULL, NULL, 0, 1, 'elic');
+(62, 'EQ_ODS', 'sqlserver', 'seg_editsolutions',               'ref_Product',              'lh_landing', 'seg_editsolutions', 'ref_product_base',                'full', NULL, NULL, NULL, NULL, 0, 0, 'elic');
 GO
 
 
