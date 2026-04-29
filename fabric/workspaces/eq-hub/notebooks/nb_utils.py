@@ -798,4 +798,587 @@ print("[nb_utils] Loaded — functions available: read_mssql_table, read_mssql_q
       "ingestion_config_df_from_json, schema_config_df_from_json, load_control_df_from_json, "
       "build_col_maps, "
       "validate_required_params, add_audit_columns, compute_md5_hash, "
-      "deduplicate_by_md5, write_delta_create")
+      "deduplicate_by_md5, make_surrogate_key, write_delta_create, "
+      "apply_scd2, apply_scd1, compute_md5Hash, add_audit_column, add_scd_column, GoldLoader")
+
+
+# ── GOLD LAYER ADDITIONS ──────────────────────────────────────────────────────
+# All Gold layer utilities are appended here. Nothing above this line is modified.
+
+import logging as _logging
+import inspect as _inspect
+from delta.tables import DeltaTable as _DeltaTable
+
+_logger = _logging.getLogger("nb_utils")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# apply_scd2 — reusable SCD Type 2 merge (extracted from nb_silver_s1_ingestion)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def apply_scd2(
+    spark: SparkSession,
+    source_df: DataFrame,
+    qualified_target: str,
+    effective_timestamp_val: str = None,
+    partition_cols: list = None,
+    tbl_properties: dict = None,
+) -> tuple:
+    """
+    Apply SCD Type 2 (md5-hash-only) merge strategy into a Delta table.
+
+    source_df must contain an md5_hash column.  SCD2 structural columns
+    (effective_timestamp, expiration_timestamp, is_current) are added to
+    source_df inside this function — any values set by callers are overwritten.
+
+    Strategy matrix:
+      MD5 in source | MD5 in target (is_current=1) | Action
+      YES           | YES                          | SKIP  — unchanged
+      YES           | NO                           | INSERT — new / changed row
+      NO            | YES                          | EXPIRE — set expiration + is_current=0
+      NO            | NO                           | ignore — already expired
+
+    Parameters
+    ----------
+    spark                   : Active SparkSession.
+    source_df               : Incoming records DataFrame.  Must contain 'md5_hash'.
+    qualified_target        : Fully qualified Delta table, e.g. 'silver_s1.client_base'.
+    effective_timestamp_val : ISO timestamp string for the effective date of this load.
+                              When None, CURRENT_TIMESTAMP() is used.
+    partition_cols          : Column names to partition by on first-run table creation.
+    tbl_properties          : Delta table properties for first-run create.
+                              Defaults to {"delta.enableChangeDataFeed": "true"}.
+
+    Returns
+    -------
+    tuple  (rows_inserted: int, rows_updated: int)
+    """
+    _OPEN_TS   = "9999-12-31 00:00:00"
+    _tbl_props = tbl_properties or {"delta.enableChangeDataFeed": "true"}
+
+    # Resolve effective_timestamp: accept explicit string or fall back to NOW
+    _eff_ts = (
+        F.lit(effective_timestamp_val).cast(TimestampType())
+        if effective_timestamp_val
+        else F.current_timestamp()
+    )
+
+    # Add SCD2 structural columns — overwrite any values already on source_df
+    source_df = (
+        source_df
+        .withColumn("effective_timestamp",  _eff_ts)
+        .withColumn("expiration_timestamp", F.lit(_OPEN_TS).cast(TimestampType()))
+        .withColumn("is_current",           F.lit(1).cast(IntegerType()))
+    )
+
+    table_exists  = spark.catalog.tableExists(qualified_target)
+    rows_inserted = 0
+    rows_updated  = 0
+
+    if not table_exists:
+        # First run — write the full source as the initial state
+        _logger.info("[apply_scd2] '%s' does not exist — creating via full write", qualified_target)
+        write_delta_create(source_df, qualified_target, partition_cols, _tbl_props)
+        rows_inserted = source_df.count()
+
+    else:
+        target_df = spark.table(qualified_target)
+
+        # New records: source md5 does NOT appear anywhere in the target
+        new_records_df = source_df.join(
+            target_df.select("md5_hash"),
+            on  = "md5_hash",
+            how = "left_anti",
+        )
+
+        # Expired records: currently-active target rows whose md5 is absent from source
+        expired_df = (
+            target_df
+            .filter(F.col("is_current") == 1)
+            .join(source_df.select("md5_hash"), on="md5_hash", how="left_anti")
+            .select("md5_hash")
+        )
+
+        rows_inserted = new_records_df.count()
+        rows_updated  = expired_df.count()
+        _logger.info(
+            "[apply_scd2] %s — new=%d, to_expire=%d",
+            qualified_target, rows_inserted, rows_updated,
+        )
+
+        # Expire stale active records — match on md5_hash AND is_current=1 so
+        # already-expired history rows are never touched
+        if rows_updated > 0:
+            (
+                _DeltaTable.forName(spark, qualified_target).alias("tgt")
+                .merge(
+                    source    = expired_df.alias("src"),
+                    condition = "tgt.md5_hash = src.md5_hash AND tgt.is_current = 1",
+                )
+                .whenMatchedUpdate(set={
+                    "is_current":           F.lit(0).cast(IntegerType()),
+                    "expiration_timestamp": _eff_ts,
+                })
+                .execute()
+            )
+            _logger.info("[apply_scd2] Expired %d record(s) in '%s'", rows_updated, qualified_target)
+
+        # Append new / changed records — md5 uniqueness guaranteed by left_anti above
+        if rows_inserted > 0:
+            (
+                new_records_df.write
+                .format("delta")
+                .mode("append")
+                .saveAsTable(qualified_target)
+            )
+            _logger.info("[apply_scd2] Appended %d new record(s) to '%s'", rows_inserted, qualified_target)
+
+    return rows_inserted, rows_updated
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# apply_scd1 — reusable SCD Type 1 UPSERT (extracted from nb_silver_s1_ingestion)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def apply_scd1(
+    spark: SparkSession,
+    source_df: DataFrame,
+    qualified_target: str,
+    business_key_cols: list,
+    partition_cols: list = None,
+    tbl_properties: dict = None,
+) -> tuple:
+    """
+    Apply SCD Type 1 UPSERT strategy into a Delta table.
+
+    Performs a Delta MERGE matched on business_key_cols:
+      WHEN MATCHED     → UPDATE all columns (overwrite with latest source values)
+      WHEN NOT MATCHED → INSERT full row
+
+    On first run (table does not exist) a full write is performed instead of a
+    MERGE, which is equivalent and avoids the overhead of an empty-table merge.
+
+    This function is intentionally key-agnostic: callers choose the match key.
+    For the Silver layer the match key is ["md5_hash"] (content-hash uniqueness),
+    which is equivalent to the former insert-only behaviour because a matching
+    md5 means the row content is identical and the UPDATE is a no-op.
+    For the Gold layer callers pass the actual business primary-key columns.
+
+    Parameters
+    ----------
+    spark             : Active SparkSession.
+    source_df         : Incoming records DataFrame.
+    qualified_target  : Fully qualified Delta table, e.g. 'silver_s1.client_base'.
+    business_key_cols : Column names used as the MERGE join condition.
+    partition_cols    : Column names to partition by on first-run table creation.
+    tbl_properties    : Delta table properties for first-run create.
+                        Defaults to {"delta.enableChangeDataFeed": "true"}.
+
+    Returns
+    -------
+    tuple  (rows_inserted: int, rows_updated: int)
+    """
+    _tbl_props  = tbl_properties or {"delta.enableChangeDataFeed": "true"}
+    table_exists = spark.catalog.tableExists(qualified_target)
+    rows_inserted = 0
+    rows_updated  = 0
+
+    if not table_exists:
+        # First run — create table with full write
+        _logger.info("[apply_scd1] '%s' does not exist — creating via full write", qualified_target)
+        write_delta_create(source_df, qualified_target, partition_cols, _tbl_props)
+        rows_inserted = source_df.count()
+
+    else:
+        target_df = spark.table(qualified_target)
+
+        # Pre-count inserts vs updates before the MERGE for summary reporting.
+        # existing_keys holds every distinct business-key combination in target.
+        existing_keys_df = target_df.select(business_key_cols).distinct()
+
+        # Rows whose business key is NOT yet in target → will be inserted
+        new_rows_df = source_df.join(existing_keys_df, on=business_key_cols, how="left_anti")
+        # Rows whose business key already exists in target → will be updated
+        upd_rows_df = source_df.join(existing_keys_df, on=business_key_cols, how="inner")
+
+        rows_inserted = new_rows_df.count()
+        rows_updated  = upd_rows_df.count()
+        _logger.info(
+            "[apply_scd1] %s — to_insert=%d, to_update=%d",
+            qualified_target, rows_inserted, rows_updated,
+        )
+
+        # Build merge condition: AND of all business key columns
+        _merge_cond = " AND ".join(
+            [f"tgt.{col} = src.{col}" for col in business_key_cols]
+        )
+
+        (
+            _DeltaTable.forName(spark, qualified_target).alias("tgt")
+            .merge(
+                source    = source_df.alias("src"),
+                condition = _merge_cond,
+            )
+            .whenMatchedUpdateAll()
+            .whenNotMatchedInsertAll()
+            .execute()
+        )
+        _logger.info("[apply_scd1] MERGE complete for '%s'", qualified_target)
+
+    return rows_inserted, rows_updated
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Gold-layer transform utility functions
+#
+# Each function accepts df as its first positional argument and returns a
+# DataFrame.  This uniform signature is required by GoldLoader.transform().
+# Any function added here with that signature becomes automatically available
+# to all GoldLoader instances via self._function_registry — no other changes
+# are needed.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def compute_md5Hash(df: DataFrame, *cols: str) -> DataFrame:
+    """
+    Add or replace the md5_hash column computed from the supplied column names.
+
+    Delegates to compute_md5_hash() so the hashing logic is not duplicated.
+    Accepts column names as individual positional arguments (unlike
+    compute_md5_hash which takes a list) so GoldLoader.transform() can pass
+    JSON 'parameters' arrays directly as *args.
+
+    Parameters
+    ----------
+    df   : Input DataFrame.
+    *cols: Column names to include in the hash, in the supplied order.
+
+    Returns
+    -------
+    DataFrame with md5_hash column added or replaced.
+    """
+    return compute_md5_hash(df, list(cols))
+
+
+def add_audit_column(df: DataFrame) -> DataFrame:
+    """
+    Append a gold-layer ingestion_timestamp column using CURRENT_TIMESTAMP().
+
+    Intended as a zero-parameter transform step in GoldLoader pipelines where
+    full pipeline context (run_id, ingestion_date, source_system) is not
+    available in the config JSON.
+
+    Parameters
+    ----------
+    df : Input DataFrame.
+
+    Returns
+    -------
+    DataFrame with ingestion_timestamp column added or replaced.
+    """
+    return df.withColumn("ingestion_timestamp", F.current_timestamp())
+
+
+def add_scd_column(df: DataFrame) -> DataFrame:
+    """
+    Add SCD2 structural columns to df with sentinel initial values.
+
+    Columns added / replaced:
+      effective_timestamp  : CURRENT_TIMESTAMP()
+      expiration_timestamp : '9999-12-31 00:00:00'  (open-ended sentinel)
+      is_current           : 1 (INTEGER)
+
+    Note: when load(is_scd2=True) is called, apply_scd2() overwrites these
+    columns with the authoritative effective_timestamp for the load run.
+    This transform step is provided so callers can inspect or persist the
+    SCD2 schema at intermediate stages if needed.
+
+    Parameters
+    ----------
+    df : Input DataFrame.
+
+    Returns
+    -------
+    DataFrame with SCD2 structural columns added or replaced.
+    """
+    _OPEN_TS = "9999-12-31 00:00:00"
+    return (
+        df
+        .withColumn("effective_timestamp",  F.current_timestamp())
+        .withColumn("expiration_timestamp", F.lit(_OPEN_TS).cast(TimestampType()))
+        .withColumn("is_current",           F.lit(1).cast(IntegerType()))
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GoldLoader — metadata-driven Extract / Transform / Load orchestrator
+# ─────────────────────────────────────────────────────────────────────────────
+
+class GoldLoader:
+    """
+    Metadata-driven ETL orchestrator for the Gold layer.
+
+    All behaviour is driven by three config dicts (pre-parsed from JSON files).
+    Adding a new transform step requires only adding a new function to nb_utils —
+    GoldLoader picks it up automatically via self._function_registry.
+
+    Typical usage:
+        loader      = GoldLoader(spark)
+        extract_df  = loader.extract(extract_config)
+        transformed = loader.transform(extract_df, transform_config)
+        loader.load(transformed, load_config["target_table"],
+                    load_config["is_scd2"], load_config["business_key_col"],
+                    load_config["surrogate_key_col"])
+    """
+
+    def __init__(self, spark: SparkSession) -> None:
+        """
+        Initialise and build the function registry.
+
+        The registry maps every public module-level function name to its
+        callable.  Because it is built from globals() at instantiation time,
+        any function added to nb_utils after the initial load will NOT be
+        registered until a new GoldLoader is instantiated — re-run nb_utils
+        or re-instantiate GoldLoader to pick up new additions.
+
+        Parameters
+        ----------
+        spark : Active SparkSession.
+        """
+        self.spark = spark
+
+        # Include only plain Python functions (not classes, modules, or built-ins)
+        # that do not start with an underscore (i.e. public API only).
+        self._function_registry: dict = {
+            name: obj
+            for name, obj in globals().items()
+            if _inspect.isfunction(obj) and not name.startswith("_")
+        }
+        _logger.info(
+            "[GoldLoader] Registry built — %d functions: %s",
+            len(self._function_registry),
+            sorted(self._function_registry.keys()),
+        )
+
+    # ── extract ──────────────────────────────────────────────────────────────
+
+    def extract(self, config: dict) -> DataFrame:
+        """
+        Execute the SQL query in config and return the resulting DataFrame.
+
+        Expected config shape:
+          {
+            "query_type"  : "extract",
+            "query_string": "SELECT ... FROM ..."
+          }
+
+        Parameters
+        ----------
+        config : Pre-parsed extract config dict.
+
+        Returns
+        -------
+        DataFrame  — result of spark.sql(config["query_string"]).
+
+        Raises
+        ------
+        ValueError : If query_type != 'extract' or query_string is missing/empty.
+        """
+        if config.get("query_type") != "extract":
+            raise ValueError(
+                f"[GoldLoader.extract] Expected query_type='extract', "
+                f"got '{config.get('query_type')}'."
+            )
+
+        query_string = config.get("query_string", "").strip()
+        if not query_string:
+            raise ValueError(
+                "[GoldLoader.extract] 'query_string' is required and must be non-empty."
+            )
+
+        _logger.info("[GoldLoader.extract] Running query: %.200s", query_string)
+        return self.spark.sql(query_string)
+
+    # ── transform ────────────────────────────────────────────────────────────
+
+    def transform(self, df: DataFrame, config: dict) -> DataFrame:
+        """
+        Apply a sequence of named transformation steps to df.
+
+        Steps are applied in JSON key order.  The output DataFrame of each
+        step becomes the input of the next (pipeline / chain pattern).
+
+        Expected config shape:
+          {
+            "query_type": "transform",
+            "<step_name>": {
+              "utility_function": "<function_in_registry>",  // required
+              "parameters": ["col1", "col2", ...]             // optional
+            },
+            ...
+          }
+
+        Each utility_function is called as:
+            func(df, *parameters)
+        and must return a DataFrame.
+
+        Parameters
+        ----------
+        df     : Input DataFrame from extract() (or a prior transform step).
+        config : Pre-parsed transform config dict.
+
+        Returns
+        -------
+        DataFrame — result after all steps have been applied in order.
+
+        Raises
+        ------
+        ValueError : If query_type is wrong, utility_function is missing or
+                     not found in the registry, or a step config is not a dict.
+        """
+        if config.get("query_type") != "transform":
+            raise ValueError(
+                f"[GoldLoader.transform] Expected query_type='transform', "
+                f"got '{config.get('query_type')}'."
+            )
+
+        for step_name, step_config in config.items():
+            if step_name == "query_type":
+                continue
+
+            if not isinstance(step_config, dict):
+                raise ValueError(
+                    f"[GoldLoader.transform] Step '{step_name}' value must be a dict, "
+                    f"got {type(step_config).__name__}."
+                )
+
+            func_name = step_config.get("utility_function")
+            if not func_name:
+                raise ValueError(
+                    f"[GoldLoader.transform] Step '{step_name}' is missing 'utility_function'."
+                )
+
+            func = self._function_registry.get(func_name)
+            if func is None:
+                raise ValueError(
+                    f"[GoldLoader.transform] Function '{func_name}' (step '{step_name}') "
+                    f"not found in registry. "
+                    f"Available: {sorted(self._function_registry.keys())}"
+                )
+
+            parameters = step_config.get("parameters", [])
+            _logger.info(
+                "[GoldLoader.transform] Step '%s' → %s(%s)",
+                step_name, func_name,
+                ", ".join(str(p) for p in parameters) if parameters else "",
+            )
+            # df is always the first argument; JSON parameters follow as positional args
+            df = func(df, *parameters)
+
+        return df
+
+    # ── load ─────────────────────────────────────────────────────────────────
+
+    def load(
+        self,
+        df: DataFrame,
+        target_table: str,
+        is_scd2: bool,
+        business_key_cols: list,
+        surrogate_key_col: str,
+        hash_col: str = "md5_hash",
+    ) -> None:
+        """
+        Persist the transformed DataFrame to a Gold Delta table.
+
+        Pre-write steps (always applied):
+          1. Adds a BIGINT surrogate key column (surrogate_key_col) derived
+             deterministically from business_key_cols via make_surrogate_key().
+          2. Adds/overwrites hash_col with an MD5 hash of business_key_cols
+             for consistent merge-key computation.
+
+        Write path (chosen by is_scd2):
+          is_scd2=True  → apply_scd2() : SCD Type 2 history tracking.
+          is_scd2=False → Delta MERGE  : WHEN MATCHED UPDATE ALL,
+                                         WHEN NOT MATCHED INSERT ALL,
+                                         matched on every business_key_cols column.
+                          First run    : full write via write_delta_create().
+
+        All Delta operations are idempotent — safe to re-run.
+
+        Parameters
+        ----------
+        df                : Transformed DataFrame from transform().
+        target_table      : Fully qualified Delta table, e.g. 'lh_gold.gold.dim_agent'.
+        is_scd2           : True  → SCD Type 2 via apply_scd2().
+                            False → standard UPSERT MERGE.
+        business_key_cols : Columns that uniquely identify a business entity.
+                            Used for surrogate key generation and MERGE condition.
+        surrogate_key_col : Name of the BIGINT surrogate key column to add.
+        hash_col          : Name of the MD5 hash column (default 'md5_hash').
+
+        Returns
+        -------
+        None  — raises ValueError if df is empty or business keys are missing.
+        """
+        # Guard: skip empty DataFrame — log warning and return rather than raising
+        if df.isEmpty():
+            _logger.warning(
+                "[GoldLoader.load] Source DataFrame is empty — skipping write to '%s'.",
+                target_table,
+            )
+            return
+
+        # Validate business key columns exist in the DataFrame
+        missing_bk = [c for c in business_key_cols if c not in df.columns]
+        if missing_bk:
+            raise ValueError(
+                f"[GoldLoader.load] Business key column(s) {missing_bk} not found in DataFrame. "
+                f"Available: {df.columns}"
+            )
+
+        # Step 1: Deterministic BIGINT surrogate key from business key columns
+        df = df.withColumn(
+            surrogate_key_col,
+            make_surrogate_key(*[F.col(c) for c in business_key_cols]),
+        )
+        _logger.info(
+            "[GoldLoader.load] Added surrogate key '%s' from %s",
+            surrogate_key_col, business_key_cols,
+        )
+
+        # Step 2: MD5 hash of business key columns for merge-key computation.
+        # compute_md5_hash always writes to 'md5_hash'; rename if caller uses a
+        # different column name.
+        df = compute_md5_hash(df, business_key_cols)
+        if hash_col != "md5_hash":
+            df = df.withColumnRenamed("md5_hash", hash_col)
+        _logger.info(
+            "[GoldLoader.load] Computed '%s' from %s", hash_col, business_key_cols
+        )
+
+        # Step 3a: SCD Type 2 — history tracking via apply_scd2
+        if is_scd2:
+            _logger.info("[GoldLoader.load] is_scd2=True — calling apply_scd2 for '%s'", target_table)
+            rows_inserted, rows_updated = apply_scd2(
+                spark            = self.spark,
+                source_df        = df,
+                qualified_target = target_table,
+            )
+            _logger.info(
+                "[GoldLoader.load] apply_scd2 done — inserted=%d, expired=%d",
+                rows_inserted, rows_updated,
+            )
+
+        # Step 3b: SCD Type 1 UPSERT — delegated to apply_scd1()
+        else:
+            _logger.info("[GoldLoader.load] is_scd2=False — calling apply_scd1 for '%s'", target_table)
+            rows_inserted, rows_updated = apply_scd1(
+                spark             = self.spark,
+                source_df         = df,
+                qualified_target  = target_table,
+                business_key_cols = business_key_cols,
+            )
+            _logger.info(
+                "[GoldLoader.load] apply_scd1 done — inserted=%d, updated=%d",
+                rows_inserted, rows_updated,
+            )
