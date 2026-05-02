@@ -863,13 +863,16 @@ def apply_scd2(
         else F.current_timestamp()
     )
 
-    # Add SCD2 structural columns — overwrite any values already on source_df
-    source_df = (
-        source_df
-        .withColumn("effective_timestamp",  _eff_ts)
-        .withColumn("expiration_timestamp", F.lit(_OPEN_TS).cast(TimestampType()))
-        .withColumn("is_current",           F.lit(1).cast(IntegerType()))
-    )
+    # Add SCD2 structural columns only when not already present on source_df.
+    # Callers that ran add_scd_column() in their transform step will already
+    # have these fields; apply_scd2 preserves those values and only fills gaps.
+    _existing = set(source_df.columns)
+    if "effective_timestamp"  not in _existing:
+        source_df = source_df.withColumn("effective_timestamp",  _eff_ts)
+    if "expiration_timestamp" not in _existing:
+        source_df = source_df.withColumn("expiration_timestamp", F.lit(_OPEN_TS).cast(TimestampType()))
+    if "is_current"           not in _existing:
+        source_df = source_df.withColumn("is_current",           F.lit(1).cast(IntegerType()))
 
     table_exists  = spark.catalog.tableExists(qualified_target)
     rows_inserted = 0
