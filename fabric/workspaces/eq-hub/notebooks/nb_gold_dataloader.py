@@ -147,8 +147,9 @@ print(f"  hash_col          : {_hash_col}")
 
 print(f"\n[2/4] Instantiating GoldLoader")
 
-loader = GoldLoader(spark)  # noqa: F821  # type: ignore[name-defined]
+loader = GoldLoader(spark, config_base_path=config_base_path)  # noqa: F821  # type: ignore[name-defined]
 print(f"  GoldLoader ready  : {len(loader._function_registry)} functions in registry")
+print(f"  config_base_path  : {config_base_path}")
 
 
 # ══════════════════════════════════════════════════════════════════════════════

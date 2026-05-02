@@ -1130,7 +1130,7 @@ class GoldLoader:
                     load_config["surrogate_key_col"])
     """
 
-    def __init__(self, spark: SparkSession) -> None:
+    def __init__(self, spark: SparkSession, config_base_path: str = None) -> None:
         """
         Initialise and build the function registry.
 
@@ -1142,9 +1142,15 @@ class GoldLoader:
 
         Parameters
         ----------
-        spark : Active SparkSession.
+        spark            : Active SparkSession.
+        config_base_path : Optional base folder path used to resolve relative
+                           file references in extract / transform configs
+                           (e.g. "Files/config/gold/dim_agent").
+                           When set, paths like "./extract_query.sql" in the
+                           config JSON are resolved against this base.
         """
-        self.spark = spark
+        self.spark             = spark
+        self._config_base_path = (config_base_path or "").rstrip("/")
 
         # Include only plain Python functions (not classes, modules, or built-ins)
         # that do not start with an underscore (i.e. public API only).
@@ -1159,17 +1165,63 @@ class GoldLoader:
             sorted(self._function_registry.keys()),
         )
 
+    # ── private helpers ───────────────────────────────────────────────────────
+
+    def _resolve_path(self, file_path: str) -> str:
+        """
+        Resolve a relative config file path against self._config_base_path.
+
+        Paths starting with "./" or without a leading "/" are treated as
+        relative.  Absolute paths are returned unchanged.
+        """
+        if self._config_base_path and not file_path.startswith("/"):
+            name = file_path.lstrip("./")
+            return f"{self._config_base_path}/{name}"
+        return file_path
+
+    def _read_text_file(self, file_path: str) -> str:
+        """
+        Read a plain-text file from the Fabric lakehouse using spark.read.text.
+
+        Parameters
+        ----------
+        file_path : Relative or absolute path to the file.
+
+        Returns
+        -------
+        str — full file contents as a single string.
+
+        Raises
+        ------
+        RuntimeError : If the file cannot be read (path not found, permissions, etc.)
+        """
+        resolved = self._resolve_path(file_path)
+        try:
+            rows = self.spark.read.text(resolved).collect()
+            return "\n".join(row["value"] for row in rows)
+        except Exception as e:
+            raise RuntimeError(
+                f"[GoldLoader] Cannot read file '{resolved}'. "
+                f"Ensure config_base_path is set correctly and the file exists.\n{e}"
+            )
+
     # ── extract ──────────────────────────────────────────────────────────────
 
     def extract(self, config: dict) -> DataFrame:
         """
-        Execute the SQL query in config and return the resulting DataFrame.
+        Execute the SQL query defined in config and return the resulting DataFrame.
 
-        Expected config shape:
-          {
-            "query_type"  : "extract",
-            "query_string": "SELECT ... FROM ..."
-          }
+        Supported config shapes:
+
+          Inline SQL:
+            { "query_type": "extract", "query_string": "SELECT ..." }
+
+          SQL from file (query_file_path takes precedence over query_string
+          when both are present):
+            { "query_type": "extract", "query_file_path": "./extract_query.sql" }
+
+        When query_file_path is used, the file is read via _read_text_file()
+        and resolved against self._config_base_path if the path is relative.
 
         Parameters
         ----------
@@ -1177,11 +1229,12 @@ class GoldLoader:
 
         Returns
         -------
-        DataFrame  — result of spark.sql(config["query_string"]).
+        DataFrame  — result of spark.sql(<resolved query>).
 
         Raises
         ------
-        ValueError : If query_type != 'extract' or query_string is missing/empty.
+        ValueError : If query_type != 'extract' or no valid query is provided.
+        RuntimeError : If query_file_path is set but the file cannot be read.
         """
         if config.get("query_type") != "extract":
             raise ValueError(
@@ -1189,10 +1242,18 @@ class GoldLoader:
                 f"got '{config.get('query_type')}'."
             )
 
-        query_string = config.get("query_string", "").strip()
+        query_file   = config.get("query_file_path", "").strip()
+        query_string = config.get("query_string",    "").strip()
+
+        if query_file:
+            # File path takes precedence — read SQL from the lakehouse file
+            _logger.info("[GoldLoader.extract] Reading SQL from file: %s", query_file)
+            query_string = self._read_text_file(query_file).strip()
+
         if not query_string:
             raise ValueError(
-                "[GoldLoader.extract] 'query_string' is required and must be non-empty."
+                "[GoldLoader.extract] Either 'query_string' or 'query_file_path' "
+                "is required and must resolve to a non-empty SQL string."
             )
 
         _logger.info("[GoldLoader.extract] Running query: %.200s", query_string)
@@ -1202,38 +1263,64 @@ class GoldLoader:
 
     def transform(self, df: DataFrame, config: dict) -> DataFrame:
         """
-        Apply a sequence of named transformation steps to df.
+        Apply a sequence of transformation steps to df.
 
-        Steps are applied in JSON key order.  The output DataFrame of each
-        step becomes the input of the next (pipeline / chain pattern).
+        Two config formats are supported:
 
-        Expected config shape:
+        ── New array format (preferred) ────────────────────────────────────
+          {
+            "query_type": "transform",
+            "transformations": [
+              {
+                "transformation_type": "python_function",
+                "transformation_details": {
+                  "utility_function": "compute_md5Hash",
+                  "parameters": ["col1", "col2"]
+                }
+              },
+              {
+                "transformation_type": "sql_file",
+                "transformation_details": {
+                  "sql_file": "./my_transform.sql"
+                }
+              }
+            ]
+          }
+
+          transformation_type values:
+            "python_function" — calls a function from self._function_registry as
+                                func(df, *parameters); must return a DataFrame.
+            "sql_file"        — reads a SQL file, registers current df as the
+                                temporary view '_transform_input', executes the
+                                SQL, and replaces df with the result.
+
+        ── Legacy flat format (backward compatible) ─────────────────────────
           {
             "query_type": "transform",
             "<step_name>": {
-              "utility_function": "<function_in_registry>",  // required
-              "parameters": ["col1", "col2", ...]             // optional
+              "utility_function": "<function_in_registry>",
+              "parameters": ["col1", "col2"]
             },
             ...
           }
 
-        Each utility_function is called as:
-            func(df, *parameters)
-        and must return a DataFrame.
+        Steps in both formats are applied sequentially — the output DataFrame
+        of each step is the input of the next.
 
         Parameters
         ----------
-        df     : Input DataFrame from extract() (or a prior transform step).
+        df     : Input DataFrame from extract() (or a prior step).
         config : Pre-parsed transform config dict.
 
         Returns
         -------
-        DataFrame — result after all steps have been applied in order.
+        DataFrame — result after all steps have been applied.
 
         Raises
         ------
-        ValueError : If query_type is wrong, utility_function is missing or
-                     not found in the registry, or a step config is not a dict.
+        ValueError : If query_type is wrong, a required field is missing, or
+                     a named function / transformation_type is unrecognised.
+        RuntimeError : If a sql_file step cannot read the referenced file.
         """
         if config.get("query_type") != "transform":
             raise ValueError(
@@ -1241,6 +1328,16 @@ class GoldLoader:
                 f"got '{config.get('query_type')}'."
             )
 
+        # ── New array format ─────────────────────────────────────────────────
+        if "transformations" in config:
+            transformations = config["transformations"]
+            if not isinstance(transformations, list):
+                raise ValueError(
+                    "[GoldLoader.transform] 'transformations' must be a list of step dicts."
+                )
+            return self._apply_transformations(df, transformations)
+
+        # ── Legacy flat format ───────────────────────────────────────────────
         for step_name, step_config in config.items():
             if step_name == "query_type":
                 continue
@@ -1251,7 +1348,9 @@ class GoldLoader:
                     f"got {type(step_config).__name__}."
                 )
 
-            func_name = step_config.get("utility_function")
+            func_name  = step_config.get("utility_function")
+            parameters = step_config.get("parameters", [])
+
             if not func_name:
                 raise ValueError(
                     f"[GoldLoader.transform] Step '{step_name}' is missing 'utility_function'."
@@ -1265,14 +1364,109 @@ class GoldLoader:
                     f"Available: {sorted(self._function_registry.keys())}"
                 )
 
-            parameters = step_config.get("parameters", [])
             _logger.info(
                 "[GoldLoader.transform] Step '%s' → %s(%s)",
                 step_name, func_name,
                 ", ".join(str(p) for p in parameters) if parameters else "",
             )
-            # df is always the first argument; JSON parameters follow as positional args
             df = func(df, *parameters)
+
+        return df
+
+    def _apply_transformations(self, df: DataFrame, transformations: list) -> DataFrame:
+        """
+        Dispatch each step in the new 'transformations' array format.
+
+        Supported transformation_type values:
+          "python_function" — look up utility_function in registry, call func(df, *params).
+          "sql_file"        — read SQL file, register df as '_transform_input' temp view,
+                              run spark.sql(), replace df with the result.
+
+        Parameters
+        ----------
+        df              : Current working DataFrame.
+        transformations : List of step dicts from config["transformations"].
+
+        Returns
+        -------
+        DataFrame — after all steps applied.
+        """
+        for i, step in enumerate(transformations):
+            if not isinstance(step, dict):
+                raise ValueError(
+                    f"[GoldLoader.transform] Step at index {i} must be a dict, "
+                    f"got {type(step).__name__}."
+                )
+
+            t_type  = step.get("transformation_type")
+            details = step.get("transformation_details", {})
+
+            if not t_type:
+                raise ValueError(
+                    f"[GoldLoader.transform] Step at index {i} is missing 'transformation_type'."
+                )
+
+            # ── python_function ──────────────────────────────────────────────
+            if t_type == "python_function":
+                func_name  = details.get("utility_function")
+                parameters = details.get("parameters", [])
+
+                if not func_name:
+                    raise ValueError(
+                        f"[GoldLoader.transform] python_function step at index {i} "
+                        f"is missing 'utility_function' in transformation_details."
+                    )
+
+                func = self._function_registry.get(func_name)
+                if func is None:
+                    raise ValueError(
+                        f"[GoldLoader.transform] Function '{func_name}' (step {i}) "
+                        f"not found in registry. "
+                        f"Available: {sorted(self._function_registry.keys())}"
+                    )
+
+                _logger.info(
+                    "[GoldLoader.transform] Step %d (python_function) → %s(%s)",
+                    i, func_name,
+                    ", ".join(str(p) for p in parameters) if parameters else "",
+                )
+                # First arg is always df; JSON parameters are additional positional args
+                df = func(df, *parameters)
+
+            # ── sql_file ─────────────────────────────────────────────────────
+            elif t_type == "sql_file":
+                sql_file = details.get("sql_file", "").strip()
+                if not sql_file:
+                    raise ValueError(
+                        f"[GoldLoader.transform] sql_file step at index {i} "
+                        f"is missing 'sql_file' in transformation_details."
+                    )
+
+                _logger.info(
+                    "[GoldLoader.transform] Step %d (sql_file) → reading '%s'",
+                    i, sql_file,
+                )
+                sql_content = self._read_text_file(sql_file).strip()
+                if not sql_content:
+                    raise ValueError(
+                        f"[GoldLoader.transform] sql_file '{sql_file}' is empty."
+                    )
+
+                # Register the current state of df as a temp view so the SQL
+                # can reference it.  The view name is fixed so SQL files are
+                # portable across different entity pipelines.
+                df.createOrReplaceTempView("_transform_input")
+                _logger.info(
+                    "[GoldLoader.transform] Registered '_transform_input' temp view, "
+                    "running SQL from '%s'", sql_file,
+                )
+                df = self.spark.sql(sql_content)
+
+            else:
+                raise ValueError(
+                    f"[GoldLoader.transform] Unknown transformation_type '{t_type}' "
+                    f"at step index {i}. Supported: 'python_function', 'sql_file'."
+                )
 
         return df
 
@@ -1320,6 +1514,17 @@ class GoldLoader:
         -------
         None  — raises ValueError if df is empty or business keys are missing.
         """
+        # Guard: surrogate_key_col must be a plain string — passing a list causes a
+        # Py4JError (withColumn receives ArrayList instead of String) with no clear
+        # error message from Spark.  Catch it here with a descriptive ValueError.
+        if not isinstance(surrogate_key_col, str) or not surrogate_key_col.strip():
+            raise ValueError(
+                f"[GoldLoader.load] 'surrogate_key_col' must be a non-empty string, "
+                f"got {type(surrogate_key_col).__name__}: {surrogate_key_col!r}. "
+                f"Check that the load config JSON has surrogate_key_col as a string "
+                f"(e.g. \"surrogate_key_col\": \"agent_key\"), not an array."
+            )
+
         # Guard: skip empty DataFrame — log warning and return rather than raising
         if df.isEmpty():
             _logger.warning(
