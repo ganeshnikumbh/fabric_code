@@ -799,7 +799,8 @@ print("[nb_utils] Loaded — functions available: read_mssql_table, read_mssql_q
       "build_col_maps, "
       "validate_required_params, add_audit_columns, compute_md5_hash, "
       "deduplicate_by_md5, make_surrogate_key, write_delta_create, "
-      "apply_scd2, apply_scd1, compute_md5Hash, add_audit_column, add_scd_column, GoldLoader")
+      "apply_scd2, apply_scd1, compute_md5Hash, add_audit_column, add_scd_column, "
+      "resolve_dim_key, GoldLoader")
 
 
 # ── GOLD LAYER ADDITIONS ──────────────────────────────────────────────────────
@@ -1110,6 +1111,90 @@ def add_scd_column(df: DataFrame) -> DataFrame:
         .withColumn("expiration_timestamp", F.lit(_OPEN_TS).cast(TimestampType()))
         .withColumn("is_current",           F.lit(1).cast(IntegerType()))
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# resolve_dim_key — surrogate key lookup helper for Gold fact/bridge tables
+# ─────────────────────────────────────────────────────────────────────────────
+
+def resolve_dim_key(
+    spark,
+    source_df: DataFrame,
+    source_col: str,
+    dim_table: str,
+    dim_bk_col: str,
+    dim_sk_col: str,
+    target_col_name: str,
+    unknown_key: int = -1,
+    is_current_col: str = None,
+) -> DataFrame:
+    """
+    Resolve a dimension surrogate key by left-joining source_df to a dim table.
+
+    Adds target_col_name to source_df containing the matched surrogate key.
+    Rows that find no match in the dim (late-arriving or missing dimension
+    members) receive unknown_key instead of NULL.
+
+    Parameters
+    ----------
+    spark           : Active SparkSession.
+    source_df       : Source DataFrame containing the FK column.
+    source_col      : FK column name in source_df (e.g. "client_id").
+    dim_table       : Fully qualified dim table (e.g. "lh_gold.gold.dim_client").
+    dim_bk_col      : Business key column in the dim table that matches source_col
+                      (e.g. "source_client_id").
+    dim_sk_col      : Surrogate key column in the dim table (e.g. "client_key").
+    target_col_name : Name of the SK column to add to the output DataFrame.
+    unknown_key     : Value to use when no dim match is found (default -1).
+                      Follows the standard unknown member convention so fact rows
+                      are never orphaned with NULL foreign keys.
+    is_current_col  : Name of the SCD2 currency flag column in the dim table.
+                      When supplied, only rows where this column equals 1 are
+                      considered (active records only).  Pass None for non-SCD2
+                      dims.
+
+    Returns
+    -------
+    DataFrame — source_df with target_col_name appended.
+
+    Notes
+    -----
+    dim_bk_col is aliased to a private temp name before the join so that
+    `.drop()` never accidentally removes a same-named column from source_df
+    (which would happen with a plain `.drop(dim_bk_col)` when
+    source_col == dim_bk_col).
+    """
+    # Private temp alias for the dim business key — isolates the join key from
+    # any same-named column on source_df so the subsequent drop is always safe.
+    _BK_TMP = "__dim_bk_tmp__"
+
+    dim_df = spark.table(dim_table)
+
+    if is_current_col:
+        # SCD2 dim: restrict to the currently-active version of each member
+        dim_df = dim_df.filter(F.col(is_current_col) == 1)
+
+    # Narrow the dim to only what the join needs — keeps shuffle data small
+    dim_df = dim_df.select(
+        F.col(dim_bk_col).alias(_BK_TMP),
+        F.col(dim_sk_col).alias(target_col_name),
+    )
+
+    result_df = (
+        source_df
+        # DataFrame-qualified reference on both sides avoids column ambiguity
+        # when source_col and dim_bk_col share the same name
+        .join(dim_df, source_df[source_col] == F.col(_BK_TMP), "left")
+        # Drop only the private alias — source_df[source_col] is preserved
+        .drop(_BK_TMP)
+        # Coalesce NULL (no match) to unknown_key; cast to long to match the
+        # BIGINT type produced by make_surrogate_key
+        .withColumn(
+            target_col_name,
+            F.coalesce(F.col(target_col_name), F.lit(unknown_key).cast("long")),
+        )
+    )
+    return result_df
 
 
 # ─────────────────────────────────────────────────────────────────────────────
