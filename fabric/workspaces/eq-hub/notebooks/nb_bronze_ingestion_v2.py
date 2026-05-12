@@ -204,11 +204,17 @@ try:
 
     print(f"\n[3/5] Applying column transformations")
 
-    source_columns_lower = {c.lower(): c for c in source_df.columns}
-    select_exprs         = []
-    missing_in_source    = []
+    source_columns_lower  = {c.lower(): c for c in source_df.columns}
+    select_exprs          = []
+    missing_in_source     = []
+    json_expand_count     = 0    # dot-notation rows — handled by expand_json_fields()
 
     for src_col, tgt_col in col_map.items():
+        if "." in src_col:
+            # Dot-notation: 'parent_col.json_key' — deferred to expand_json_fields().
+            # The parent column must appear as a plain mapping so it survives the select.
+            json_expand_count += 1
+            continue
         actual_col = source_columns_lower.get(src_col.lower())
         if actual_col is None:
             missing_in_source.append(src_col)
@@ -221,6 +227,12 @@ try:
             select_exprs.append(F.lit(None).cast("string").alias(col_map[src_col]))
 
     transformed_df = source_df.select(*select_exprs)
+
+    # JSON field expansion — runs after the base select so parent columns (e.g.
+    # 'properties_json') are already present in transformed_df.
+    if json_expand_count > 0:
+        transformed_df = expand_json_fields(transformed_df, mappings)  # noqa: F821  # type: ignore[name-defined]
+
     print(f"  Columns after mapping : {len(transformed_df.columns)} business columns")
 
 

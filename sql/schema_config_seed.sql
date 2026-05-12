@@ -1018,172 +1018,90 @@ VALUES
 -- [H04–H14] CRM Objects — shared field set (9 fields × 11 object types)
 -- source_column_name = landing column (already flattened); properties are stored as JSON blob
 
--- [H04] crm_contacts
+-- [H04] crm_contacts — 9 base cols + 6 properties_json expansions
+-- Base columns: direct rename from landing table (landing already uses snake_case)
+-- target schema: bronze_hubspot  (set via ingestion_config.target_schema)
 INSERT INTO schema_config
     (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
 VALUES
-  ( 987, 'HubSpot', 'crm_contacts', 'crm_contacts', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  ( 988, 'HubSpot', 'crm_contacts', 'crm_contacts', 'createdAt',            'created_at',             'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  ( 989, 'HubSpot', 'crm_contacts', 'crm_contacts', 'updatedAt',            'updated_at',             'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  ( 990, 'HubSpot', 'crm_contacts', 'crm_contacts', 'archived',             'archived',               'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  ( 991, 'HubSpot', 'crm_contacts', 'crm_contacts', 'archivedAt',           'archived_at',            'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  ( 992, 'HubSpot', 'crm_contacts', 'crm_contacts', 'objectWriteTraceId',   'object_write_trace_id',  'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  ( 993, 'HubSpot', 'crm_contacts', 'crm_contacts', 'url',                  'url',                    'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  ( 994, 'HubSpot', 'crm_contacts', 'crm_contacts', 'properties',           'properties_json',        'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  ( 995, 'HubSpot', 'crm_contacts', 'crm_contacts', 'N/A',                  'object_type',            'STRING',   9, 0, 0, 1, GETUTCDATE());
-
--- [H05] crm_companies
+  ( 987, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
+  ( 988, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'created_at',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  ( 989, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'updated_at',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
+  ( 990, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'archived',              'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
+  ( 991, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'archived_at',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
+  ( 992, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'object_write_trace_id', 'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
+  ( 993, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'url',                   'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
+  ( 994, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties_json',       'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
+  ( 995, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'object_type',           'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+-- properties_json expansion — dot-notation source_column_name triggers get_json_object() in nb_bronze_ingestion_v2
+-- include_in_md5hash=1: these extracted values are the business content used for change detection
 INSERT INTO schema_config
     (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
 VALUES
-  ( 996, 'HubSpot', 'crm_companies', 'crm_companies', 'id',                  'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  ( 997, 'HubSpot', 'crm_companies', 'crm_companies', 'createdAt',           'created_at',             'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  ( 998, 'HubSpot', 'crm_companies', 'crm_companies', 'updatedAt',           'updated_at',             'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  ( 999, 'HubSpot', 'crm_companies', 'crm_companies', 'archived',            'archived',               'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1000, 'HubSpot', 'crm_companies', 'crm_companies', 'archivedAt',          'archived_at',            'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1001, 'HubSpot', 'crm_companies', 'crm_companies', 'objectWriteTraceId',  'object_write_trace_id',  'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1002, 'HubSpot', 'crm_companies', 'crm_companies', 'url',                 'url',                    'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  (1003, 'HubSpot', 'crm_companies', 'crm_companies', 'properties',          'properties_json',        'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1004, 'HubSpot', 'crm_companies', 'crm_companies', 'N/A',                 'object_type',            'STRING',   9, 0, 0, 1, GETUTCDATE());
+  (1086, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties_json.createdate',        'prop_createdate',       'TIMESTAMP', 10, 1, 0, 1, GETUTCDATE()),
+  (1087, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties_json.email',             'prop_email',            'STRING',    11, 1, 0, 1, GETUTCDATE()),
+  (1088, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties_json.firstname',         'prop_firstname',        'STRING',    12, 1, 0, 1, GETUTCDATE()),
+  (1089, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties_json.hs_object_id',      'prop_hs_object_id',     'STRING',    13, 1, 0, 1, GETUTCDATE()),
+  (1090, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties_json.lastmodifieddate',  'prop_lastmodifieddate', 'TIMESTAMP', 14, 1, 0, 1, GETUTCDATE()),
+  (1091, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties_json.lastname',          'prop_lastname',         'STRING',    15, 1, 0, 1, GETUTCDATE());
 
--- [H06] crm_deals
+-- [H05] crm_companies — 9 base cols + 5 properties_json expansions
+-- Base columns: direct rename from landing table (landing already uses snake_case)
+-- target schema: bronze_hubspot  (set via ingestion_config.target_schema)
 INSERT INTO schema_config
     (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
 VALUES
-  (1005, 'HubSpot', 'crm_deals', 'crm_deals', 'id',                  'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1006, 'HubSpot', 'crm_deals', 'crm_deals', 'createdAt',           'created_at',             'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1007, 'HubSpot', 'crm_deals', 'crm_deals', 'updatedAt',           'updated_at',             'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1008, 'HubSpot', 'crm_deals', 'crm_deals', 'archived',            'archived',               'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1009, 'HubSpot', 'crm_deals', 'crm_deals', 'archivedAt',          'archived_at',            'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1010, 'HubSpot', 'crm_deals', 'crm_deals', 'objectWriteTraceId',  'object_write_trace_id',  'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1011, 'HubSpot', 'crm_deals', 'crm_deals', 'url',                 'url',                    'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  (1012, 'HubSpot', 'crm_deals', 'crm_deals', 'properties',          'properties_json',        'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1013, 'HubSpot', 'crm_deals', 'crm_deals', 'N/A',                 'object_type',            'STRING',   9, 0, 0, 1, GETUTCDATE());
-
--- [H07] crm_tickets
+  ( 996, 'HubSpot', 'crm_companies', 'crm_companies_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
+  ( 997, 'HubSpot', 'crm_companies', 'crm_companies_base', 'created_at',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  ( 998, 'HubSpot', 'crm_companies', 'crm_companies_base', 'updated_at',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
+  ( 999, 'HubSpot', 'crm_companies', 'crm_companies_base', 'archived',              'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
+  (1000, 'HubSpot', 'crm_companies', 'crm_companies_base', 'archived_at',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
+  (1001, 'HubSpot', 'crm_companies', 'crm_companies_base', 'object_write_trace_id', 'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
+  (1002, 'HubSpot', 'crm_companies', 'crm_companies_base', 'url',                   'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
+  (1003, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties_json',       'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
+  (1004, 'HubSpot', 'crm_companies', 'crm_companies_base', 'object_type',           'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+-- properties_json expansion — dot-notation source_column_name triggers get_json_object() in nb_bronze_ingestion_v2
 INSERT INTO schema_config
     (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
 VALUES
-  (1014, 'HubSpot', 'crm_tickets', 'crm_tickets', 'id',                  'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1015, 'HubSpot', 'crm_tickets', 'crm_tickets', 'createdAt',           'created_at',             'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1016, 'HubSpot', 'crm_tickets', 'crm_tickets', 'updatedAt',           'updated_at',             'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1017, 'HubSpot', 'crm_tickets', 'crm_tickets', 'archived',            'archived',               'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1018, 'HubSpot', 'crm_tickets', 'crm_tickets', 'archivedAt',          'archived_at',            'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1019, 'HubSpot', 'crm_tickets', 'crm_tickets', 'objectWriteTraceId',  'object_write_trace_id',  'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1020, 'HubSpot', 'crm_tickets', 'crm_tickets', 'url',                 'url',                    'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  (1021, 'HubSpot', 'crm_tickets', 'crm_tickets', 'properties',          'properties_json',        'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1022, 'HubSpot', 'crm_tickets', 'crm_tickets', 'N/A',                 'object_type',            'STRING',   9, 0, 0, 1, GETUTCDATE());
+  (1092, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties_json.createdate',          'prop_createdate',          'TIMESTAMP', 10, 1, 0, 1, GETUTCDATE()),
+  (1093, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties_json.domain',              'prop_domain',              'STRING',    11, 1, 0, 1, GETUTCDATE()),
+  (1094, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties_json.hs_lastmodifieddate', 'prop_hs_lastmodifieddate', 'TIMESTAMP', 12, 1, 0, 1, GETUTCDATE()),
+  (1095, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties_json.hs_object_id',        'prop_hs_object_id',        'STRING',    13, 1, 0, 1, GETUTCDATE()),
+  (1096, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties_json.name',                'prop_name',                'STRING',    14, 1, 0, 1, GETUTCDATE());
 
--- [H08] crm_products
+
+-- [H15] crm_owners — 11 cols, no properties_json; teams_json kept as blob
+-- Landing columns are flat (no nested properties object for owners)
+-- teams_json is a JSON array — kept as STRING blob; not expanded (structure varies)
 INSERT INTO schema_config
     (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
 VALUES
-  (1023, 'HubSpot', 'crm_products', 'crm_products', 'id',                  'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1024, 'HubSpot', 'crm_products', 'crm_products', 'createdAt',           'created_at',             'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1025, 'HubSpot', 'crm_products', 'crm_products', 'updatedAt',           'updated_at',             'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1026, 'HubSpot', 'crm_products', 'crm_products', 'archived',            'archived',               'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1027, 'HubSpot', 'crm_products', 'crm_products', 'archivedAt',          'archived_at',            'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1028, 'HubSpot', 'crm_products', 'crm_products', 'objectWriteTraceId',  'object_write_trace_id',  'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1029, 'HubSpot', 'crm_products', 'crm_products', 'url',                 'url',                    'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  (1030, 'HubSpot', 'crm_products', 'crm_products', 'properties',          'properties_json',        'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1031, 'HubSpot', 'crm_products', 'crm_products', 'N/A',                 'object_type',            'STRING',   9, 0, 0, 1, GETUTCDATE());
+  (1097, 'HubSpot', 'crm_owners', 'crm_owners_base', 'id',                         'id',                         'STRING',   1, 1, 1, 1, GETUTCDATE()),
+  (1098, 'HubSpot', 'crm_owners', 'crm_owners_base', 'email',                      'email',                      'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  (1099, 'HubSpot', 'crm_owners', 'crm_owners_base', 'first_name',                 'first_name',                 'STRING',   3, 1, 0, 1, GETUTCDATE()),
+  (1100, 'HubSpot', 'crm_owners', 'crm_owners_base', 'last_name',                  'last_name',                  'STRING',   4, 1, 0, 1, GETUTCDATE()),
+  (1101, 'HubSpot', 'crm_owners', 'crm_owners_base', 'type',                       'type',                       'STRING',   5, 1, 0, 1, GETUTCDATE()),
+  (1102, 'HubSpot', 'crm_owners', 'crm_owners_base', 'user_id',                    'user_id',                    'INT',      6, 1, 0, 1, GETUTCDATE()),
+  (1103, 'HubSpot', 'crm_owners', 'crm_owners_base', 'user_id_including_inactive', 'user_id_including_inactive', 'INT',      7, 1, 0, 1, GETUTCDATE()),
+  (1104, 'HubSpot', 'crm_owners', 'crm_owners_base', 'created_at',                 'created_at',                 'STRING',   8, 1, 0, 1, GETUTCDATE()),
+  (1105, 'HubSpot', 'crm_owners', 'crm_owners_base', 'updated_at',                 'updated_at',                 'STRING',   9, 1, 0, 1, GETUTCDATE()),
+  (1106, 'HubSpot', 'crm_owners', 'crm_owners_base', 'archived',                   'archived',                   'BOOLEAN', 10, 1, 0, 1, GETUTCDATE()),
+  (1107, 'HubSpot', 'crm_owners', 'crm_owners_base', 'teams_json',                 'teams_json',                 'STRING',  11, 0, 0, 1, GETUTCDATE());
 
--- [H09] crm_line_items
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  (1032, 'HubSpot', 'crm_line_items', 'crm_line_items', 'id',                  'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1033, 'HubSpot', 'crm_line_items', 'crm_line_items', 'createdAt',           'created_at',             'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1034, 'HubSpot', 'crm_line_items', 'crm_line_items', 'updatedAt',           'updated_at',             'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1035, 'HubSpot', 'crm_line_items', 'crm_line_items', 'archived',            'archived',               'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1036, 'HubSpot', 'crm_line_items', 'crm_line_items', 'archivedAt',          'archived_at',            'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1037, 'HubSpot', 'crm_line_items', 'crm_line_items', 'objectWriteTraceId',  'object_write_trace_id',  'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1038, 'HubSpot', 'crm_line_items', 'crm_line_items', 'url',                 'url',                    'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  (1039, 'HubSpot', 'crm_line_items', 'crm_line_items', 'properties',          'properties_json',        'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1040, 'HubSpot', 'crm_line_items', 'crm_line_items', 'N/A',                 'object_type',            'STRING',   9, 0, 0, 1, GETUTCDATE());
-
--- [H10] crm_quotes
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  (1041, 'HubSpot', 'crm_quotes', 'crm_quotes', 'id',                  'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1042, 'HubSpot', 'crm_quotes', 'crm_quotes', 'createdAt',           'created_at',             'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1043, 'HubSpot', 'crm_quotes', 'crm_quotes', 'updatedAt',           'updated_at',             'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1044, 'HubSpot', 'crm_quotes', 'crm_quotes', 'archived',            'archived',               'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1045, 'HubSpot', 'crm_quotes', 'crm_quotes', 'archivedAt',          'archived_at',            'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1046, 'HubSpot', 'crm_quotes', 'crm_quotes', 'objectWriteTraceId',  'object_write_trace_id',  'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1047, 'HubSpot', 'crm_quotes', 'crm_quotes', 'url',                 'url',                    'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  (1048, 'HubSpot', 'crm_quotes', 'crm_quotes', 'properties',          'properties_json',        'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1049, 'HubSpot', 'crm_quotes', 'crm_quotes', 'N/A',                 'object_type',            'STRING',   9, 0, 0, 1, GETUTCDATE());
-
--- [H11] crm_calls
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  (1050, 'HubSpot', 'crm_calls', 'crm_calls', 'id',                  'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1051, 'HubSpot', 'crm_calls', 'crm_calls', 'createdAt',           'created_at',             'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1052, 'HubSpot', 'crm_calls', 'crm_calls', 'updatedAt',           'updated_at',             'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1053, 'HubSpot', 'crm_calls', 'crm_calls', 'archived',            'archived',               'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1054, 'HubSpot', 'crm_calls', 'crm_calls', 'archivedAt',          'archived_at',            'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1055, 'HubSpot', 'crm_calls', 'crm_calls', 'objectWriteTraceId',  'object_write_trace_id',  'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1056, 'HubSpot', 'crm_calls', 'crm_calls', 'url',                 'url',                    'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  (1057, 'HubSpot', 'crm_calls', 'crm_calls', 'properties',          'properties_json',        'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1058, 'HubSpot', 'crm_calls', 'crm_calls', 'N/A',                 'object_type',            'STRING',   9, 0, 0, 1, GETUTCDATE());
-
--- [H12] crm_meetings
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  (1059, 'HubSpot', 'crm_meetings', 'crm_meetings', 'id',                  'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1060, 'HubSpot', 'crm_meetings', 'crm_meetings', 'createdAt',           'created_at',             'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1061, 'HubSpot', 'crm_meetings', 'crm_meetings', 'updatedAt',           'updated_at',             'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1062, 'HubSpot', 'crm_meetings', 'crm_meetings', 'archived',            'archived',               'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1063, 'HubSpot', 'crm_meetings', 'crm_meetings', 'archivedAt',          'archived_at',            'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1064, 'HubSpot', 'crm_meetings', 'crm_meetings', 'objectWriteTraceId',  'object_write_trace_id',  'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1065, 'HubSpot', 'crm_meetings', 'crm_meetings', 'url',                 'url',                    'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  (1066, 'HubSpot', 'crm_meetings', 'crm_meetings', 'properties',          'properties_json',        'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1067, 'HubSpot', 'crm_meetings', 'crm_meetings', 'N/A',                 'object_type',            'STRING',   9, 0, 0, 1, GETUTCDATE());
-
--- [H13] crm_notes
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  (1068, 'HubSpot', 'crm_notes', 'crm_notes', 'id',                  'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1069, 'HubSpot', 'crm_notes', 'crm_notes', 'createdAt',           'created_at',             'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1070, 'HubSpot', 'crm_notes', 'crm_notes', 'updatedAt',           'updated_at',             'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1071, 'HubSpot', 'crm_notes', 'crm_notes', 'archived',            'archived',               'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1072, 'HubSpot', 'crm_notes', 'crm_notes', 'archivedAt',          'archived_at',            'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1073, 'HubSpot', 'crm_notes', 'crm_notes', 'objectWriteTraceId',  'object_write_trace_id',  'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1074, 'HubSpot', 'crm_notes', 'crm_notes', 'url',                 'url',                    'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  (1075, 'HubSpot', 'crm_notes', 'crm_notes', 'properties',          'properties_json',        'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1076, 'HubSpot', 'crm_notes', 'crm_notes', 'N/A',                 'object_type',            'STRING',   9, 0, 0, 1, GETUTCDATE());
-
--- [H14] crm_tasks
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  (1077, 'HubSpot', 'crm_tasks', 'crm_tasks', 'id',                  'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1078, 'HubSpot', 'crm_tasks', 'crm_tasks', 'createdAt',           'created_at',             'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1079, 'HubSpot', 'crm_tasks', 'crm_tasks', 'updatedAt',           'updated_at',             'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1080, 'HubSpot', 'crm_tasks', 'crm_tasks', 'archived',            'archived',               'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1081, 'HubSpot', 'crm_tasks', 'crm_tasks', 'archivedAt',          'archived_at',            'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1082, 'HubSpot', 'crm_tasks', 'crm_tasks', 'objectWriteTraceId',  'object_write_trace_id',  'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1083, 'HubSpot', 'crm_tasks', 'crm_tasks', 'url',                 'url',                    'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  (1084, 'HubSpot', 'crm_tasks', 'crm_tasks', 'properties',          'properties_json',        'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1085, 'HubSpot', 'crm_tasks', 'crm_tasks', 'N/A',                 'object_type',            'STRING',   9, 0, 0, 1, GETUTCDATE());
-
--- Total HubSpot: 175 column mappings across 14 landing tables (IDs 911–1085)
+-- Total HubSpot: 197 column mappings across 15 landing tables (IDs 911–1107)
+--   911–986  : marketing_events, marketing_emails, events_event_types  (76 rows)
+--   987–995  : crm_contacts base cols                                   (9 rows)
+--   996–1004 : crm_companies base cols                                  (9 rows)
+--   1005–1085: crm_deals through crm_tasks (9 cols × 9 tables)         (81 rows)
+--   1086–1091: crm_contacts properties_json expansion                   (6 rows)
+--   1092–1096: crm_companies properties_json expansion                  (5 rows)
+--   1097–1107: crm_owners                                              (11 rows)
 
 
 -- ============================================================

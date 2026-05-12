@@ -485,6 +485,52 @@ def load_control_df_from_json(json_str: str) -> DataFrame:
 # Derived mapping structures (built from schema_config rows)
 # ─────────────────────────────────────────────────────────────────────────────
 
+def expand_json_fields(df: DataFrame, mappings: list) -> DataFrame:
+    """
+    Extract JSON sub-fields from a source column when schema_config uses dot-notation
+    in source_column_name (e.g. 'properties_json.email').
+
+    Convention:
+      source_column_name = '<parent_col>.<json_key>'
+        → F.get_json_object(F.col('<parent_col>'), '$.<json_key>')
+        → aliased as target_column_name
+
+    Plain source column names (no '.') and 'N/A' pipeline-audit rows are skipped —
+    they are handled by the standard column-rename select in nb_bronze_ingestion_v2.
+
+    The parent column (e.g. 'properties_json') must already exist in df before this
+    function is called — it is produced by the standard select_exprs loop that runs
+    the plain mapping rows first.
+
+    Parameters
+    ----------
+    df       : DataFrame after the initial column-rename select.
+    mappings : Full ordered list of schema_config Rows for the entity,
+               including both plain and dot-notation entries.
+
+    Returns
+    -------
+    DataFrame with JSON-extracted columns appended.
+    """
+    df_cols_lower = {c.lower(): c for c in df.columns}
+    expanded = 0
+    for row in mappings:
+        src = (row["source_column_name"] or "").strip()
+        tgt = row["target_column_name"]
+        if "." not in src or src == "N/A":
+            continue
+        parent_col_name, json_key = src.split(".", 1)
+        actual_parent = df_cols_lower.get(parent_col_name.lower())
+        if actual_parent is None:
+            print(f"  WARNING: JSON parent column '{parent_col_name}' not in DataFrame — '{src}' skipped")
+            continue
+        df = df.withColumn(tgt, F.get_json_object(F.col(actual_parent), f"$.{json_key}"))
+        expanded += 1
+    if expanded:
+        print(f"  JSON fields expanded : {expanded} sub-field(s) extracted via get_json_object")
+    return df
+
+
 def build_col_maps(mappings: list) -> tuple:
     """
     Build column mapping structures from a list of schema_config Rows.
@@ -796,7 +842,7 @@ print("[nb_utils] Loaded — functions available: read_mssql_table, read_mssql_q
       "upsert_load_control, log_fabric_operation, "
       "get_ingestion_config_schema, get_schema_config_schema, get_load_control_schema, "
       "ingestion_config_df_from_json, schema_config_df_from_json, load_control_df_from_json, "
-      "build_col_maps, "
+      "expand_json_fields, build_col_maps, "
       "validate_required_params, add_audit_columns, compute_md5_hash, "
       "deduplicate_by_md5, make_surrogate_key, write_delta_create, "
       "apply_scd2, apply_scd1, compute_md5Hash, add_audit_column, add_scd_column, "
