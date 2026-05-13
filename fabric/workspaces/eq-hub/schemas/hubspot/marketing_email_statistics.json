@@ -1,10 +1,11 @@
 {
   "table_name": "marketing_email_statistics",
-  "description": "HubSpot email send statistics per email — GET /marketing/v3/emails/{emailId}/statistics/list. Response is a root JSON array (no wrapper key). email_id is injected from pipeline context (p_context_json). campaignAggregations always has exactly one entry per per-email call; $first/$first_key navigate the dynamic UUID key.",
+  "description": "HubSpot email send statistics per email — GET /marketing/v3/emails/{emailId}/statistics/list. Response is a root JSON array (no wrapper key). email_id is extracted from the response's emails[0] element. campaignAggregations always has exactly one entry per per-email call; $first/$first_key navigate the dynamic UUID key.",
   "source_path": "",
   "has_pagination": false,
-  "context_fields": ["email_id"],
+  "context_fields": [],
   "fields": [
+    {"column": "email_id",                        "source": "emails.$0",                                           "type": "string"},
     {"column": "cnt_sent",                        "source": "aggregate.counters.sent",                             "type": "integer"},
     {"column": "cnt_open",                        "source": "aggregate.counters.open",                             "type": "integer"},
     {"column": "cnt_delivered",                   "source": "aggregate.counters.delivered",                        "type": "integer"},

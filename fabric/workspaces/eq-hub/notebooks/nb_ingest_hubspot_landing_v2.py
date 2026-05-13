@@ -130,6 +130,7 @@ def _flatten(record, fields, context=None):
 
 def _build_spark_schema(fields, context_keys=None):
     """Build a Spark StructType from field definitions plus optional context column names."""
+    from pyspark.sql.types import BooleanType, DoubleType, IntegerType, StringType, StructField, StructType  # noqa: F811
     _type_map = {
         "string":  StringType(),
         "boolean": BooleanType(),
@@ -141,8 +142,10 @@ def _build_spark_schema(fields, context_keys=None):
         StructField(f["column"], _type_map.get(f["type"], StringType()), nullable=True)
         for f in fields
     ]
+    _field_cols = {f["column"] for f in fields}
     for ck in (context_keys or []):
-        sf_list.append(StructField(ck, StringType(), nullable=True))
+        if ck not in _field_cols:   # skip if already declared as a schema field
+            sf_list.append(StructField(ck, StringType(), nullable=True))
     return StructType(sf_list)
 
 
