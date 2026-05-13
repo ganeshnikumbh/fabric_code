@@ -1109,14 +1109,101 @@ VALUES
   (1106, 'HubSpot', 'crm_owners', 'crm_owners_base', 'archived',                   'archived',                   'BOOLEAN', 10, 1, 0, 1, GETUTCDATE()),
   (1107, 'HubSpot', 'crm_owners', 'crm_owners_base', 'teams_json',                 'teams_json',                 'STRING',  11, 0, 0, 1, GETUTCDATE());
 
--- Total HubSpot: 197 column mappings across 15 landing tables (IDs 911–1107)
---   911–986  : marketing_events, marketing_emails, events_event_types  (76 rows)
---   987–995  : crm_contacts base cols                                   (9 rows)
---   996–1004 : crm_companies base cols                                  (9 rows)
---   1005–1085: crm_deals through crm_tasks (9 cols × 9 tables)         (81 rows)
---   1086–1091: crm_contacts properties_json expansion                   (6 rows)
---   1092–1096: crm_companies properties_json expansion                  (5 rows)
---   1097–1107: crm_owners                                              (11 rows)
+-- [H16] marketing_email_statistics — 64 cols
+--   email_id (PK, from context) + 16 agg counters + 13 agg ratios + 2 agg blobs
+--   + campaign_id + 16 campaign counters + 13 campaign ratios + 2 campaign blobs
+-- Source:  lh_landing.hubspot.marketing_email_statistics
+-- Target:  lh_bronze.bronze_hubspot.marketing_email_statistics_base
+-- campaign_* cols use $first/$first_key in schema JSON to navigate the dynamic UUID key.
+-- Counters + ratios: include_in_md5hash=1.  JSON blobs: include_in_md5hash=0.
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (1113, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'email_id',                       'email_id',                       'STRING',        1, 1, 1, 1, GETUTCDATE()),
+  -- aggregate counters
+  (1114, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_sent',                       'cnt_sent',                       'INT',           2, 1, 0, 1, GETUTCDATE()),
+  (1115, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_open',                       'cnt_open',                       'INT',           3, 1, 0, 1, GETUTCDATE()),
+  (1116, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_delivered',                  'cnt_delivered',                  'INT',           4, 1, 0, 1, GETUTCDATE()),
+  (1117, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_bounce',                     'cnt_bounce',                     'INT',           5, 1, 0, 1, GETUTCDATE()),
+  (1118, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_unsubscribed',               'cnt_unsubscribed',               'INT',           6, 1, 0, 1, GETUTCDATE()),
+  (1119, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_click',                      'cnt_click',                      'INT',           7, 1, 0, 1, GETUTCDATE()),
+  (1120, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_reply',                      'cnt_reply',                      'INT',           8, 1, 0, 1, GETUTCDATE()),
+  (1121, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_dropped',                    'cnt_dropped',                    'INT',           9, 1, 0, 1, GETUTCDATE()),
+  (1122, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_selected',                   'cnt_selected',                   'INT',          10, 1, 0, 1, GETUTCDATE()),
+  (1123, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_spamreport',                 'cnt_spamreport',                 'INT',          11, 1, 0, 1, GETUTCDATE()),
+  (1124, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_suppressed',                 'cnt_suppressed',                 'INT',          12, 1, 0, 1, GETUTCDATE()),
+  (1125, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_hardbounced',                'cnt_hardbounced',                'INT',          13, 1, 0, 1, GETUTCDATE()),
+  (1126, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_softbounced',                'cnt_softbounced',                'INT',          14, 1, 0, 1, GETUTCDATE()),
+  (1127, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_pending',                    'cnt_pending',                    'INT',          15, 1, 0, 1, GETUTCDATE()),
+  (1128, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_contactslost',               'cnt_contactslost',               'INT',          16, 1, 0, 1, GETUTCDATE()),
+  (1129, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_notsent',                    'cnt_notsent',                    'INT',          17, 1, 0, 1, GETUTCDATE()),
+  -- aggregate ratios
+  (1130, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_click',                    'ratio_click',                    'DECIMAL(10,3)', 18, 1, 0, 1, GETUTCDATE()),
+  (1131, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_clickthrough',             'ratio_clickthrough',             'DECIMAL(10,3)', 19, 1, 0, 1, GETUTCDATE()),
+  (1132, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_delivered',                'ratio_delivered',                'DECIMAL(10,3)', 20, 1, 0, 1, GETUTCDATE()),
+  (1133, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_open',                     'ratio_open',                     'DECIMAL(10,3)', 21, 1, 0, 1, GETUTCDATE()),
+  (1134, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_reply',                    'ratio_reply',                    'DECIMAL(10,3)', 22, 1, 0, 1, GETUTCDATE()),
+  (1135, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_unsubscribed',             'ratio_unsubscribed',             'DECIMAL(10,3)', 23, 1, 0, 1, GETUTCDATE()),
+  (1136, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_spamreport',               'ratio_spamreport',               'DECIMAL(10,3)', 24, 1, 0, 1, GETUTCDATE()),
+  (1137, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_bounce',                   'ratio_bounce',                   'DECIMAL(10,3)', 25, 1, 0, 1, GETUTCDATE()),
+  (1138, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_hardbounce',               'ratio_hardbounce',               'DECIMAL(10,3)', 26, 1, 0, 1, GETUTCDATE()),
+  (1139, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_softbounce',               'ratio_softbounce',               'DECIMAL(10,3)', 27, 1, 0, 1, GETUTCDATE()),
+  (1140, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_contactslost',             'ratio_contactslost',             'DECIMAL(10,3)', 28, 1, 0, 1, GETUTCDATE()),
+  (1141, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_pending',                  'ratio_pending',                  'DECIMAL(10,3)', 29, 1, 0, 1, GETUTCDATE()),
+  (1142, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_notsent',                  'ratio_notsent',                  'DECIMAL(10,3)', 30, 1, 0, 1, GETUTCDATE()),
+  -- aggregate blobs
+  (1143, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'device_breakdown_json',          'device_breakdown_json',          'STRING',        31, 0, 0, 1, GETUTCDATE()),
+  (1144, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'qualifier_stats_json',           'qualifier_stats_json',           'STRING',        32, 0, 0, 1, GETUTCDATE()),
+  -- campaign (first entry of campaignAggregations — dynamic UUID key)
+  (1145, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_id',                    'campaign_id',                    'STRING',        33, 1, 0, 1, GETUTCDATE()),
+  -- campaign counters
+  (1146, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_sent',              'campaign_cnt_sent',              'INT',           34, 1, 0, 1, GETUTCDATE()),
+  (1147, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_open',              'campaign_cnt_open',              'INT',           35, 1, 0, 1, GETUTCDATE()),
+  (1148, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_delivered',         'campaign_cnt_delivered',         'INT',           36, 1, 0, 1, GETUTCDATE()),
+  (1149, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_bounce',            'campaign_cnt_bounce',            'INT',           37, 1, 0, 1, GETUTCDATE()),
+  (1150, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_unsubscribed',      'campaign_cnt_unsubscribed',      'INT',           38, 1, 0, 1, GETUTCDATE()),
+  (1151, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_click',             'campaign_cnt_click',             'INT',           39, 1, 0, 1, GETUTCDATE()),
+  (1152, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_reply',             'campaign_cnt_reply',             'INT',           40, 1, 0, 1, GETUTCDATE()),
+  (1153, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_dropped',           'campaign_cnt_dropped',           'INT',           41, 1, 0, 1, GETUTCDATE()),
+  (1154, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_selected',          'campaign_cnt_selected',          'INT',           42, 1, 0, 1, GETUTCDATE()),
+  (1155, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_spamreport',        'campaign_cnt_spamreport',        'INT',           43, 1, 0, 1, GETUTCDATE()),
+  (1156, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_suppressed',        'campaign_cnt_suppressed',        'INT',           44, 1, 0, 1, GETUTCDATE()),
+  (1157, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_hardbounced',       'campaign_cnt_hardbounced',       'INT',           45, 1, 0, 1, GETUTCDATE()),
+  (1158, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_softbounced',       'campaign_cnt_softbounced',       'INT',           46, 1, 0, 1, GETUTCDATE()),
+  (1159, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_pending',           'campaign_cnt_pending',           'INT',           47, 1, 0, 1, GETUTCDATE()),
+  (1160, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_contactslost',      'campaign_cnt_contactslost',      'INT',           48, 1, 0, 1, GETUTCDATE()),
+  (1161, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_notsent',           'campaign_cnt_notsent',           'INT',           49, 1, 0, 1, GETUTCDATE()),
+  -- campaign ratios
+  (1162, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_click',           'campaign_ratio_click',           'DECIMAL(10,3)', 50, 1, 0, 1, GETUTCDATE()),
+  (1163, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_clickthrough',    'campaign_ratio_clickthrough',    'DECIMAL(10,3)', 51, 1, 0, 1, GETUTCDATE()),
+  (1164, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_delivered',       'campaign_ratio_delivered',       'DECIMAL(10,3)', 52, 1, 0, 1, GETUTCDATE()),
+  (1165, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_open',            'campaign_ratio_open',            'DECIMAL(10,3)', 53, 1, 0, 1, GETUTCDATE()),
+  (1166, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_reply',           'campaign_ratio_reply',           'DECIMAL(10,3)', 54, 1, 0, 1, GETUTCDATE()),
+  (1167, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_unsubscribed',    'campaign_ratio_unsubscribed',    'DECIMAL(10,3)', 55, 1, 0, 1, GETUTCDATE()),
+  (1168, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_spamreport',      'campaign_ratio_spamreport',      'DECIMAL(10,3)', 56, 1, 0, 1, GETUTCDATE()),
+  (1169, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_bounce',          'campaign_ratio_bounce',          'DECIMAL(10,3)', 57, 1, 0, 1, GETUTCDATE()),
+  (1170, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_hardbounce',      'campaign_ratio_hardbounce',      'DECIMAL(10,3)', 58, 1, 0, 1, GETUTCDATE()),
+  (1171, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_softbounce',      'campaign_ratio_softbounce',      'DECIMAL(10,3)', 59, 1, 0, 1, GETUTCDATE()),
+  (1172, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_contactslost',    'campaign_ratio_contactslost',    'DECIMAL(10,3)', 60, 1, 0, 1, GETUTCDATE()),
+  (1173, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_pending',         'campaign_ratio_pending',         'DECIMAL(10,3)', 61, 1, 0, 1, GETUTCDATE()),
+  (1174, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_notsent',         'campaign_ratio_notsent',         'DECIMAL(10,3)', 62, 1, 0, 1, GETUTCDATE()),
+  -- campaign blobs
+  (1175, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_device_breakdown_json', 'campaign_device_breakdown_json', 'STRING',        63, 0, 0, 1, GETUTCDATE()),
+  (1176, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_qualifier_stats_json',  'campaign_qualifier_stats_json',  'STRING',        64, 0, 0, 1, GETUTCDATE());
+
+-- Total HubSpot: 266 column mappings across 16 landing tables (IDs 911–1176)
+--   911–932  : marketing_events                                          (22 rows)
+--   933–985  : marketing_emails base cols                                (53 rows)
+--   986      : events_event_types                                         (1 row)
+--   987–995  : crm_contacts base cols                                     (9 rows)
+--   996–1004 : crm_companies base cols                                    (9 rows)
+--   1005–1085: crm_deals through crm_tasks (9 cols × 9 tables)           (81 rows)
+--   1086–1091: crm_contacts properties_json expansion                     (6 rows)
+--   1092–1096: crm_companies properties_json expansion                    (5 rows)
+--   1097–1107: crm_owners                                                (11 rows)
+--   1108–1112: marketing_emails to_json expansion                         (5 rows)
+--   1113–1176: marketing_email_statistics (agg + campaign fully flattened)(64 rows)
 
 
 -- ============================================================

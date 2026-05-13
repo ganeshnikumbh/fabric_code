@@ -10,18 +10,21 @@
 #   The pipeline handles pagination (passing after-cursor to successive Web calls).
 #
 # p_table_name values and their targets:
-#   marketing_events               → hubspot.marketing_events           (schema: marketing_events.json)
-#   marketing_emails               → hubspot.marketing_emails           (schema: marketing_emails.json)
-#   events_event_types             → hubspot.events_event_types         (schema: events_event_types.json)
-#   crm_owners                     → hubspot.crm_owners                 (schema: crm_owners.json)
-#   crm_object_type_contacts       → hubspot.crm_contacts               (schema: crm_objects.json)
-#   crm_object_type_companies      → hubspot.crm_companies              (schema: crm_objects.json)
-#   crm_object_type_deals          → hubspot.crm_deals                  (schema: crm_objects.json)
-#   crm_object_type_<any>          → hubspot.crm_<any>                  (schema: crm_objects.json)
-#   crm_properties_type_contacts   → hubspot.crm_contacts_properties    (schema: crm_properties.json)
-#   crm_properties_type_<any>      → hubspot.crm_<any>_properties       (schema: crm_properties.json)
-#   crm_pipelines_type_deals       → hubspot.crm_deals_pipelines        (schema: crm_pipelines.json)
-#   crm_pipelines_type_<any>       → hubspot.crm_<any>_pipelines        (schema: crm_pipelines.json)
+#   marketing_events                  → hubspot.marketing_events              (schema: marketing_events.json)
+#   marketing_emails                  → hubspot.marketing_emails              (schema: marketing_emails.json)
+#   marketing_email_statistics        → hubspot.marketing_email_statistics    (schema: marketing_email_statistics.json)
+#                                        Response is a root JSON array. Pipeline must pass email_id
+#                                        via p_context_json e.g. {"email_id": "123456"}
+#   events_event_types                → hubspot.events_event_types            (schema: events_event_types.json)
+#   crm_owners                        → hubspot.crm_owners                    (schema: crm_owners.json)
+#   crm_object_type_contacts          → hubspot.crm_contacts                  (schema: crm_objects.json)
+#   crm_object_type_companies         → hubspot.crm_companies                 (schema: crm_objects.json)
+#   crm_object_type_deals             → hubspot.crm_deals                     (schema: crm_objects.json)
+#   crm_object_type_<any>             → hubspot.crm_<any>                     (schema: crm_objects.json)
+#   crm_properties_type_contacts      → hubspot.crm_contacts_properties       (schema: crm_properties.json)
+#   crm_properties_type_<any>         → hubspot.crm_<any>_properties          (schema: crm_properties.json)
+#   crm_pipelines_type_deals          → hubspot.crm_deals_pipelines           (schema: crm_pipelines.json)
+#   crm_pipelines_type_<any>          → hubspot.crm_<any>_pipelines           (schema: crm_pipelines.json)
 #
 # Parameters:
 #   p_api_response   — JSON string of the API response (one page), from Web activity
@@ -38,7 +41,7 @@
 import json
 
 from pyspark.sql import SparkSession
-from pyspark.sql.types import BooleanType, IntegerType, StringType, StructField, StructType
+from pyspark.sql.types import BooleanType, DoubleType, IntegerType, StringType, StructField, StructType
 
 %run nb_utils.py
 
@@ -77,14 +80,30 @@ def _load_schema(schema_name):
 
 
 def _get(record, dot_path):
-    """Resolve a dot-notation path against a nested dict."""
+    """Resolve a dot-notation path against a nested dict/list.
+
+    Special path components (prefix $):
+      $first     — first value of a dict  (for dynamic-key objects like campaignAggregations)
+      $first_key — first key   of a dict  (extracts the dynamic key string itself)
+      $N         — element at index N of a list  (e.g. $0 for the first item)
+    """
     if dot_path == "__item__":
         return record
     val = record
     for key in dot_path.split("."):
-        if not isinstance(val, dict):
+        if val is None:
             return None
-        val = val.get(key)
+        if key == "$first":
+            val = next(iter(val.values()), None) if isinstance(val, dict) else None
+        elif key == "$first_key":
+            val = next(iter(val.keys()), None) if isinstance(val, dict) else None
+        elif key.startswith("$"):
+            try:
+                val = val[int(key[1:])] if isinstance(val, (list, tuple)) else None
+            except (IndexError, ValueError, TypeError):
+                val = None
+        else:
+            val = val.get(key) if isinstance(val, dict) else None
     return val
 
 
@@ -100,6 +119,8 @@ def _flatten(record, fields, context=None):
             row[f["column"]] = bool(val) if val is not None else None
         elif t == "integer":
             row[f["column"]] = int(val) if val is not None else None
+        elif t == "float":
+            row[f["column"]] = float(val) if val is not None else None
         else:
             row[f["column"]] = str(val) if val is not None else None
     if context:
@@ -113,6 +134,7 @@ def _build_spark_schema(fields, context_keys=None):
         "string":  StringType(),
         "boolean": BooleanType(),
         "integer": IntegerType(),
+        "float":   DoubleType(),
         "json":    StringType(),
     }
     sf_list = [
@@ -154,6 +176,12 @@ _TABLE_MAP = {
         "results_path":    "results",
         "is_string_array": False,
     },
+    "marketing_email_statistics": {
+        "schema_name":     "marketing_email_statistics",
+        "target_table":    "marketing_email_statistics",
+        "results_path":    "",
+        "is_string_array": False,
+    },
 }
 
 # Parse context JSON (may be empty)
@@ -192,7 +220,8 @@ elif p_table_name in _TABLE_MAP:
 else:
     raise ValueError(
         f"Unknown p_table_name '{p_table_name}'. "
-        "Expected: marketing_events | marketing_emails | events_event_types | crm_owners | "
+        "Expected: marketing_events | marketing_emails | marketing_email_statistics | "
+        "events_event_types | crm_owners | "
         "crm_object_type_<objectType> | crm_properties_type_<objectType> | crm_pipelines_type_<objectType>"
     )
 
@@ -223,6 +252,10 @@ if _is_str_array:
     # events_event_types: response is {"eventTypes": ["type1", "type2", ...]}
     items = _response.get(_results_path, [])
     rows  = [{"event_type": str(item)} for item in items if item]
+elif _results_path == "":
+    # marketing_email_statistics: API returns a root JSON array, no wrapper key
+    records = _response if isinstance(_response, list) else [_response]
+    rows    = [_flatten(r, _fields, context=_context or None) for r in records]
 else:
     records = _response.get(_results_path, [])
     rows    = [_flatten(r, _fields, context=_context or None) for r in records]

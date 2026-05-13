@@ -372,3 +372,19 @@ VALUES
      'full', NULL, NULL, NULL, NULL,
      0, '/crm/objects/2025-09/tasks',                     'GET', 1, 'elic');
 GO
+
+-- ── HubSpot — email statistics (per-email detail endpoint) ────────────────────
+-- Pipeline iterates over marketing_emails.id and calls this endpoint per email.
+-- p_context_json must carry {"email_id": "<id>"} so the landing table gets the FK.
+
+INSERT INTO dbo.ingestion_config
+    (source_id, source_name, source_type, source_schema, entity_name,
+     target_lakehouse, target_schema, target_table,
+     load_type, watermark_column, watermark_type, batch_size, partition_by_column_names,
+     is_scd2, api_endpoint, api_method, active_flag, src_busn_asst)
+VALUES
+(84, 'HubSpot', 'api', NULL, 'marketing_email_statistics',
+     'lh_landing', 'hubspot', 'marketing_email_statistics',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/marketing/v3/emails/{emailId}/statistics/list',  'GET', 1, 'elic');
+GO
