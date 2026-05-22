@@ -1,0 +1,113 @@
+# Notebook: nb_maintenance_silver_s1
+# Layer:    Silver S1 (lh_silver)
+# Purpose:  Run OPTIMIZE and VACUUM (4-hour retention) on every Delta table
+#           in the silver_s1 schema. Tables are discovered dynamically at
+#           runtime — no hardcoding required.
+#
+# !! VACUUM with RETAIN 4 HOURS is below the Delta Lake default minimum (7 days).
+#    This notebook disables the retention-duration safety check. Only schedule
+#    this when you are certain no active queries or time-travel reads depend on
+#    older file versions.
+#
+# How to run:
+#   - Attach lh_silver as the default lakehouse before running.
+#   - Can be run standalone or called from a Fabric Data Pipeline.
+#   - Optional pipeline parameter p_schema to target a different schema.
+
+import time
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("nb_maintenance_silver_s1").getOrCreate()
+
+# Allow VACUUM retention below the 7-day Delta Lake default minimum
+spark.conf.set("spark.databricks.delta.retentionDurationCheck.enabled", "false")
+
+_notebook_start = time.time()
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 1 — Parameters
+# Cell tag: parameters — Fabric Pipeline injects values at runtime.
+# ══════════════════════════════════════════════════════════════════════════════
+
+p_schema                 = "silver_s1"   # schema to maintain
+p_vacuum_retention_hours = 4             # hours to retain Delta log history
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 2 — Discover tables dynamically
+# ══════════════════════════════════════════════════════════════════════════════
+
+rows = spark.sql(f"SHOW TABLES IN `{p_schema}`").collect()
+tables_to_process = [
+    row["tableName"]
+    for row in rows
+    if not row["isTemporary"]
+]
+
+print(f"Schema  : {p_schema}")
+print(f"Tables  : {len(tables_to_process)} discovered")
+for t in tables_to_process:
+    print(f"  - {t}")
+print()
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 3 — Maintenance loop
+# ══════════════════════════════════════════════════════════════════════════════
+
+results = []
+
+for table in tables_to_process:
+    full_table = f"`{p_schema}`.`{table}`"
+    status = {"table": f"{p_schema}.{table}", "optimize": None, "vacuum": None, "error": None}
+    t0 = time.time()
+
+    try:
+        print(f"[OPTIMIZE] {p_schema}.{table} ...", end=" ")
+        spark.sql(f"OPTIMIZE {full_table}")
+        status["optimize"] = "ok"
+        print(f"done ({time.time() - t0:.1f}s)")
+    except Exception as e:
+        status["optimize"] = "FAILED"
+        status["error"] = str(e)
+        print(f"FAILED — {e}")
+
+    try:
+        t1 = time.time()
+        print(f"[VACUUM]   {p_schema}.{table} RETAIN {p_vacuum_retention_hours} HOURS ...", end=" ")
+        spark.sql(f"VACUUM {full_table} RETAIN {p_vacuum_retention_hours} HOURS")
+        status["vacuum"] = "ok"
+        print(f"done ({time.time() - t1:.1f}s)")
+    except Exception as e:
+        status["vacuum"] = "FAILED"
+        if status["error"] is None:
+            status["error"] = str(e)
+        print(f"FAILED — {e}")
+
+    results.append(status)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 4 — Summary
+# ══════════════════════════════════════════════════════════════════════════════
+
+elapsed = time.time() - _notebook_start
+total   = len(results)
+failed  = [r for r in results if r["optimize"] == "FAILED" or r["vacuum"] == "FAILED"]
+
+print("\n" + "=" * 70)
+print(f"nb_maintenance_silver_s1 — COMPLETE")
+print(f"  Schema           : {p_schema}")
+print(f"  Tables processed : {total}")
+print(f"  Failures         : {len(failed)}")
+print(f"  Total elapsed    : {elapsed:.1f}s")
+print("=" * 70)
+
+if failed:
+    print("\nFailed tables:")
+    for r in failed:
+        print(f"  {r['table']}")
+        print(f"    optimize : {r['optimize']}")
+        print(f"    vacuum   : {r['vacuum']}")
+        print(f"    error    : {r['error']}")
+    raise RuntimeError(
+        f"nb_maintenance_silver_s1 completed with {len(failed)} failure(s). "
+        "See output above for details."
+    )
