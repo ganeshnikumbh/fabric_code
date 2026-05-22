@@ -12,6 +12,8 @@
 # How to run:
 #   - Attach lh_landing as the default lakehouse before running.
 #   - Can be run standalone or called from a Fabric Data Pipeline.
+#   - Optional pipeline parameter p_schema (e.g. "hubspot") to target a single
+#     schema. Leave empty to run across all schemas.
 #   - Optional pipeline parameter p_exclude_schemas (comma-separated) to skip
 #     specific schemas on top of the built-in system schema exclusions.
 
@@ -31,6 +33,8 @@ _notebook_start = time.time()
 # ══════════════════════════════════════════════════════════════════════════════
 
 p_vacuum_retention_hours = 4    # hours to retain Delta log history
+p_schema                 = ""   # optional — target a single schema, e.g. "hubspot"
+                                # leave empty to run across all schemas
 p_exclude_schemas        = ""   # optional comma-separated schemas to skip
                                 # e.g. "scratch_staging,dev_local"
 
@@ -56,13 +60,20 @@ _user_exclude = {s.strip().lower() for s in p_exclude_schemas.split(",") if s.st
 _excluded     = _SYSTEM_SCHEMAS | _user_exclude
 
 # SHOW SCHEMAS returns column "namespace" in Fabric Spark
+_schema_filter = p_schema.strip().lower()   # non-empty = single-schema mode
+
 all_namespaces = [
     row["namespace"]
     for row in spark.sql("SHOW SCHEMAS").collect()
-    if row["namespace"].split(".")[-1].lower() not in _excluded  # filter on schema name (last part)
+    if row["namespace"].split(".")[-1].lower() not in _excluded           # always exclude system schemas
+    and (not _schema_filter or row["namespace"].split(".")[-1].lower() == _schema_filter)  # p_schema filter
 ]
 
-print(f"Schemas discovered : {len(all_namespaces)}")
+if _schema_filter and not all_namespaces:
+    raise ValueError(f"Schema '{p_schema}' not found in this lakehouse.")
+
+print(f"Mode               : {'single schema — ' + p_schema if _schema_filter else 'all schemas'}")
+print(f"Schemas to process : {len(all_namespaces)}")
 for ns in all_namespaces:
     print(f"  {ns}")
 
@@ -128,6 +139,7 @@ failed  = [r for r in results if r["optimize"] == "FAILED" or r["vacuum"] == "FA
 
 print("\n" + "=" * 70)
 print(f"nb_maintenance_landing — COMPLETE")
+print(f"  Mode              : {'single schema — ' + p_schema if _schema_filter else 'all schemas'}")
 print(f"  Schemas processed : {len(all_namespaces)}")
 print(f"  Tables processed  : {total}")
 print(f"  Failures          : {len(failed)}")
