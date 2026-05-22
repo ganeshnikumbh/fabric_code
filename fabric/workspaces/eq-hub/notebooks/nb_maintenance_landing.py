@@ -36,7 +36,18 @@ p_exclude_schemas        = ""   # optional comma-separated schemas to skip
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SECTION 2 — Discover schemas and tables dynamically
+#
+# In Microsoft Fabric, SHOW SCHEMAS returns a column called "namespace" with
+# fully-qualified three-part values: workspace.lakehouse.schema
+# e.g. "EQ-Fabric-NP-Dev-Data-Ops.lh_landing.hubspot"
+#
+# Each part must be backtick-quoted individually when used in Spark SQL.
+# Schema-level filtering compares against the last part only (the schema name).
 # ══════════════════════════════════════════════════════════════════════════════
+
+def _quote_namespace(namespace: str) -> str:
+    """Backtick-quote each part of a dot-separated namespace for Spark SQL."""
+    return ".".join(f"`{p}`" for p in namespace.split("."))
 
 # Schemas that are always excluded — Fabric/Spark system namespaces
 _SYSTEM_SCHEMAS = {"information_schema", "default"}
@@ -44,23 +55,29 @@ _SYSTEM_SCHEMAS = {"information_schema", "default"}
 _user_exclude = {s.strip().lower() for s in p_exclude_schemas.split(",") if s.strip()}
 _excluded     = _SYSTEM_SCHEMAS | _user_exclude
 
-all_schemas = [
-    row["databaseName"]
+# SHOW SCHEMAS returns column "namespace" in Fabric Spark
+all_namespaces = [
+    row["namespace"]
     for row in spark.sql("SHOW SCHEMAS").collect()
-    if row["databaseName"].lower() not in _excluded
+    if row["namespace"].split(".")[-1].lower() not in _excluded  # filter on schema name (last part)
 ]
 
-print(f"Schemas discovered : {all_schemas}")
+print(f"Schemas discovered : {len(all_namespaces)}")
+for ns in all_namespaces:
+    print(f"  {ns}")
 
-tables_to_process = []   # list of (schema, table) tuples
-for schema in all_schemas:
-    rows = spark.sql(f"SHOW TABLES IN `{schema}`").collect()
+# list of (namespace, schema_label, table) tuples
+tables_to_process = []
+for ns in all_namespaces:
+    schema_label = ns.split(".")[-1]   # last part — used for display only
+    quoted_ns    = _quote_namespace(ns)
+    rows = spark.sql(f"SHOW TABLES IN {quoted_ns}").collect()
     schema_tables = [
-        (schema, row["tableName"])
+        (quoted_ns, schema_label, row["tableName"])
         for row in rows
         if not row["isTemporary"]
     ]
-    print(f"  {schema}: {len(schema_tables)} table(s)")
+    print(f"  {schema_label}: {len(schema_tables)} table(s)")
     tables_to_process.extend(schema_tables)
 
 print(f"\nTotal tables to maintain: {len(tables_to_process)}\n")
@@ -71,13 +88,14 @@ print(f"\nTotal tables to maintain: {len(tables_to_process)}\n")
 
 results = []
 
-for schema, table in tables_to_process:
-    full_table = f"`{schema}`.`{table}`"
-    status = {"table": f"{schema}.{table}", "optimize": None, "vacuum": None, "error": None}
+for quoted_ns, schema_label, table in tables_to_process:
+    full_table   = f"{quoted_ns}.`{table}`"
+    display_name = f"{schema_label}.{table}"
+    status = {"table": display_name, "optimize": None, "vacuum": None, "error": None}
     t0 = time.time()
 
     try:
-        print(f"[OPTIMIZE] {schema}.{table} ...", end=" ")
+        print(f"[OPTIMIZE] {display_name} ...", end=" ")
         spark.sql(f"OPTIMIZE {full_table}")
         status["optimize"] = "ok"
         print(f"done ({time.time() - t0:.1f}s)")
@@ -88,7 +106,7 @@ for schema, table in tables_to_process:
 
     try:
         t1 = time.time()
-        print(f"[VACUUM]   {schema}.{table} RETAIN {p_vacuum_retention_hours} HOURS ...", end=" ")
+        print(f"[VACUUM]   {display_name} RETAIN {p_vacuum_retention_hours} HOURS ...", end=" ")
         spark.sql(f"VACUUM {full_table} RETAIN {p_vacuum_retention_hours} HOURS")
         status["vacuum"] = "ok"
         print(f"done ({time.time() - t1:.1f}s)")
@@ -110,7 +128,7 @@ failed  = [r for r in results if r["optimize"] == "FAILED" or r["vacuum"] == "FA
 
 print("\n" + "=" * 70)
 print(f"nb_maintenance_landing — COMPLETE")
-print(f"  Schemas processed : {len(all_schemas)}")
+print(f"  Schemas processed : {len(all_namespaces)}")
 print(f"  Tables processed  : {total}")
 print(f"  Failures          : {len(failed)}")
 print(f"  Total elapsed     : {elapsed:.1f}s")

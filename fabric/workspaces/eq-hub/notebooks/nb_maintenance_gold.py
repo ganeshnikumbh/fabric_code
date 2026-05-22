@@ -34,17 +34,36 @@ p_vacuum_retention_hours = 4        # hours to retain Delta log history
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SECTION 2 — Discover tables dynamically
+#
+# In Microsoft Fabric, SHOW SCHEMAS returns column "namespace" with fully-
+# qualified values: workspace.lakehouse.schema. We resolve p_schema to its
+# full namespace so SHOW TABLES and OPTIMIZE/VACUUM use the correct reference.
 # ══════════════════════════════════════════════════════════════════════════════
 
-rows = spark.sql(f"SHOW TABLES IN `{p_schema}`").collect()
+def _quote_namespace(namespace: str) -> str:
+    """Backtick-quote each part of a dot-separated namespace for Spark SQL."""
+    return ".".join(f"`{p}`" for p in namespace.split("."))
+
+# Resolve p_schema to its full qualified namespace
+_all_ns = [row["namespace"] for row in spark.sql("SHOW SCHEMAS").collect()]
+_matches = [ns for ns in _all_ns if ns.split(".")[-1].lower() == p_schema.lower()]
+
+if not _matches:
+    raise ValueError(f"Schema '{p_schema}' not found. Available schemas: {_all_ns}")
+
+full_namespace = _matches[0]
+quoted_ns      = _quote_namespace(full_namespace)
+
+rows = spark.sql(f"SHOW TABLES IN {quoted_ns}").collect()
 tables_to_process = [
     row["tableName"]
     for row in rows
     if not row["isTemporary"]
 ]
 
-print(f"Schema  : {p_schema}")
-print(f"Tables  : {len(tables_to_process)} discovered")
+print(f"Schema    : {p_schema}")
+print(f"Namespace : {full_namespace}")
+print(f"Tables    : {len(tables_to_process)} discovered")
 for t in tables_to_process:
     print(f"  - {t}")
 print()
@@ -56,7 +75,7 @@ print()
 results = []
 
 for table in tables_to_process:
-    full_table = f"`{p_schema}`.`{table}`"
+    full_table = f"{quoted_ns}.`{table}`"
     status = {"table": f"{p_schema}.{table}", "optimize": None, "vacuum": None, "error": None}
     t0 = time.time()
 
