@@ -1594,3 +1594,725 @@ VALUES
   (3285, 'EQ_ODS', 'ProductStructure', 'product_structure_base', 'ProductTypeCT',         'product_type_code',       'STRING', 4, 1, 0, 1, GETUTCDATE());
 
 -- Total EQ_ODS: 285 column mappings across 15 base tables (IDs 3001-3285)
+
+
+-- ============================================================
+-- Raw-landing migration — HubSpot source_column_name updates
+-- Changes flat snake_case landing column names → camelCase JSON paths
+-- that the v3 bronze notebook reads directly from raw_json.
+-- ============================================================
+
+-- [U01] marketing_events
+UPDATE schema_config SET source_column_name = 'objectId'          WHERE id = 911;
+UPDATE schema_config SET source_column_name = 'externalEventId'   WHERE id = 912;
+UPDATE schema_config SET source_column_name = 'eventName'         WHERE id = 913;
+UPDATE schema_config SET source_column_name = 'eventType'         WHERE id = 914;
+UPDATE schema_config SET source_column_name = 'eventStatus'       WHERE id = 915;
+UPDATE schema_config SET source_column_name = 'eventStatusV2'     WHERE id = 916;
+UPDATE schema_config SET source_column_name = 'startDateTime'     WHERE id = 917;
+UPDATE schema_config SET source_column_name = 'endDateTime'       WHERE id = 918;
+UPDATE schema_config SET source_column_name = 'eventOrganizer'    WHERE id = 919;
+UPDATE schema_config SET source_column_name = 'eventDescription'  WHERE id = 920;
+UPDATE schema_config SET source_column_name = 'eventUrl'          WHERE id = 921;
+UPDATE schema_config SET source_column_name = 'eventCancelled'    WHERE id = 922;
+UPDATE schema_config SET source_column_name = 'eventCompleted'    WHERE id = 923;
+UPDATE schema_config SET source_column_name = 'noShows'           WHERE id = 927;
+UPDATE schema_config SET source_column_name = 'appInfo.id'        WHERE id = 928;
+UPDATE schema_config SET source_column_name = 'appInfo.name'      WHERE id = 929;
+UPDATE schema_config SET source_column_name = 'createdAt'         WHERE id = 930;
+UPDATE schema_config SET source_column_name = 'updatedAt'         WHERE id = 931;
+
+-- [U02] marketing_emails base cols
+UPDATE schema_config SET source_column_name = 'isAb'                                WHERE id = 941;
+UPDATE schema_config SET source_column_name = 'isPublished'                         WHERE id = 942;
+UPDATE schema_config SET source_column_name = 'isTransactional'                     WHERE id = 943;
+UPDATE schema_config SET source_column_name = 'sendOnPublish'                       WHERE id = 944;
+UPDATE schema_config SET source_column_name = 'jitterSendTime'                      WHERE id = 945;
+UPDATE schema_config SET source_column_name = 'activeDomain'                        WHERE id = 946;
+UPDATE schema_config SET source_column_name = 'campaignName'                        WHERE id = 948;
+UPDATE schema_config SET source_column_name = 'campaignUtm'                         WHERE id = 949;
+UPDATE schema_config SET source_column_name = 'emailCampaignGroupId'                WHERE id = 950;
+UPDATE schema_config SET source_column_name = 'primaryEmailCampaignId'              WHERE id = 951;
+UPDATE schema_config SET source_column_name = 'emailTemplateMode'                   WHERE id = 952;
+UPDATE schema_config SET source_column_name = 'feedbackSurveyId'                    WHERE id = 953;
+UPDATE schema_config SET source_column_name = 'folderId'                            WHERE id = 954;
+UPDATE schema_config SET source_column_name = 'businessUnitId'                      WHERE id = 955;
+UPDATE schema_config SET source_column_name = 'clonedFrom'                          WHERE id = 956;
+UPDATE schema_config SET source_column_name = 'previewKey'                          WHERE id = 957;
+UPDATE schema_config SET source_column_name = 'publishDate'                         WHERE id = 958;
+UPDATE schema_config SET source_column_name = 'publishedAt'                         WHERE id = 959;
+UPDATE schema_config SET source_column_name = 'unpublishedAt'                       WHERE id = 960;
+UPDATE schema_config SET source_column_name = 'publishedByEmail'                    WHERE id = 961;
+UPDATE schema_config SET source_column_name = 'publishedById'                       WHERE id = 962;
+UPDATE schema_config SET source_column_name = 'publishedByName'                     WHERE id = 963;
+UPDATE schema_config SET source_column_name = 'createdAt'                           WHERE id = 964;
+UPDATE schema_config SET source_column_name = 'createdById'                         WHERE id = 965;
+UPDATE schema_config SET source_column_name = 'deletedAt'                           WHERE id = 966;
+UPDATE schema_config SET source_column_name = 'updatedAt'                           WHERE id = 967;
+UPDATE schema_config SET source_column_name = 'updatedById'                         WHERE id = 968;
+UPDATE schema_config SET source_column_name = 'from.fromName'                       WHERE id = 969;
+UPDATE schema_config SET source_column_name = 'from.replyTo'                        WHERE id = 970;
+UPDATE schema_config SET source_column_name = 'from.customReplyTo'                  WHERE id = 971;
+UPDATE schema_config SET source_column_name = 'subscriptionDetails.subscriptionId'  WHERE id = 972;
+UPDATE schema_config SET source_column_name = 'subscriptionDetails.subscriptionName' WHERE id = 973;
+UPDATE schema_config SET source_column_name = 'subscriptionDetails.officeLocationId' WHERE id = 974;
+UPDATE schema_config SET source_column_name = 'subscriptionDetails.preferencesGroupId' WHERE id = 975;
+UPDATE schema_config SET source_column_name = 'webversion.url'                      WHERE id = 976;
+UPDATE schema_config SET source_column_name = 'webversion.enabled'                  WHERE id = 977;
+UPDATE schema_config SET source_column_name = 'content'                             WHERE id = 978;
+UPDATE schema_config SET source_column_name = 'stats'                               WHERE id = 979;
+UPDATE schema_config SET source_column_name = 'testing'                             WHERE id = 980;
+UPDATE schema_config SET source_column_name = 'rssData'                             WHERE id = 981;
+UPDATE schema_config SET source_column_name = 'to'                                  WHERE id = 982;
+UPDATE schema_config SET source_column_name = 'allEmailCampaignIds'                 WHERE id = 983;
+UPDATE schema_config SET source_column_name = 'teamsWithAccess'                     WHERE id = 984;
+UPDATE schema_config SET source_column_name = 'workflowNames'                       WHERE id = 985;
+
+-- [U03] events_event_types
+UPDATE schema_config SET source_column_name = '__item__' WHERE id = 986;
+
+-- [U04] crm_contacts base
+UPDATE schema_config SET source_column_name = 'createdAt'            WHERE id = 988;
+UPDATE schema_config SET source_column_name = 'updatedAt'            WHERE id = 989;
+UPDATE schema_config SET source_column_name = 'archivedAt'           WHERE id = 991;
+UPDATE schema_config SET source_column_name = 'objectWriteTraceId'   WHERE id = 992;
+UPDATE schema_config SET source_column_name = 'properties'           WHERE id = 994;
+UPDATE schema_config SET source_column_name = 'N/A'                  WHERE id = 995;
+
+-- [U05] crm_companies base
+UPDATE schema_config SET source_column_name = 'createdAt'            WHERE id = 997;
+UPDATE schema_config SET source_column_name = 'updatedAt'            WHERE id = 998;
+UPDATE schema_config SET source_column_name = 'archivedAt'           WHERE id = 1000;
+UPDATE schema_config SET source_column_name = 'objectWriteTraceId'   WHERE id = 1001;
+UPDATE schema_config SET source_column_name = 'properties'           WHERE id = 1003;
+UPDATE schema_config SET source_column_name = 'N/A'                  WHERE id = 1004;
+
+-- [U06] crm_contacts properties expansion
+UPDATE schema_config SET source_column_name = 'properties.createdate'       WHERE id = 1086;
+UPDATE schema_config SET source_column_name = 'properties.email'            WHERE id = 1087;
+UPDATE schema_config SET source_column_name = 'properties.firstname'        WHERE id = 1088;
+UPDATE schema_config SET source_column_name = 'properties.hs_object_id'     WHERE id = 1089;
+UPDATE schema_config SET source_column_name = 'properties.lastmodifieddate' WHERE id = 1090;
+UPDATE schema_config SET source_column_name = 'properties.lastname'         WHERE id = 1091;
+
+-- [U07] crm_companies properties expansion
+UPDATE schema_config SET source_column_name = 'properties.createdate'          WHERE id = 1092;
+UPDATE schema_config SET source_column_name = 'properties.domain'              WHERE id = 1093;
+UPDATE schema_config SET source_column_name = 'properties.hs_lastmodifieddate' WHERE id = 1094;
+UPDATE schema_config SET source_column_name = 'properties.hs_object_id'        WHERE id = 1095;
+UPDATE schema_config SET source_column_name = 'properties.name'                WHERE id = 1096;
+
+-- [U08] crm_owners
+UPDATE schema_config SET source_column_name = 'firstName'              WHERE id = 1099;
+UPDATE schema_config SET source_column_name = 'lastName'               WHERE id = 1100;
+UPDATE schema_config SET source_column_name = 'userId'                 WHERE id = 1102;
+UPDATE schema_config SET source_column_name = 'userIdIncludingInactive' WHERE id = 1103;
+UPDATE schema_config SET source_column_name = 'createdAt'              WHERE id = 1104;
+UPDATE schema_config SET source_column_name = 'updatedAt'              WHERE id = 1105;
+UPDATE schema_config SET source_column_name = 'teams'                  WHERE id = 1107;
+
+-- [U09] marketing_emails to_json expansion
+UPDATE schema_config SET source_column_name = 'to.contactIds'         WHERE id = 1108;
+UPDATE schema_config SET source_column_name = 'to.contactIlsLists'    WHERE id = 1109;
+UPDATE schema_config SET source_column_name = 'to.contactLists'       WHERE id = 1110;
+UPDATE schema_config SET source_column_name = 'to.limitSendFrequency' WHERE id = 1111;
+UPDATE schema_config SET source_column_name = 'to.suppressGraymail'   WHERE id = 1112;
+
+-- [U10] marketing_email_statistics — flat names → JSON paths
+UPDATE schema_config SET source_column_name = 'emails.$0'                                   WHERE id = 1113;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.sent'                     WHERE id = 1114;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.open'                     WHERE id = 1115;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.delivered'                WHERE id = 1116;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.bounce'                   WHERE id = 1117;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.unsubscribed'             WHERE id = 1118;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.click'                    WHERE id = 1119;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.reply'                    WHERE id = 1120;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.dropped'                  WHERE id = 1121;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.selected'                 WHERE id = 1122;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.spamreport'               WHERE id = 1123;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.suppressed'               WHERE id = 1124;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.hardbounced'              WHERE id = 1125;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.softbounced'              WHERE id = 1126;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.pending'                  WHERE id = 1127;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.contactslost'             WHERE id = 1128;
+UPDATE schema_config SET source_column_name = 'aggregate.counters.notsent'                  WHERE id = 1129;
+UPDATE schema_config SET source_column_name = 'aggregate.ratios.clickratio'                 WHERE id = 1130;
+UPDATE schema_config SET source_column_name = 'aggregate.ratios.clickthroughratio'          WHERE id = 1131;
+UPDATE schema_config SET source_column_name = 'aggregate.ratios.deliveredratio'             WHERE id = 1132;
+UPDATE schema_config SET source_column_name = 'aggregate.ratios.openratio'                  WHERE id = 1133;
+UPDATE schema_config SET source_column_name = 'aggregate.ratios.replyratio'                 WHERE id = 1134;
+UPDATE schema_config SET source_column_name = 'aggregate.ratios.unsubscribedratio'          WHERE id = 1135;
+UPDATE schema_config SET source_column_name = 'aggregate.ratios.spamreportratio'            WHERE id = 1136;
+UPDATE schema_config SET source_column_name = 'aggregate.ratios.bounceratio'                WHERE id = 1137;
+UPDATE schema_config SET source_column_name = 'aggregate.ratios.hardbounceratio'            WHERE id = 1138;
+UPDATE schema_config SET source_column_name = 'aggregate.ratios.softbounceratio'            WHERE id = 1139;
+UPDATE schema_config SET source_column_name = 'aggregate.ratios.contactslostratio'          WHERE id = 1140;
+UPDATE schema_config SET source_column_name = 'aggregate.ratios.pendingratio'               WHERE id = 1141;
+UPDATE schema_config SET source_column_name = 'aggregate.ratios.notsentratio'               WHERE id = 1142;
+UPDATE schema_config SET source_column_name = 'aggregate.deviceBreakdown'                   WHERE id = 1143;
+UPDATE schema_config SET source_column_name = 'aggregate.qualifierStats'                    WHERE id = 1144;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first_key'             WHERE id = 1145;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.sent'        WHERE id = 1146;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.open'        WHERE id = 1147;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.delivered'   WHERE id = 1148;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.bounce'      WHERE id = 1149;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.unsubscribed' WHERE id = 1150;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.click'       WHERE id = 1151;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.reply'       WHERE id = 1152;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.dropped'     WHERE id = 1153;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.selected'    WHERE id = 1154;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.spamreport'  WHERE id = 1155;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.suppressed'  WHERE id = 1156;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.hardbounced' WHERE id = 1157;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.softbounced' WHERE id = 1158;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.pending'     WHERE id = 1159;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.contactslost' WHERE id = 1160;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.notsent'     WHERE id = 1161;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.clickratio'        WHERE id = 1162;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.clickthroughratio' WHERE id = 1163;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.deliveredratio'    WHERE id = 1164;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.openratio'         WHERE id = 1165;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.replyratio'        WHERE id = 1166;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.unsubscribedratio' WHERE id = 1167;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.spamreportratio'   WHERE id = 1168;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.bounceratio'       WHERE id = 1169;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.hardbounceratio'   WHERE id = 1170;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.softbounceratio'   WHERE id = 1171;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.contactslostratio' WHERE id = 1172;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.pendingratio'      WHERE id = 1173;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.notsentratio'      WHERE id = 1174;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.deviceBreakdown'          WHERE id = 1175;
+UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.qualifierStats'           WHERE id = 1176;
+
+
+-- ============================================================
+-- Missing CRM object tables — IDs 1005-1085
+-- 9 tables × 9 cols = 81 rows; all share crm_objects.json schema
+-- source_path = 'results' (set in ingestion_config)
+-- ============================================================
+
+-- [H06] crm_deals (IDs 1005-1013)
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (1005, 'HubSpot', 'crm_deals', 'crm_deals_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
+  (1006, 'HubSpot', 'crm_deals', 'crm_deals_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  (1007, 'HubSpot', 'crm_deals', 'crm_deals_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
+  (1008, 'HubSpot', 'crm_deals', 'crm_deals_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
+  (1009, 'HubSpot', 'crm_deals', 'crm_deals_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
+  (1010, 'HubSpot', 'crm_deals', 'crm_deals_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
+  (1011, 'HubSpot', 'crm_deals', 'crm_deals_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
+  (1012, 'HubSpot', 'crm_deals', 'crm_deals_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
+  (1013, 'HubSpot', 'crm_deals', 'crm_deals_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+
+-- [H07] crm_tickets (IDs 1014-1022)
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (1014, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
+  (1015, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  (1016, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
+  (1017, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
+  (1018, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
+  (1019, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
+  (1020, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
+  (1021, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
+  (1022, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+
+-- [H08] crm_products (IDs 1023-1031)
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (1023, 'HubSpot', 'crm_products', 'crm_products_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
+  (1024, 'HubSpot', 'crm_products', 'crm_products_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  (1025, 'HubSpot', 'crm_products', 'crm_products_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
+  (1026, 'HubSpot', 'crm_products', 'crm_products_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
+  (1027, 'HubSpot', 'crm_products', 'crm_products_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
+  (1028, 'HubSpot', 'crm_products', 'crm_products_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
+  (1029, 'HubSpot', 'crm_products', 'crm_products_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
+  (1030, 'HubSpot', 'crm_products', 'crm_products_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
+  (1031, 'HubSpot', 'crm_products', 'crm_products_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+
+-- [H09] crm_line_items (IDs 1032-1040)
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (1032, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
+  (1033, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  (1034, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
+  (1035, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
+  (1036, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
+  (1037, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
+  (1038, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
+  (1039, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
+  (1040, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+
+-- [H10] crm_quotes (IDs 1041-1049)
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (1041, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
+  (1042, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  (1043, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
+  (1044, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
+  (1045, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
+  (1046, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
+  (1047, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
+  (1048, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
+  (1049, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+
+-- [H11] crm_calls (IDs 1050-1058)
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (1050, 'HubSpot', 'crm_calls', 'crm_calls_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
+  (1051, 'HubSpot', 'crm_calls', 'crm_calls_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  (1052, 'HubSpot', 'crm_calls', 'crm_calls_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
+  (1053, 'HubSpot', 'crm_calls', 'crm_calls_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
+  (1054, 'HubSpot', 'crm_calls', 'crm_calls_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
+  (1055, 'HubSpot', 'crm_calls', 'crm_calls_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
+  (1056, 'HubSpot', 'crm_calls', 'crm_calls_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
+  (1057, 'HubSpot', 'crm_calls', 'crm_calls_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
+  (1058, 'HubSpot', 'crm_calls', 'crm_calls_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+
+-- [H12] crm_meetings (IDs 1059-1067)
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (1059, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
+  (1060, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  (1061, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
+  (1062, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
+  (1063, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
+  (1064, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
+  (1065, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
+  (1066, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
+  (1067, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+
+-- [H13] crm_notes (IDs 1068-1076)
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (1068, 'HubSpot', 'crm_notes', 'crm_notes_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
+  (1069, 'HubSpot', 'crm_notes', 'crm_notes_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  (1070, 'HubSpot', 'crm_notes', 'crm_notes_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
+  (1071, 'HubSpot', 'crm_notes', 'crm_notes_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
+  (1072, 'HubSpot', 'crm_notes', 'crm_notes_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
+  (1073, 'HubSpot', 'crm_notes', 'crm_notes_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
+  (1074, 'HubSpot', 'crm_notes', 'crm_notes_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
+  (1075, 'HubSpot', 'crm_notes', 'crm_notes_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
+  (1076, 'HubSpot', 'crm_notes', 'crm_notes_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+
+-- [H14] crm_tasks (IDs 1077-1085)
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (1077, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
+  (1078, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  (1079, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
+  (1080, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
+  (1081, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
+  (1082, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
+  (1083, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
+  (1084, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
+  (1085, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+
+
+-- ============================================================
+-- Webex source — schema_config seed data
+-- IDs 2001+  (source_name = 'Webex')
+-- source_column_name = camelCase JSON path within each result record
+-- context fields use __top__.<key> to pull from the top-level envelope
+-- include_in_md5hash: 0 for JSON blobs and context fields, 1 for data scalars
+-- ============================================================
+
+-- [W01] aar (IDs 2001-2013)  9 data fields + 4 context
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (2001, 'Webex', 'aar', 'aar_base', 'agentId',              'agent_id',           'STRING',  1, 1, 1, 1, GETUTCDATE()),
+  (2002, 'Webex', 'aar', 'aar_base', 'agentName',            'agent_name',         'STRING',  2, 1, 0, 1, GETUTCDATE()),
+  (2003, 'Webex', 'aar', 'aar_base', 'agentSessionId',       'agent_session_id',   'STRING',  3, 1, 0, 1, GETUTCDATE()),
+  (2004, 'Webex', 'aar', 'aar_base', 'channelInfo',          'channel_info_json',  'STRING',  4, 0, 0, 1, GETUTCDATE()),
+  (2005, 'Webex', 'aar', 'aar_base', 'siteId',               'site_id',            'STRING',  5, 1, 0, 1, GETUTCDATE()),
+  (2006, 'Webex', 'aar', 'aar_base', 'siteName',             'site_name',          'STRING',  6, 1, 0, 1, GETUTCDATE()),
+  (2007, 'Webex', 'aar', 'aar_base', 'teamId',               'team_id',            'STRING',  7, 1, 0, 1, GETUTCDATE()),
+  (2008, 'Webex', 'aar', 'aar_base', 'teamName',             'team_name',          'STRING',  8, 1, 0, 1, GETUTCDATE()),
+  (2009, 'Webex', 'aar', 'aar_base', 'userLoginId',          'user_login_id',      'STRING',  9, 1, 0, 1, GETUTCDATE()),
+  (2010, 'Webex', 'aar', 'aar_base', '__top__.start_date',   'start_date',         'STRING', 10, 0, 0, 1, GETUTCDATE()),
+  (2011, 'Webex', 'aar', 'aar_base', '__top__.end_date',     'end_date',           'STRING', 11, 0, 0, 1, GETUTCDATE()),
+  (2012, 'Webex', 'aar', 'aar_base', '__top__.record_type',  'record_type',        'STRING', 12, 0, 0, 1, GETUTCDATE()),
+  (2013, 'Webex', 'aar', 'aar_base', '__top__.source',       'source',             'STRING', 13, 0, 0, 1, GETUTCDATE());
+
+-- [W02] asr (IDs 2014-2038)  21 data fields + 4 context
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (2014, 'Webex', 'asr', 'asr_base', 'agentId',               'agent_id',                  'STRING',  1, 1, 1, 1, GETUTCDATE()),
+  (2015, 'Webex', 'asr', 'asr_base', 'agentName',             'agent_name',                'STRING',  2, 1, 0, 1, GETUTCDATE()),
+  (2016, 'Webex', 'asr', 'asr_base', 'agentSessionId',        'agent_session_id',          'STRING',  3, 1, 0, 1, GETUTCDATE()),
+  (2017, 'Webex', 'asr', 'asr_base', 'agentSignOutReason',    'agent_sign_out_reason',     'STRING',  4, 1, 0, 1, GETUTCDATE()),
+  (2018, 'Webex', 'asr', 'asr_base', 'agentSkills',           'agent_skills_json',         'STRING',  5, 0, 0, 1, GETUTCDATE()),
+  (2019, 'Webex', 'asr', 'asr_base', 'channelInfo',           'channel_info_json',         'STRING',  6, 0, 0, 1, GETUTCDATE()),
+  (2020, 'Webex', 'asr', 'asr_base', 'endTime',               'end_time',                  'BIGINT',  7, 1, 0, 1, GETUTCDATE()),
+  (2021, 'Webex', 'asr', 'asr_base', 'isActive',              'is_active',                 'BOOLEAN', 8, 1, 0, 1, GETUTCDATE()),
+  (2022, 'Webex', 'asr', 'asr_base', 'multiMediaProfileType', 'multi_media_profile_type',  'STRING',  9, 1, 0, 1, GETUTCDATE()),
+  (2023, 'Webex', 'asr', 'asr_base', 'orgId',                 'org_id',                    'STRING', 10, 1, 0, 1, GETUTCDATE()),
+  (2024, 'Webex', 'asr', 'asr_base', 'orgName',               'org_name',                  'STRING', 11, 1, 0, 1, GETUTCDATE()),
+  (2025, 'Webex', 'asr', 'asr_base', 'parentOrgId',           'parent_org_id',             'STRING', 12, 1, 0, 1, GETUTCDATE()),
+  (2026, 'Webex', 'asr', 'asr_base', 'parentOrgName',         'parent_org_name',           'STRING', 13, 1, 0, 1, GETUTCDATE()),
+  (2027, 'Webex', 'asr', 'asr_base', 'siteId',                'site_id',                   'STRING', 14, 1, 0, 1, GETUTCDATE()),
+  (2028, 'Webex', 'asr', 'asr_base', 'siteName',              'site_name',                 'STRING', 15, 1, 0, 1, GETUTCDATE()),
+  (2029, 'Webex', 'asr', 'asr_base', 'skillsProfile',         'skills_profile',            'STRING', 16, 1, 0, 1, GETUTCDATE()),
+  (2030, 'Webex', 'asr', 'asr_base', 'startTime',             'start_time',                'BIGINT', 17, 1, 0, 1, GETUTCDATE()),
+  (2031, 'Webex', 'asr', 'asr_base', 'state',                 'state',                     'STRING', 18, 1, 0, 1, GETUTCDATE()),
+  (2032, 'Webex', 'asr', 'asr_base', 'teamId',                'team_id',                   'STRING', 19, 1, 0, 1, GETUTCDATE()),
+  (2033, 'Webex', 'asr', 'asr_base', 'teamName',              'team_name',                 'STRING', 20, 1, 0, 1, GETUTCDATE()),
+  (2034, 'Webex', 'asr', 'asr_base', 'userLoginId',           'user_login_id',             'STRING', 21, 1, 0, 1, GETUTCDATE()),
+  (2035, 'Webex', 'asr', 'asr_base', '__top__.start_date',    'start_date',                'STRING', 22, 0, 0, 1, GETUTCDATE()),
+  (2036, 'Webex', 'asr', 'asr_base', '__top__.end_date',      'end_date',                  'STRING', 23, 0, 0, 1, GETUTCDATE()),
+  (2037, 'Webex', 'asr', 'asr_base', '__top__.record_type',   'record_type',               'STRING', 24, 0, 0, 1, GETUTCDATE()),
+  (2038, 'Webex', 'asr', 'asr_base', '__top__.source',        'source',                    'STRING', 25, 0, 0, 1, GETUTCDATE());
+
+-- [W03] clr (IDs 2039-2145)  103 data fields + 4 context
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (2039, 'Webex', 'clr', 'clr_base', 'abandonedSlCount',               'abandoned_sl_count',                 'STRING',   1, 1, 0, 1, GETUTCDATE()),
+  (2040, 'Webex', 'clr', 'clr_base', 'abandonedType',                  'abandoned_type',                     'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  (2041, 'Webex', 'clr', 'clr_base', 'agentToDnTransferCount',         'agent_to_dn_transfer_count',         'INT',      3, 1, 0, 1, GETUTCDATE()),
+  (2042, 'Webex', 'clr', 'clr_base', 'agentTransferedInCount',         'agent_transfered_in_count',          'INT',      4, 1, 0, 1, GETUTCDATE()),
+  (2043, 'Webex', 'clr', 'clr_base', 'blindTransferCount',             'blind_transfer_count',               'INT',      5, 1, 0, 1, GETUTCDATE()),
+  (2044, 'Webex', 'clr', 'clr_base', 'blindTransferToAgentCount',      'blind_transfer_to_agent_count',      'INT',      6, 1, 0, 1, GETUTCDATE()),
+  (2045, 'Webex', 'clr', 'clr_base', 'callLegType',                    'call_leg_type',                      'STRING',   7, 1, 0, 1, GETUTCDATE()),
+  (2046, 'Webex', 'clr', 'clr_base', 'callRejectedCount',              'call_rejected_count',                'INT',      8, 1, 0, 1, GETUTCDATE()),
+  (2047, 'Webex', 'clr', 'clr_base', 'callType',                       'call_type',                          'STRING',   9, 1, 0, 1, GETUTCDATE()),
+  (2048, 'Webex', 'clr', 'clr_base', 'channelSubType',                 'channel_sub_type',                   'STRING',  10, 1, 0, 1, GETUTCDATE()),
+  (2049, 'Webex', 'clr', 'clr_base', 'channelType',                    'channel_type',                       'STRING',  11, 1, 0, 1, GETUTCDATE()),
+  (2050, 'Webex', 'clr', 'clr_base', 'childContactId',                 'child_contact_id',                   'STRING',  12, 1, 0, 1, GETUTCDATE()),
+  (2051, 'Webex', 'clr', 'clr_base', 'childContactType',               'child_contact_type',                 'STRING',  13, 1, 0, 1, GETUTCDATE()),
+  (2052, 'Webex', 'clr', 'clr_base', 'conferenceConnectedCount',       'conference_connected_count',         'STRING',  14, 1, 0, 1, GETUTCDATE()),
+  (2053, 'Webex', 'clr', 'clr_base', 'conferenceDuration',             'conference_duration',                'INT',     15, 1, 0, 1, GETUTCDATE()),
+  (2054, 'Webex', 'clr', 'clr_base', 'conferenceSuccessCount',         'conference_success_count',           'INT',     16, 1, 0, 1, GETUTCDATE()),
+  (2055, 'Webex', 'clr', 'clr_base', 'connectErrorCount',              'connect_error_count',                'INT',     17, 1, 0, 1, GETUTCDATE()),
+  (2056, 'Webex', 'clr', 'clr_base', 'connectedCount',                 'connected_count',                    'INT',     18, 1, 0, 1, GETUTCDATE()),
+  (2057, 'Webex', 'clr', 'clr_base', 'connectedDuration',              'connected_duration',                 'INT',     19, 1, 0, 1, GETUTCDATE()),
+  (2058, 'Webex', 'clr', 'clr_base', 'consultDuration',                'consult_duration',                   'INT',     20, 1, 0, 1, GETUTCDATE()),
+  (2059, 'Webex', 'clr', 'clr_base', 'consultEpId',                    'consult_ep_id',                      'STRING',  21, 1, 0, 1, GETUTCDATE()),
+  (2060, 'Webex', 'clr', 'clr_base', 'consultEpName',                  'consult_ep_name',                    'STRING',  22, 1, 0, 1, GETUTCDATE()),
+  (2061, 'Webex', 'clr', 'clr_base', 'consultSuccessCount',            'consult_success_count',              'INT',     23, 1, 0, 1, GETUTCDATE()),
+  (2062, 'Webex', 'clr', 'clr_base', 'consultToAgentErrorCount',       'consult_to_agent_error_count',       'INT',     24, 1, 0, 1, GETUTCDATE()),
+  (2063, 'Webex', 'clr', 'clr_base', 'consultToDnErrorCount',          'consult_to_dn_error_count',          'INT',     25, 1, 0, 1, GETUTCDATE()),
+  (2064, 'Webex', 'clr', 'clr_base', 'consultToEPCount',               'consult_to_ep_count',                'INT',     26, 1, 0, 1, GETUTCDATE()),
+  (2065, 'Webex', 'clr', 'clr_base', 'consultToEPDuration',            'consult_to_ep_duration',             'INT',     27, 1, 0, 1, GETUTCDATE()),
+  (2066, 'Webex', 'clr', 'clr_base', 'consultToEpErrorCount',          'consult_to_ep_error_count',          'INT',     28, 1, 0, 1, GETUTCDATE()),
+  (2067, 'Webex', 'clr', 'clr_base', 'consultToQueueCount',            'consult_to_queue_count',             'INT',     29, 1, 0, 1, GETUTCDATE()),
+  (2068, 'Webex', 'clr', 'clr_base', 'consultToQueueDuration',         'consult_to_queue_duration',          'INT',     30, 1, 0, 1, GETUTCDATE()),
+  (2069, 'Webex', 'clr', 'clr_base', 'consultToQueueErrorCount',       'consult_to_queue_error_count',       'INT',     31, 1, 0, 1, GETUTCDATE()),
+  (2070, 'Webex', 'clr', 'clr_base', 'consultToQueueHandledCount',     'consult_to_queue_handled_count',     'INT',     32, 1, 0, 1, GETUTCDATE()),
+  (2071, 'Webex', 'clr', 'clr_base', 'contactState',                   'contact_state',                      'STRING',  33, 1, 0, 1, GETUTCDATE()),
+  (2072, 'Webex', 'clr', 'clr_base', 'createdTime',                    'created_time',                       'BIGINT',  34, 1, 0, 1, GETUTCDATE()),
+  (2073, 'Webex', 'clr', 'clr_base', 'customer',                       'customer_json',                      'STRING',  35, 0, 0, 1, GETUTCDATE()),
+  (2074, 'Webex', 'clr', 'clr_base', 'destination',                    'destination',                        'STRING',  36, 1, 0, 1, GETUTCDATE()),
+  (2075, 'Webex', 'clr', 'clr_base', 'direction',                      'direction',                          'STRING',  37, 1, 0, 1, GETUTCDATE()),
+  (2076, 'Webex', 'clr', 'clr_base', 'endedTime',                      'ended_time',                         'BIGINT',  38, 1, 0, 1, GETUTCDATE()),
+  (2077, 'Webex', 'clr', 'clr_base', 'entryPoint',                     'entry_point_json',                   'STRING',  39, 0, 0, 1, GETUTCDATE()),
+  (2078, 'Webex', 'clr', 'clr_base', 'handleTime',                     'handle_time',                        'INT',     40, 1, 0, 1, GETUTCDATE()),
+  (2079, 'Webex', 'clr', 'clr_base', 'handleType',                     'handle_type',                        'STRING',  41, 1, 0, 1, GETUTCDATE()),
+  (2080, 'Webex', 'clr', 'clr_base', 'holdCount',                      'hold_count',                         'INT',     42, 1, 0, 1, GETUTCDATE()),
+  (2081, 'Webex', 'clr', 'clr_base', 'holdDuration',                   'hold_duration',                      'INT',     43, 1, 0, 1, GETUTCDATE()),
+  (2082, 'Webex', 'clr', 'clr_base', 'id',                             'id',                                 'STRING',  44, 1, 1, 1, GETUTCDATE()),
+  (2083, 'Webex', 'clr', 'clr_base', 'interQueueBlindTransferCount',   'inter_queue_blind_transfer_count',   'INT',     45, 1, 0, 1, GETUTCDATE()),
+  (2084, 'Webex', 'clr', 'clr_base', 'interQueueConsultTransferCount', 'inter_queue_consult_transfer_count', 'INT',     46, 1, 0, 1, GETUTCDATE()),
+  (2085, 'Webex', 'clr', 'clr_base', 'isActive',                       'is_active',                          'BOOLEAN', 47, 1, 0, 1, GETUTCDATE()),
+  (2086, 'Webex', 'clr', 'clr_base', 'isHandledByPreferredAgent',      'is_handled_by_preferred_agent',      'BOOLEAN', 48, 1, 0, 1, GETUTCDATE()),
+  (2087, 'Webex', 'clr', 'clr_base', 'isOptOutOfQueue',                'is_opt_out_of_queue',                'BOOLEAN', 49, 1, 0, 1, GETUTCDATE()),
+  (2088, 'Webex', 'clr', 'clr_base', 'isOutdial',                      'is_outdial',                         'BOOLEAN', 50, 1, 0, 1, GETUTCDATE()),
+  (2089, 'Webex', 'clr', 'clr_base', 'isTaskLegHandled',               'is_task_leg_handled',                'BOOLEAN', 51, 1, 0, 1, GETUTCDATE()),
+  (2090, 'Webex', 'clr', 'clr_base', 'isWithinServiceLevel',           'is_within_service_level',            'BOOLEAN', 52, 1, 0, 1, GETUTCDATE()),
+  (2091, 'Webex', 'clr', 'clr_base', 'ivrScriptId',                    'ivr_script_id',                      'STRING',  53, 1, 0, 1, GETUTCDATE()),
+  (2092, 'Webex', 'clr', 'clr_base', 'ivrScriptName',                  'ivr_script_name',                    'STRING',  54, 1, 0, 1, GETUTCDATE()),
+  (2093, 'Webex', 'clr', 'clr_base', 'ivrScriptTagId',                 'ivr_script_tag_id',                  'STRING',  55, 1, 0, 1, GETUTCDATE()),
+  (2094, 'Webex', 'clr', 'clr_base', 'ivrScriptTagName',               'ivr_script_tag_name',                'STRING',  56, 1, 0, 1, GETUTCDATE()),
+  (2095, 'Webex', 'clr', 'clr_base', 'lastActivityTime',               'last_activity_time',                 'BIGINT',  57, 1, 0, 1, GETUTCDATE()),
+  (2096, 'Webex', 'clr', 'clr_base', 'lastWrapupCodeName',             'last_wrapup_code_name',              'STRING',  58, 1, 0, 1, GETUTCDATE()),
+  (2097, 'Webex', 'clr', 'clr_base', 'manualAssignCount',              'manual_assign_count',                'INT',     59, 1, 0, 1, GETUTCDATE()),
+  (2098, 'Webex', 'clr', 'clr_base', 'matchedSkills',                  'matched_skills',                     'STRING',  60, 1, 0, 1, GETUTCDATE()),
+  (2099, 'Webex', 'clr', 'clr_base', 'matchedSkillsProfile',           'matched_skills_profile',             'STRING',  61, 1, 0, 1, GETUTCDATE()),
+  (2100, 'Webex', 'clr', 'clr_base', 'nextDestination',                'next_destination_json',              'STRING',  62, 0, 0, 1, GETUTCDATE()),
+  (2101, 'Webex', 'clr', 'clr_base', 'optOutOfQueueTimestamp',         'opt_out_of_queue_timestamp',         'BIGINT',  63, 1, 0, 1, GETUTCDATE()),
+  (2102, 'Webex', 'clr', 'clr_base', 'origin',                         'origin',                             'STRING',  64, 1, 0, 1, GETUTCDATE()),
+  (2103, 'Webex', 'clr', 'clr_base', 'outdialConferenceCount',         'outdial_conference_count',           'INT',     65, 1, 0, 1, GETUTCDATE()),
+  (2104, 'Webex', 'clr', 'clr_base', 'outdialConferenceDuration',      'outdial_conference_duration',        'INT',     66, 1, 0, 1, GETUTCDATE()),
+  (2105, 'Webex', 'clr', 'clr_base', 'outdialConsultCount',            'outdial_consult_count',              'INT',     67, 1, 0, 1, GETUTCDATE()),
+  (2106, 'Webex', 'clr', 'clr_base', 'outdialConsultDuration',         'outdial_consult_duration',           'INT',     68, 1, 0, 1, GETUTCDATE()),
+  (2107, 'Webex', 'clr', 'clr_base', 'outdialConsultToEPCount',        'outdial_consult_to_ep_count',        'INT',     69, 1, 0, 1, GETUTCDATE()),
+  (2108, 'Webex', 'clr', 'clr_base', 'outdialConsultToEPDuration',     'outdial_consult_to_ep_duration',     'INT',     70, 1, 0, 1, GETUTCDATE()),
+  (2109, 'Webex', 'clr', 'clr_base', 'outdialConsultToQueueCount',     'outdial_consult_to_queue_count',     'INT',     71, 1, 0, 1, GETUTCDATE()),
+  (2110, 'Webex', 'clr', 'clr_base', 'outdialConsultToQueueDuration',  'outdial_consult_to_queue_duration',  'INT',     72, 1, 0, 1, GETUTCDATE()),
+  (2111, 'Webex', 'clr', 'clr_base', 'outdialConsultToQueueErrorCount','outdial_consult_to_queue_error_count','INT',    73, 1, 0, 1, GETUTCDATE()),
+  (2112, 'Webex', 'clr', 'clr_base', 'outdialConsultToQueueHandledCount','outdial_consult_to_queue_handled_count','INT', 74, 1, 0, 1, GETUTCDATE()),
+  (2113, 'Webex', 'clr', 'clr_base', 'owner',                          'owner_json',                         'STRING',  75, 0, 0, 1, GETUTCDATE()),
+  (2114, 'Webex', 'clr', 'clr_base', 'postCallConnectedCount',         'post_call_connected_count',          'STRING',  76, 1, 0, 1, GETUTCDATE()),
+  (2115, 'Webex', 'clr', 'clr_base', 'postCallConsultDuration',        'post_call_consult_duration',         'INT',     77, 1, 0, 1, GETUTCDATE()),
+  (2116, 'Webex', 'clr', 'clr_base', 'postCallDuration',               'post_call_duration',                 'INT',     78, 1, 0, 1, GETUTCDATE()),
+  (2117, 'Webex', 'clr', 'clr_base', 'preferredAgentName',             'preferred_agent_name',               'STRING',  79, 1, 0, 1, GETUTCDATE()),
+  (2118, 'Webex', 'clr', 'clr_base', 'preferredAgentSystemId',         'preferred_agent_system_id',          'STRING',  80, 1, 0, 1, GETUTCDATE()),
+  (2119, 'Webex', 'clr', 'clr_base', 'queue',                          'queue_json',                         'STRING',  81, 0, 0, 1, GETUTCDATE()),
+  (2120, 'Webex', 'clr', 'clr_base', 'queueCount',                     'queue_count',                        'INT',     82, 1, 0, 1, GETUTCDATE()),
+  (2121, 'Webex', 'clr', 'clr_base', 'queuedTo',                       'queued_to',                          'STRING',  83, 1, 0, 1, GETUTCDATE()),
+  (2122, 'Webex', 'clr', 'clr_base', 'requiredSkills',                 'required_skills',                    'STRING',  84, 1, 0, 1, GETUTCDATE()),
+  (2123, 'Webex', 'clr', 'clr_base', 'ringingDuration',                'ringing_duration',                   'INT',     85, 1, 0, 1, GETUTCDATE()),
+  (2124, 'Webex', 'clr', 'clr_base', 'ronaCount',                      'rona_count',                         'INT',     86, 1, 0, 1, GETUTCDATE()),
+  (2125, 'Webex', 'clr', 'clr_base', 'routingType',                    'routing_type',                       'STRING',  87, 1, 0, 1, GETUTCDATE()),
+  (2126, 'Webex', 'clr', 'clr_base', 'selfserviceCount',               'selfservice_count',                  'INT',     88, 1, 0, 1, GETUTCDATE()),
+  (2127, 'Webex', 'clr', 'clr_base', 'selfserviceDuration',            'selfservice_duration',               'INT',     89, 1, 0, 1, GETUTCDATE()),
+  (2128, 'Webex', 'clr', 'clr_base', 'site',                           'site_json',                          'STRING',  90, 0, 0, 1, GETUTCDATE()),
+  (2129, 'Webex', 'clr', 'clr_base', 'skillsAssignedIn',               'skills_assigned_in',                 'STRING',  91, 1, 0, 1, GETUTCDATE()),
+  (2130, 'Webex', 'clr', 'clr_base', 'slaValue',                       'sla_value',                          'STRING',  92, 1, 0, 1, GETUTCDATE()),
+  (2131, 'Webex', 'clr', 'clr_base', 'status',                         'status',                             'STRING',  93, 1, 0, 1, GETUTCDATE()),
+  (2132, 'Webex', 'clr', 'clr_base', 'taskId',                         'task_id',                            'STRING',  94, 1, 0, 1, GETUTCDATE()),
+  (2133, 'Webex', 'clr', 'clr_base', 'taskLegCount',                   'task_leg_count',                     'INT',     95, 1, 0, 1, GETUTCDATE()),
+  (2134, 'Webex', 'clr', 'clr_base', 'team',                           'team_json',                          'STRING',  96, 0, 0, 1, GETUTCDATE()),
+  (2135, 'Webex', 'clr', 'clr_base', 'terminatingEnd',                 'terminating_end',                    'STRING',  97, 1, 0, 1, GETUTCDATE()),
+  (2136, 'Webex', 'clr', 'clr_base', 'terminationReason',              'termination_reason',                 'STRING',  98, 1, 0, 1, GETUTCDATE()),
+  (2137, 'Webex', 'clr', 'clr_base', 'transferCount',                  'transfer_count',                     'INT',     99, 1, 0, 1, GETUTCDATE()),
+  (2138, 'Webex', 'clr', 'clr_base', 'transferEpDN',                   'transfer_ep_dn',                     'STRING', 100, 1, 0, 1, GETUTCDATE()),
+  (2139, 'Webex', 'clr', 'clr_base', 'transferErrorCount',             'transfer_error_count',               'INT',    101, 1, 0, 1, GETUTCDATE()),
+  (2140, 'Webex', 'clr', 'clr_base', 'transferOutCount',               'transfer_out_count',                 'INT',    102, 1, 0, 1, GETUTCDATE()),
+  (2141, 'Webex', 'clr', 'clr_base', 'wrapupDuration',                 'wrapup_duration',                    'INT',    103, 1, 0, 1, GETUTCDATE()),
+  (2142, 'Webex', 'clr', 'clr_base', '__top__.start_date',             'start_date',                         'STRING', 104, 0, 0, 1, GETUTCDATE()),
+  (2143, 'Webex', 'clr', 'clr_base', '__top__.end_date',               'end_date',                           'STRING', 105, 0, 0, 1, GETUTCDATE()),
+  (2144, 'Webex', 'clr', 'clr_base', '__top__.record_type',            'record_type',                        'STRING', 106, 0, 0, 1, GETUTCDATE()),
+  (2145, 'Webex', 'clr', 'clr_base', '__top__.source',                 'source',                             'STRING', 107, 0, 0, 1, GETUTCDATE());
+
+-- [W04] car (IDs 2146-2164)  15 data fields + 4 context
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (2146, 'Webex', 'car', 'car_base', 'activities',            'activities_json',       'STRING',   1, 0, 0, 1, GETUTCDATE()),
+  (2147, 'Webex', 'car', 'car_base', 'channelSubType',        'channel_sub_type',      'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  (2148, 'Webex', 'car', 'car_base', 'channelType',           'channel_type',          'STRING',   3, 1, 0, 1, GETUTCDATE()),
+  (2149, 'Webex', 'car', 'car_base', 'destination',           'destination',           'STRING',   4, 1, 0, 1, GETUTCDATE()),
+  (2150, 'Webex', 'car', 'car_base', 'emailBccList',          'email_bcc_list',        'STRING',   5, 1, 0, 1, GETUTCDATE()),
+  (2151, 'Webex', 'car', 'car_base', 'emailCcList',           'email_cc_list',         'STRING',   6, 1, 0, 1, GETUTCDATE()),
+  (2152, 'Webex', 'car', 'car_base', 'emailReplyTo',          'email_reply_to',        'STRING',   7, 1, 0, 1, GETUTCDATE()),
+  (2153, 'Webex', 'car', 'car_base', 'emailToList',           'email_to_list',         'STRING',   8, 1, 0, 1, GETUTCDATE()),
+  (2154, 'Webex', 'car', 'car_base', 'id',                    'id',                    'STRING',   9, 1, 1, 1, GETUTCDATE()),
+  (2155, 'Webex', 'car', 'car_base', 'isEmailSent',           'is_email_sent',         'BOOLEAN', 10, 1, 0, 1, GETUTCDATE()),
+  (2156, 'Webex', 'car', 'car_base', 'isOutdial',             'is_outdial',            'BOOLEAN', 11, 1, 0, 1, GETUTCDATE()),
+  (2157, 'Webex', 'car', 'car_base', 'matchedSkillsProfile',  'matched_skills_profile','STRING',  12, 1, 0, 1, GETUTCDATE()),
+  (2158, 'Webex', 'car', 'car_base', 'origin',                'origin',                'STRING',  13, 1, 0, 1, GETUTCDATE()),
+  (2159, 'Webex', 'car', 'car_base', 'preferredAgentName',    'preferred_agent_name',  'STRING',  14, 1, 0, 1, GETUTCDATE()),
+  (2160, 'Webex', 'car', 'car_base', 'routingType',           'routing_type',          'STRING',  15, 1, 0, 1, GETUTCDATE()),
+  (2161, 'Webex', 'car', 'car_base', '__top__.start_date',    'start_date',            'STRING',  16, 0, 0, 1, GETUTCDATE()),
+  (2162, 'Webex', 'car', 'car_base', '__top__.end_date',      'end_date',              'STRING',  17, 0, 0, 1, GETUTCDATE()),
+  (2163, 'Webex', 'car', 'car_base', '__top__.record_type',   'record_type',           'STRING',  18, 0, 0, 1, GETUTCDATE()),
+  (2164, 'Webex', 'car', 'car_base', '__top__.source',        'source',                'STRING',  19, 0, 0, 1, GETUTCDATE());
+
+-- [W05] csr (IDs 2165-2344)  176 data fields + 4 context  [part 1 of 2: rows 2165-2254]
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (2165, 'Webex', 'csr', 'csr_base', 'abandonedSlCount',                  'abandoned_sl_count',                 'INT',      1, 1, 0, 1, GETUTCDATE()),
+  (2166, 'Webex', 'csr', 'csr_base', 'abandonedType',                     'abandoned_type',                     'STRING',   2, 1, 0, 1, GETUTCDATE()),
+  (2167, 'Webex', 'csr', 'csr_base', 'agentHangupCount',                  'agent_hangup_count',                 'INT',      3, 1, 0, 1, GETUTCDATE()),
+  (2168, 'Webex', 'csr', 'csr_base', 'agentToAgentTransferCount',         'agent_to_agent_transfer_count',      'STRING',   4, 1, 0, 1, GETUTCDATE()),
+  (2169, 'Webex', 'csr', 'csr_base', 'agentToDnTransferCount',            'agent_to_dn_transfer_count',         'INT',      5, 1, 0, 1, GETUTCDATE()),
+  (2170, 'Webex', 'csr', 'csr_base', 'agentToEntrypointTransferCount',    'agent_to_entrypoint_transfer_count', 'INT',      6, 1, 0, 1, GETUTCDATE()),
+  (2171, 'Webex', 'csr', 'csr_base', 'agentToQueueTransferCount',         'agent_to_queue_transfer_count',      'INT',      7, 1, 0, 1, GETUTCDATE()),
+  (2172, 'Webex', 'csr', 'csr_base', 'agentTransferedInCount',            'agent_transfered_in_count',          'INT',      8, 1, 0, 1, GETUTCDATE()),
+  (2173, 'Webex', 'csr', 'csr_base', 'autoCsat',                          'auto_csat',                          'STRING',   9, 1, 0, 1, GETUTCDATE()),
+  (2174, 'Webex', 'csr', 'csr_base', 'bargedInCount',                     'barged_in_count',                    'INT',     10, 1, 0, 1, GETUTCDATE()),
+  (2175, 'Webex', 'csr', 'csr_base', 'bargedInDuration',                  'barged_in_duration',                 'INT',     11, 1, 0, 1, GETUTCDATE()),
+  (2176, 'Webex', 'csr', 'csr_base', 'bargedInFailedCount',               'barged_in_failed_count',             'INT',     12, 1, 0, 1, GETUTCDATE()),
+  (2177, 'Webex', 'csr', 'csr_base', 'blindTransferCount',                'blind_transfer_count',               'INT',     13, 1, 0, 1, GETUTCDATE()),
+  (2178, 'Webex', 'csr', 'csr_base', 'botName',                           'bot_name',                           'STRING',  14, 1, 0, 1, GETUTCDATE()),
+  (2179, 'Webex', 'csr', 'csr_base', 'callCompletedCount',                'call_completed_count',               'INT',     15, 1, 0, 1, GETUTCDATE()),
+  (2180, 'Webex', 'csr', 'csr_base', 'callbackData',                      'callback_data_json',                 'STRING',  16, 0, 0, 1, GETUTCDATE()),
+  (2181, 'Webex', 'csr', 'csr_base', 'campaignId',                        'campaign_id',                        'STRING',  17, 1, 0, 1, GETUTCDATE()),
+  (2182, 'Webex', 'csr', 'csr_base', 'campaignName',                      'campaign_name',                      'STRING',  18, 1, 0, 1, GETUTCDATE()),
+  (2183, 'Webex', 'csr', 'csr_base', 'campaignStatus',                    'campaign_status',                    'STRING',  19, 1, 0, 1, GETUTCDATE()),
+  (2184, 'Webex', 'csr', 'csr_base', 'captureRequested',                  'capture_requested',                  'BOOLEAN', 20, 1, 0, 1, GETUTCDATE()),
+  (2185, 'Webex', 'csr', 'csr_base', 'chainedInToEPCount',                'chained_in_to_ep_count',             'INT',     21, 1, 0, 1, GETUTCDATE()),
+  (2186, 'Webex', 'csr', 'csr_base', 'chainedInToQueueCount',             'chained_in_to_queue_count',          'INT',     22, 1, 0, 1, GETUTCDATE()),
+  (2187, 'Webex', 'csr', 'csr_base', 'channelMetaData',                   'channel_meta_data_json',             'STRING',  23, 0, 0, 1, GETUTCDATE()),
+  (2188, 'Webex', 'csr', 'csr_base', 'channelSubType',                    'channel_sub_type',                   'STRING',  24, 1, 0, 1, GETUTCDATE()),
+  (2189, 'Webex', 'csr', 'csr_base', 'channelType',                       'channel_type',                       'STRING',  25, 1, 0, 1, GETUTCDATE()),
+  (2190, 'Webex', 'csr', 'csr_base', 'chatType',                          'chat_type',                          'STRING',  26, 1, 0, 1, GETUTCDATE()),
+  (2191, 'Webex', 'csr', 'csr_base', 'conferenceCount',                   'conference_count',                   'INT',     27, 1, 0, 1, GETUTCDATE()),
+  (2192, 'Webex', 'csr', 'csr_base', 'conferenceDuration',                'conference_duration',                'INT',     28, 1, 0, 1, GETUTCDATE()),
+  (2193, 'Webex', 'csr', 'csr_base', 'connectedCount',                    'connected_count',                    'INT',     29, 1, 0, 1, GETUTCDATE()),
+  (2194, 'Webex', 'csr', 'csr_base', 'connectedDuration',                 'connected_duration',                 'INT',     30, 1, 0, 1, GETUTCDATE()),
+  (2195, 'Webex', 'csr', 'csr_base', 'consultCount',                      'consult_count',                      'INT',     31, 1, 0, 1, GETUTCDATE()),
+  (2196, 'Webex', 'csr', 'csr_base', 'consultDuration',                   'consult_duration',                   'INT',     32, 1, 0, 1, GETUTCDATE()),
+  (2197, 'Webex', 'csr', 'csr_base', 'consultToEPCount',                  'consult_to_ep_count',                'INT',     33, 1, 0, 1, GETUTCDATE()),
+  (2198, 'Webex', 'csr', 'csr_base', 'consultToEPDuration',               'consult_to_ep_duration',             'INT',     34, 1, 0, 1, GETUTCDATE()),
+  (2199, 'Webex', 'csr', 'csr_base', 'consultToQueueCount',               'consult_to_queue_count',             'INT',     35, 1, 0, 1, GETUTCDATE()),
+  (2200, 'Webex', 'csr', 'csr_base', 'consultToQueueDuration',            'consult_to_queue_duration',          'INT',     36, 1, 0, 1, GETUTCDATE()),
+  (2201, 'Webex', 'csr', 'csr_base', 'contactDriver',                     'contact_driver',                     'STRING',  37, 1, 0, 1, GETUTCDATE()),
+  (2202, 'Webex', 'csr', 'csr_base', 'contactHandleType',                 'contact_handle_type',                'STRING',  38, 1, 0, 1, GETUTCDATE()),
+  (2203, 'Webex', 'csr', 'csr_base', 'contactPriority',                   'contact_priority',                   'INT',     39, 1, 0, 1, GETUTCDATE()),
+  (2204, 'Webex', 'csr', 'csr_base', 'contactReason',                     'contact_reason',                     'STRING',  40, 1, 0, 1, GETUTCDATE()),
+  (2205, 'Webex', 'csr', 'csr_base', 'cpaStatus',                         'cpa_status',                         'STRING',  41, 1, 0, 1, GETUTCDATE()),
+  (2206, 'Webex', 'csr', 'csr_base', 'createdTime',                       'created_time',                       'BIGINT',  42, 1, 0, 1, GETUTCDATE()),
+  (2207, 'Webex', 'csr', 'csr_base', 'crossTalkCount',                    'cross_talk_count',                   'INT',     43, 1, 0, 1, GETUTCDATE()),
+  (2208, 'Webex', 'csr', 'csr_base', 'crossTalkTime',                     'cross_talk_time',                    'INT',     44, 1, 0, 1, GETUTCDATE()),
+  (2209, 'Webex', 'csr', 'csr_base', 'csatScore',                         'csat_score',                         'INT',     45, 1, 0, 1, GETUTCDATE()),
+  (2210, 'Webex', 'csr', 'csr_base', 'customer',                          'customer_json',                      'STRING',  46, 0, 0, 1, GETUTCDATE()),
+  (2211, 'Webex', 'csr', 'csr_base', 'customerSentimentScore',            'customer_sentiment_score',           'STRING',  47, 1, 0, 1, GETUTCDATE()),
+  (2212, 'Webex', 'csr', 'csr_base', 'deadAirCount',                      'dead_air_count',                     'INT',     48, 1, 0, 1, GETUTCDATE()),
+  (2213, 'Webex', 'csr', 'csr_base', 'deadAirTime',                       'dead_air_time',                      'INT',     49, 1, 0, 1, GETUTCDATE()),
+  (2214, 'Webex', 'csr', 'csr_base', 'destination',                       'destination',                        'STRING',  50, 1, 0, 1, GETUTCDATE()),
+  (2215, 'Webex', 'csr', 'csr_base', 'direction',                         'direction',                          'STRING',  51, 1, 0, 1, GETUTCDATE()),
+  (2216, 'Webex', 'csr', 'csr_base', 'emailBccList',                      'email_bcc_list',                     'STRING',  52, 1, 0, 1, GETUTCDATE()),
+  (2217, 'Webex', 'csr', 'csr_base', 'emailBody',                         'email_body',                         'STRING',  53, 1, 0, 1, GETUTCDATE()),
+  (2218, 'Webex', 'csr', 'csr_base', 'emailCcList',                       'email_cc_list',                      'STRING',  54, 1, 0, 1, GETUTCDATE()),
+  (2219, 'Webex', 'csr', 'csr_base', 'emailContent',                      'email_content',                      'STRING',  55, 1, 0, 1, GETUTCDATE()),
+  (2220, 'Webex', 'csr', 'csr_base', 'emailContentType',                  'email_content_type',                 'STRING',  56, 1, 0, 1, GETUTCDATE()),
+  (2221, 'Webex', 'csr', 'csr_base', 'emailDate',                         'email_date',                         'INT',     57, 1, 0, 1, GETUTCDATE()),
+  (2222, 'Webex', 'csr', 'csr_base', 'emailFullMessage',                  'email_full_message',                 'STRING',  58, 1, 0, 1, GETUTCDATE()),
+  (2223, 'Webex', 'csr', 'csr_base', 'emailHasAttachments',               'email_has_attachments',              'BOOLEAN', 59, 1, 0, 1, GETUTCDATE()),
+  (2224, 'Webex', 'csr', 'csr_base', 'emailMessageId',                    'email_message_id',                   'STRING',  60, 1, 0, 1, GETUTCDATE()),
+  (2225, 'Webex', 'csr', 'csr_base', 'emailRef',                          'email_ref',                          'STRING',  61, 1, 0, 1, GETUTCDATE()),
+  (2226, 'Webex', 'csr', 'csr_base', 'emailReplyBody',                    'email_reply_body',                   'STRING',  62, 1, 0, 1, GETUTCDATE()),
+  (2227, 'Webex', 'csr', 'csr_base', 'emailReplyContentType',             'email_reply_content_type',           'STRING',  63, 1, 0, 1, GETUTCDATE()),
+  (2228, 'Webex', 'csr', 'csr_base', 'emailReplyTo',                      'email_reply_to',                     'STRING',  64, 1, 0, 1, GETUTCDATE()),
+  (2229, 'Webex', 'csr', 'csr_base', 'emailToList',                       'email_to_list',                      'STRING',  65, 1, 0, 1, GETUTCDATE()),
+  (2230, 'Webex', 'csr', 'csr_base', 'endedTime',                         'ended_time',                         'BIGINT',  66, 1, 0, 1, GETUTCDATE()),
+  (2231, 'Webex', 'csr', 'csr_base', 'epTransferToEPCount',               'ep_transfer_to_ep_count',            'INT',     67, 1, 0, 1, GETUTCDATE()),
+  (2232, 'Webex', 'csr', 'csr_base', 'evalScore',                         'eval_score',                         'STRING',  68, 1, 0, 1, GETUTCDATE()),
+  (2233, 'Webex', 'csr', 'csr_base', 'evalScoreType',                     'eval_score_type',                    'STRING',  69, 1, 0, 1, GETUTCDATE()),
+  (2234, 'Webex', 'csr', 'csr_base', 'evalSectionsFailureCount',          'eval_sections_failure_count',        'INT',     70, 1, 0, 1, GETUTCDATE()),
+  (2235, 'Webex', 'csr', 'csr_base', 'evalStatus',                        'eval_status',                        'STRING',  71, 1, 0, 1, GETUTCDATE()),
+  (2236, 'Webex', 'csr', 'csr_base', 'feedback',                          'feedback_json',                      'STRING',  72, 0, 0, 1, GETUTCDATE()),
+  (2237, 'Webex', 'csr', 'csr_base', 'firstQueueId',                      'first_queue_id',                     'STRING',  73, 1, 0, 1, GETUTCDATE()),
+  (2238, 'Webex', 'csr', 'csr_base', 'firstQueueName',                    'first_queue_name',                   'STRING',  74, 1, 0, 1, GETUTCDATE()),
+  (2239, 'Webex', 'csr', 'csr_base', 'flowActivityName',                  'flow_activity_name',                 'STRING',  75, 1, 0, 1, GETUTCDATE()),
+  (2240, 'Webex', 'csr', 'csr_base', 'flowActivitySequence',              'flow_activity_sequence',             'STRING',  76, 1, 0, 1, GETUTCDATE()),
+  (2241, 'Webex', 'csr', 'csr_base', 'fullMonitoringCount',               'full_monitoring_count',              'INT',     77, 1, 0, 1, GETUTCDATE()),
+  (2242, 'Webex', 'csr', 'csr_base', 'globalVariables',                   'global_variables_json',              'STRING',  78, 0, 0, 1, GETUTCDATE()),
+  (2243, 'Webex', 'csr', 'csr_base', 'holdCount',                         'hold_count',                         'INT',     79, 1, 0, 1, GETUTCDATE()),
+  (2244, 'Webex', 'csr', 'csr_base', 'holdDuration',                      'hold_duration',                      'INT',     80, 1, 0, 1, GETUTCDATE()),
+  (2245, 'Webex', 'csr', 'csr_base', 'id',                                'id',                                 'STRING',  81, 1, 1, 1, GETUTCDATE()),
+  (2246, 'Webex', 'csr', 'csr_base', 'isActive',                          'is_active',                          'BOOLEAN', 82, 1, 0, 1, GETUTCDATE()),
+  (2247, 'Webex', 'csr', 'csr_base', 'isBarged',                          'is_barged',                          'BOOLEAN', 83, 1, 0, 1, GETUTCDATE()),
+  (2248, 'Webex', 'csr', 'csr_base', 'isCallback',                        'is_callback',                        'BOOLEAN', 84, 1, 0, 1, GETUTCDATE()),
+  (2249, 'Webex', 'csr', 'csr_base', 'isCampaign',                        'is_campaign',                        'BOOLEAN', 85, 1, 0, 1, GETUTCDATE()),
+  (2250, 'Webex', 'csr', 'csr_base', 'isContactEscalatedToQueue',         'is_contact_escalated_to_queue',      'BOOLEAN', 86, 1, 0, 1, GETUTCDATE()),
+  (2251, 'Webex', 'csr', 'csr_base', 'isContactHandled',                  'is_contact_handled',                 'BOOLEAN', 87, 1, 0, 1, GETUTCDATE()),
+  (2252, 'Webex', 'csr', 'csr_base', 'isContactOffered',                  'is_contact_offered',                 'BOOLEAN', 88, 1, 0, 1, GETUTCDATE()),
+  (2253, 'Webex', 'csr', 'csr_base', 'isEmailSent',                       'is_email_sent',                      'BOOLEAN', 89, 1, 0, 1, GETUTCDATE()),
+  (2254, 'Webex', 'csr', 'csr_base', 'isHandledByPreferredAgent',         'is_handled_by_preferred_agent',      'BOOLEAN', 90, 1, 0, 1, GETUTCDATE());
+
+-- [W05] csr part 2 (IDs 2255-2344)
+INSERT INTO schema_config
+    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  (2255, 'Webex', 'csr', 'csr_base', 'isMonitored',                       'is_monitored',                       'BOOLEAN',  91, 1, 0, 1, GETUTCDATE()),
+  (2256, 'Webex', 'csr', 'csr_base', 'isOptOutOfQueue',                   'is_opt_out_of_queue',                'BOOLEAN',  92, 1, 0, 1, GETUTCDATE()),
+  (2257, 'Webex', 'csr', 'csr_base', 'isOutdial',                         'is_outdial',                         'BOOLEAN',  93, 1, 0, 1, GETUTCDATE()),
+  (2258, 'Webex', 'csr', 'csr_base', 'isRealtimeTranscriptionEnabled',    'is_realtime_transcription_enabled',  'BOOLEAN',  94, 1, 0, 1, GETUTCDATE()),
+  (2259, 'Webex', 'csr', 'csr_base', 'isRecordingDeleted',                'is_recording_deleted',               'BOOLEAN',  95, 1, 0, 1, GETUTCDATE()),
+  (2260, 'Webex', 'csr', 'csr_base', 'isSuggestedResponseRequested',      'is_suggested_response_requested',    'BOOLEAN',  96, 1, 0, 1, GETUTCDATE()),
+  (2261, 'Webex', 'csr', 'csr_base', 'isTranscriptionAvailable',          'is_transcription_available',         'BOOLEAN',  97, 1, 0, 1, GETUTCDATE()),
+  (2262, 'Webex', 'csr', 'csr_base', 'isWithInServiceLevel',              'is_with_in_service_level',           'BOOLEAN',  98, 1, 0, 1, GETUTCDATE()),
+  (2263, 'Webex', 'csr', 'csr_base', 'ivrEndedCount',                     'ivr_ended_count',                    'INT',      99, 1, 0, 1, GETUTCDATE()),
+  (2264, 'Webex', 'csr', 'csr_base', 'ivrScriptId',                       'ivr_script_id',                      'STRING',  100, 1, 0, 1, GETUTCDATE()),
+  (2265, 'Webex', 'csr', 'csr_base', 'ivrScriptName',                     'ivr_script_name',                    'STRING',  101, 1, 0, 1, GETUTCDATE()),
+  (2266, 'Webex', 'csr', 'csr_base', 'ivrScriptTagId',                    'ivr_script_tag_id',                  'STRING',  102, 1, 0, 1, GETUTCDATE()),
+  (2267, 'Webex', 'csr', 'csr_base', 'ivrScriptTagName',                  'ivr_script_tag_name',                'STRING',  103, 1, 0, 1, GETUTCDATE()),
+  (2268, 'Webex', 'csr', 'csr_base', 'lastActivityTime',                  'last_activity_time',                 'BIGINT',  104, 1, 0, 1, GETUTCDATE()),
+  (2269, 'Webex', 'csr', 'csr_base', 'lastAgent',                         'last_agent_json',                    'STRING',  105, 0, 0, 1, GETUTCDATE()),
+  (2270, 'Webex', 'csr', 'csr_base', 'lastEntryPoint',                    'last_entry_point_json',              'STRING',  106, 0, 0, 1, GETUTCDATE()),
+  (2271, 'Webex', 'csr', 'csr_base', 'lastQueue',                         'last_queue_json',                    'STRING',  107, 0, 0, 1, GETUTCDATE()),
+  (2272, 'Webex', 'csr', 'csr_base', 'lastSite',                          'last_site_json',                     'STRING',  108, 0, 0, 1, GETUTCDATE()),
+  (2273, 'Webex', 'csr', 'csr_base', 'lastTeam',                          'last_team_json',                     'STRING',  109, 0, 0, 1, GETUTCDATE()),
+  (2274, 'Webex', 'csr', 'csr_base', 'lastWrapUpCodeId',                  'last_wrap_up_code_id',               'STRING',  110, 1, 0, 1, GETUTCDATE()),
+  (2275, 'Webex', 'csr', 'csr_base', 'lastWrapupCodeName',                'last_wrapup_code_name',              'STRING',  111, 1, 0, 1, GETUTCDATE()),
+  (2276, 'Webex', 'csr', 'csr_base', 'manualAssignCount',                 'manual_assign_count',                'INT',     112, 1, 0, 1, GETUTCDATE()),
+  (2277, 'Webex', 'csr', 'csr_base', 'matchedSkills',                     'matched_skills_json',                'STRING',  113, 0, 0, 1, GETUTCDATE()),
+  (2278, 'Webex', 'csr', 'csr_base', 'matchedSkillsProfile',              'matched_skills_profile',             'STRING',  114, 1, 0, 1, GETUTCDATE()),
+  (2279, 'Webex', 'csr', 'csr_base', 'midCallSummaryCount',               'mid_call_summary_count',             'INT',     115, 1, 0, 1, GETUTCDATE()),
+  (2280, 'Webex', 'csr', 'csr_base', 'midcallMonitoringCount',            'midcall_monitoring_count',           'INT',     116, 1, 0, 1, GETUTCDATE()),
+  (2281, 'Webex', 'csr', 'csr_base', 'monitorFullName',                   'monitor_full_name',                  'STRING',  117, 1, 0, 1, GETUTCDATE()),
+  (2282, 'Webex', 'csr', 'csr_base', 'monitoringTimestamp',               'monitoring_timestamp',               'BIGINT',  118, 1, 0, 1, GETUTCDATE()),
+  (2283, 'Webex', 'csr', 'csr_base', 'origin',                            'origin',                             'STRING',  119, 1, 0, 1, GETUTCDATE()),
+  (2284, 'Webex', 'csr', 'csr_base', 'outdialConsultCount',               'outdial_consult_count',              'INT',     120, 1, 0, 1, GETUTCDATE()),
+  (2285, 'Webex', 'csr', 'csr_base', 'outdialConsultToEPCount',           'outdial_consult_to_ep_count',        'INT',     121, 1, 0, 1, GETUTCDATE()),
+  (2286, 'Webex', 'csr', 'csr_base', 'outdialConsultToEPDuration',        'outdial_consult_to_ep_duration',     'INT',     122, 1, 0, 1, GETUTCDATE()),
+  (2287, 'Webex', 'csr', 'csr_base', 'outdialConsultToQueueCount',        'outdial_consult_to_queue_count',     'INT',     123, 1, 0, 1, GETUTCDATE()),
+  (2288, 'Webex', 'csr', 'csr_base', 'outdialConsultToQueueDuration',     'outdial_consult_to_queue_duration',  'INT',     124, 1, 0, 1, GETUTCDATE()),
+  (2289, 'Webex', 'csr', 'csr_base', 'outdialType',                       'outdial_type',                       'STRING',  125, 1, 0, 1, GETUTCDATE()),
+  (2290, 'Webex', 'csr', 'csr_base', 'overallEvalScore',                  'overall_eval_score',                 'STRING',  126, 1, 0, 1, GETUTCDATE()),
+  (2291, 'Webex', 'csr', 'csr_base', 'overflowCount',                     'overflow_count',                     'INT',     127, 1, 0, 1, GETUTCDATE()),
+  (2292, 'Webex', 'csr', 'csr_base', 'pausedCount',                       'paused_count',                       'INT',     128, 1, 0, 1, GETUTCDATE()),
+  (2293, 'Webex', 'csr', 'csr_base', 'pausedDuration',                    'paused_duration',                    'INT',     129, 1, 0, 1, GETUTCDATE()),
+  (2294, 'Webex', 'csr', 'csr_base', 'personalCallBackAgentName',         'personal_call_back_agent_name',      'STRING',  130, 1, 0, 1, GETUTCDATE()),
+  (2295, 'Webex', 'csr', 'csr_base', 'postCallConsultDuration',           'post_call_consult_duration',         'INT',     131, 1, 0, 1, GETUTCDATE()),
+  (2296, 'Webex', 'csr', 'csr_base', 'postCallDuration',                  'post_call_duration',                 'INT',     132, 1, 0, 1, GETUTCDATE()),
+  (2297, 'Webex', 'csr', 'csr_base', 'postCallSummaryCount',              'post_call_summary_count',            'INT',     133, 1, 0, 1, GETUTCDATE()),
+  (2298, 'Webex', 'csr', 'csr_base', 'preferredAgentName',                'preferred_agent_name',               'STRING',  134, 1, 0, 1, GETUTCDATE()),
+  (2299, 'Webex', 'csr', 'csr_base', 'preferredAgentSystemId',            'preferred_agent_system_id',          'STRING',  135, 1, 0, 1, GETUTCDATE()),
+  (2300, 'Webex', 'csr', 'csr_base', 'previousAgentId',                   'previous_agent_id',                  'STRING',  136, 1, 0, 1, GETUTCDATE()),
+  (2301, 'Webex', 'csr', 'csr_base', 'previousAgentName',                 'previous_agent_name',                'STRING',  137, 1, 0, 1, GETUTCDATE()),
+  (2302, 'Webex', 'csr', 'csr_base', 'previousAgentSessionId',            'previous_agent_session_id',          'STRING',  138, 1, 0, 1, GETUTCDATE()),
+  (2303, 'Webex', 'csr', 'csr_base', 'previousQueue',                     'previous_queue_json',                'STRING',  139, 0, 0, 1, GETUTCDATE()),
+  (2304, 'Webex', 'csr', 'csr_base', 'queueCount',                        'queue_count',                        'INT',     140, 1, 0, 1, GETUTCDATE()),
+  (2305, 'Webex', 'csr', 'csr_base', 'queueDuration',                     'queue_duration',                     'INT',     141, 1, 0, 1, GETUTCDATE()),
+  (2306, 'Webex', 'csr', 'csr_base', 'queueTransferToEPCount',            'queue_transfer_to_ep_count',         'INT',     142, 1, 0, 1, GETUTCDATE()),
+  (2307, 'Webex', 'csr', 'csr_base', 'queueTransferToQueueCount',         'queue_transfer_to_queue_count',      'INT',     143, 1, 0, 1, GETUTCDATE()),
+  (2308, 'Webex', 'csr', 'csr_base', 'recordingCount',                    'recording_count',                    'INT',     144, 1, 0, 1, GETUTCDATE()),
+  (2309, 'Webex', 'csr', 'csr_base', 'recordingErrorCount',               'recording_error_count',              'INT',     145, 1, 0, 1, GETUTCDATE()),
+  (2310, 'Webex', 'csr', 'csr_base', 'recordingFileSize',                 'recording_file_size',                'INT',     146, 1, 0, 1, GETUTCDATE()),
+  (2311, 'Webex', 'csr', 'csr_base', 'recordingLocation',                 'recording_location',                 'STRING',  147, 1, 0, 1, GETUTCDATE()),
+  (2312, 'Webex', 'csr', 'csr_base', 'recordingStereoBlobId',             'recording_stereo_blob_id',           'STRING',  148, 1, 0, 1, GETUTCDATE()),
+  (2313, 'Webex', 'csr', 'csr_base', 'requiredSkills',                    'required_skills_json',               'STRING',  149, 0, 0, 1, GETUTCDATE()),
+  (2314, 'Webex', 'csr', 'csr_base', 'resumedCount',                      'resumed_count',                      'INT',     150, 1, 0, 1, GETUTCDATE()),
+  (2315, 'Webex', 'csr', 'csr_base', 'ringingDuration',                   'ringing_duration',                   'INT',     151, 1, 0, 1, GETUTCDATE()),
+  (2316, 'Webex', 'csr', 'csr_base', 'routingType',                       'routing_type',                       'STRING',  152, 1, 0, 1, GETUTCDATE()),
+  (2317, 'Webex', 'csr', 'csr_base', 'selfserviceCount',                  'selfservice_count',                  'INT',     153, 1, 0, 1, GETUTCDATE()),
+  (2318, 'Webex', 'csr', 'csr_base', 'selfserviceDuration',               'selfservice_duration',               'INT',     154, 1, 0, 1, GETUTCDATE()),
+  (2319, 'Webex', 'csr', 'csr_base', 'shortInIVRCount',                   'short_in_ivr_count',                 'INT',     155, 1, 0, 1, GETUTCDATE()),
+  (2320, 'Webex', 'csr', 'csr_base', 'shortInQueueCount',                 'short_in_queue_count',               'INT',     156, 1, 0, 1, GETUTCDATE()),
+  (2321, 'Webex', 'csr', 'csr_base', 'silentMonitoringCount',             'silent_monitoring_count',            'INT',     157, 1, 0, 1, GETUTCDATE()),
+  (2322, 'Webex', 'csr', 'csr_base', 'skillsAssignedIn',                  'skills_assigned_in',                 'STRING',  158, 1, 0, 1, GETUTCDATE()),
+  (2323, 'Webex', 'csr', 'csr_base', 'status',                            'status',                             'STRING',  159, 1, 0, 1, GETUTCDATE()),
+  (2324, 'Webex', 'csr', 'csr_base', 'suddenDisconnectCount',             'sudden_disconnect_count',            'INT',     160, 1, 0, 1, GETUTCDATE()),
+  (2325, 'Webex', 'csr', 'csr_base', 'terminatingEnd',                    'terminating_end',                    'STRING',  161, 1, 0, 1, GETUTCDATE()),
+  (2326, 'Webex', 'csr', 'csr_base', 'terminationReason',                 'termination_reason',                 'STRING',  162, 1, 0, 1, GETUTCDATE()),
+  (2327, 'Webex', 'csr', 'csr_base', 'terminationType',                   'termination_type',                   'STRING',  163, 1, 0, 1, GETUTCDATE()),
+  (2328, 'Webex', 'csr', 'csr_base', 'topicName',                         'topic_name',                         'STRING',  164, 1, 0, 1, GETUTCDATE()),
+  (2329, 'Webex', 'csr', 'csr_base', 'totalBnrDuration',                  'total_bnr_duration',                 'INT',     165, 1, 0, 1, GETUTCDATE()),
+  (2330, 'Webex', 'csr', 'csr_base', 'totalDuration',                     'total_duration',                     'INT',     166, 1, 0, 1, GETUTCDATE()),
+  (2331, 'Webex', 'csr', 'csr_base', 'totalMonitoringCount',              'total_monitoring_count',             'INT',     167, 1, 0, 1, GETUTCDATE()),
+  (2332, 'Webex', 'csr', 'csr_base', 'transferCount',                     'transfer_count',                     'INT',     168, 1, 0, 1, GETUTCDATE()),
+  (2333, 'Webex', 'csr', 'csr_base', 'transferEpDN',                      'transfer_ep_dn',                     'STRING',  169, 1, 0, 1, GETUTCDATE()),
+  (2334, 'Webex', 'csr', 'csr_base', 'transferErrorCount',                'transfer_error_count',               'INT',     170, 1, 0, 1, GETUTCDATE()),
+  (2335, 'Webex', 'csr', 'csr_base', 'transferInToEPCount',               'transfer_in_to_ep_count',            'INT',     171, 1, 0, 1, GETUTCDATE()),
+  (2336, 'Webex', 'csr', 'csr_base', 'vaRecordingAvailable',              'va_recording_available',             'BOOLEAN', 172, 1, 0, 1, GETUTCDATE()),
+  (2337, 'Webex', 'csr', 'csr_base', 'vaTranscriptionAvailable',          'va_transcription_available',         'STRING',  173, 1, 0, 1, GETUTCDATE()),
+  (2338, 'Webex', 'csr', 'csr_base', 'wordRatioCount',                    'word_ratio_count',                   'INT',     174, 1, 0, 1, GETUTCDATE()),
+  (2339, 'Webex', 'csr', 'csr_base', 'wordRatioScore',                    'word_ratio_score',                   'STRING',  175, 1, 0, 1, GETUTCDATE()),
+  (2340, 'Webex', 'csr', 'csr_base', 'wrapupDuration',                    'wrapup_duration',                    'INT',     176, 1, 0, 1, GETUTCDATE()),
+  (2341, 'Webex', 'csr', 'csr_base', '__top__.start_date',                'start_date',                         'STRING',  177, 0, 0, 1, GETUTCDATE()),
+  (2342, 'Webex', 'csr', 'csr_base', '__top__.end_date',                  'end_date',                           'STRING',  178, 0, 0, 1, GETUTCDATE()),
+  (2343, 'Webex', 'csr', 'csr_base', '__top__.record_type',               'record_type',                        'STRING',  179, 0, 0, 1, GETUTCDATE()),
+  (2344, 'Webex', 'csr', 'csr_base', '__top__.source',                    'source',                             'STRING',  180, 0, 0, 1, GETUTCDATE());
+
+-- Total Webex: 180 rows (AAR 13 + ASR 25 + CLR 107 + CAR 19 + CSR 180 = 344 rows, IDs 2001-2344)

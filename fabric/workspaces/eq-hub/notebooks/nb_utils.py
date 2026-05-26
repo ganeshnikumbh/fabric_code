@@ -25,7 +25,7 @@ from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql import functions as F
 from pyspark.sql.types import (
     StructType, StructField,
-    StringType, IntegerType, TimestampType,
+    BooleanType, DoubleType, IntegerType, LongType, StringType, TimestampType,
 )
 from typing import Optional
 import com.microsoft.sqlserver.jdbc.spark
@@ -114,7 +114,7 @@ def get_ingestion_config(jdbc_url: str) -> DataFrame:
         "SELECT source_id, source_name, source_type, source_schema, entity_name, "
         "       target_lakehouse, target_schema, target_table, "
         "       load_type, watermark_column, watermark_type, batch_size, "
-        "       partition_by_column_names, is_scd2, src_busn_asst "
+        "       partition_by_column_names, is_scd2, src_busn_asst, source_path "
         "FROM dbo.ingestion_config "
         "WHERE active_flag = 1"
     )
@@ -134,7 +134,7 @@ def get_ingestion_config_by_source(jdbc_url: str, source_name: str) -> DataFrame
         f"SELECT source_id, source_name, source_type, source_schema, entity_name, "
         f"       target_lakehouse, target_schema, target_table, "
         f"       load_type, watermark_column, watermark_type, batch_size, "
-        f"       partition_by_column_names, is_scd2, src_busn_asst "
+        f"       partition_by_column_names, is_scd2, src_busn_asst, source_path "
         f"FROM dbo.ingestion_config "
         f"WHERE LOWER(source_name) = LOWER('{source_name}') "
         f"  AND active_flag = 1"
@@ -356,14 +356,16 @@ def get_ingestion_config_schema() -> StructType:
 
     JSON shape per item:
     {
-      "source_id", "source_name", "source_table", "source_schema",
+      "source_id", "source_name", "source_type", "source_table", "source_schema",
       "target_table", "target_schema", "load_type",
-      "watermark_column", "watermark_type", "batch_size"
+      "watermark_column", "watermark_type", "batch_size",
+      "partition_by_column_names", "is_scd2", "src_busn_asst", "source_path"
     }
     """
     return StructType([
         StructField("source_id",                 IntegerType(), nullable=True),
         StructField("source_name",               StringType(),  nullable=True),
+        StructField("source_type",               StringType(),  nullable=True),
         StructField("source_table",              StringType(),  nullable=True),
         StructField("source_schema",             StringType(),  nullable=True),
         StructField("target_table",              StringType(),  nullable=True),
@@ -375,6 +377,7 @@ def get_ingestion_config_schema() -> StructType:
         StructField("partition_by_column_names", StringType(),  nullable=True),
         StructField("is_scd2",                   IntegerType(), nullable=True),
         StructField("src_busn_asst",             StringType(),  nullable=True),
+        StructField("source_path",               StringType(),  nullable=True),
     ])
 
 
@@ -835,6 +838,105 @@ def log_fabric_operation(
     pass
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# API raw-JSON helpers
+# Used by nb_load_landing_to_bronze_v3 for the source_type='api' path.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def resolve_json_path(record, dot_path):
+    """Traverse a nested dict/list using a dot-notation path and return the value.
+
+    Special path tokens (prefix $):
+      __item__    — return the record itself (for string-array sources)
+      $first      — first value of a dict   (dynamic-key objects)
+      $first_key  — first key   of a dict   (extract the dynamic key string)
+      $N          — element at index N of a list  (e.g. $0 for first item)
+    """
+    if dot_path == "__item__":
+        return record
+    val = record
+    for key in dot_path.split("."):
+        if val is None:
+            return None
+        if key == "$first":
+            val = next(iter(val.values()), None) if isinstance(val, dict) else None
+        elif key == "$first_key":
+            val = next(iter(val.keys()), None) if isinstance(val, dict) else None
+        elif key.startswith("$"):
+            try:
+                val = val[int(key[1:])] if isinstance(val, (list, tuple)) else None
+            except (IndexError, ValueError, TypeError):
+                val = None
+        else:
+            val = val.get(key) if isinstance(val, dict) else None
+    return val
+
+
+def extract_api_records(response, source_path):
+    """Return the list of individual records from an API response envelope.
+
+    source_path is a dot-notation key path to the records array
+    (e.g. 'results', 'result.data').  An empty path means the response
+    itself is the array, or a single-record response.
+    """
+    if not source_path:
+        return response if isinstance(response, list) else [response]
+    val = response
+    for key in source_path.split("."):
+        if not isinstance(val, dict):
+            return []
+        val = val.get(key)
+    if val is None:
+        return []
+    return val if isinstance(val, list) else [val]
+
+
+def cast_to_target_type(val, dtype):
+    """Cast a Python value to the target schema data type.
+
+    Dicts and lists are always serialized to a JSON string so that nested
+    objects land as string blobs in the bronze table, regardless of dtype.
+    """
+    if val is None:
+        return None
+    if isinstance(val, (dict, list)):
+        return json.dumps(val)
+    d = (dtype or "STRING").upper()
+    if d == "BOOLEAN":
+        return bool(val)
+    elif d in ("INTEGER", "BIGINT"):
+        try:    return int(val)
+        except: return None
+    elif d in ("FLOAT", "DOUBLE"):
+        try:    return float(val)
+        except: return None
+    return str(val)
+
+
+def build_struct_from_mappings(schema_mappings):
+    """Build a Spark StructType from a list of schema_config mapping Rows.
+
+    Uses target_column_name as the field name and target_data_type to
+    select the Spark type.  Unknown types default to StringType.
+    """
+    _type_map = {
+        "STRING":  StringType(),
+        "BOOLEAN": BooleanType(),
+        "INTEGER": IntegerType(),
+        "BIGINT":  LongType(),
+        "FLOAT":   DoubleType(),
+        "DOUBLE":  DoubleType(),
+    }
+    return StructType([
+        StructField(
+            m["target_column_name"],
+            _type_map.get((m["target_data_type"] or "STRING").upper(), StringType()),
+            nullable=True,
+        )
+        for m in schema_mappings
+    ])
+
+
 print("[nb_utils] Loaded — functions available: read_mssql_table, read_mssql_query, "
       "get_ingestion_config, get_ingestion_config_by_source, get_ingestion_config_for_entity, "
       "get_schema_config, get_schema_config_by_source, get_schema_config_for_table, "
@@ -845,6 +947,7 @@ print("[nb_utils] Loaded — functions available: read_mssql_table, read_mssql_q
       "expand_json_fields, build_col_maps, "
       "validate_required_params, add_audit_columns, compute_md5_hash, "
       "deduplicate_by_md5, make_surrogate_key, write_delta_create, "
+      "resolve_json_path, extract_api_records, cast_to_target_type, build_struct_from_mappings, "
       "apply_scd2, apply_scd1, compute_md5Hash, add_audit_column, add_scd_column, "
       "resolve_dim_key, GoldLoader")
 

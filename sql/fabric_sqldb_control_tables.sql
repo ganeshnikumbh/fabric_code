@@ -32,6 +32,7 @@ CREATE TABLE dbo.ingestion_config (
     api_endpoint        NVARCHAR(500)   NULL,
     api_method          NVARCHAR(10)    NULL,
     api_headers         NVARCHAR(MAX)   NULL,
+    source_path         NVARCHAR(200)   NULL,       -- path within API JSON to the records array (e.g. 'results', 'result.data'); empty string = single-record response
     active_flag         BIT             NOT NULL    CONSTRAINT df_ingestion_config_active DEFAULT (1),
     created_by          NVARCHAR(100)   NOT NULL    CONSTRAINT df_ingestion_config_created_by DEFAULT ('fabric-pipeline-svc'),
     created_date        DATETIME2       NOT NULL    CONSTRAINT df_ingestion_config_created_date DEFAULT (SYSUTCDATETIME()),
@@ -387,4 +388,56 @@ VALUES
      'lh_landing', 'hubspot', 'marketing_email_statistics',
      'full', NULL, NULL, NULL, NULL,
      0, '/marketing/v3/emails/{emailId}/statistics/list',  'GET', 1, 'elic');
+GO
+
+-- ── Set source_path for all HubSpot entries (raw-landing migration) ──────────
+-- marketing_events/emails/crm_objects → array is under key "results"
+-- events_event_types                  → array is under key "results"
+-- marketing_email_statistics          → single-record response; path is empty string
+
+UPDATE dbo.ingestion_config SET source_path = 'results'
+WHERE source_id IN (63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76);
+GO
+
+UPDATE dbo.ingestion_config SET source_path = ''
+WHERE source_id = 84;
+GO
+
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- SEED DATA: ingestion_config  (5 rows — Webex source)
+-- source_ids 85–89; source_type = api; target = lh_landing.webex.*
+-- source_path = 'result.data'  (Webex response envelope)
+-- ══════════════════════════════════════════════════════════════════════════════
+
+INSERT INTO dbo.ingestion_config
+    (source_id, source_name, source_type, source_schema, entity_name,
+     target_lakehouse, target_schema, target_table,
+     load_type, watermark_column, watermark_type, batch_size, partition_by_column_names,
+     is_scd2, active_flag, src_busn_asst, source_path)
+VALUES
+(85, 'Webex', 'api', NULL, 'aar',
+     'lh_landing', 'webex', 'aar',
+     'full', NULL, NULL, NULL, NULL,
+     0, 1, 'elic', 'result.data'),
+
+(86, 'Webex', 'api', NULL, 'asr',
+     'lh_landing', 'webex', 'asr',
+     'full', NULL, NULL, NULL, NULL,
+     0, 1, 'elic', 'result.data'),
+
+(87, 'Webex', 'api', NULL, 'csr',
+     'lh_landing', 'webex', 'csr',
+     'full', NULL, NULL, NULL, NULL,
+     0, 1, 'elic', 'result.data'),
+
+(88, 'Webex', 'api', NULL, 'clr',
+     'lh_landing', 'webex', 'clr',
+     'full', NULL, NULL, NULL, NULL,
+     0, 1, 'elic', 'result.data'),
+
+(89, 'Webex', 'api', NULL, 'car',
+     'lh_landing', 'webex', 'car',
+     'full', NULL, NULL, NULL, NULL,
+     0, 1, 'elic', 'result.data');
 GO

@@ -19,15 +19,21 @@
 #
 #   Output shape per item:
 #   {
-#     "source_id"       : 14,
-#     "source_name"     : "EQ_Warehouse",
-#     "source_table"    : "Client",
-#     "target_table"    : "client_base",
-#     "target_schema"   : "bronze_eqwarehouse",
-#     "load_type"       : "incremental",
-#     "watermark_column": "StartDate",
-#     "watermark_type"  : "datetime",
-#     "batch_size"      : 50000
+#     "source_id"                 : 14,
+#     "source_name"               : "EQ_Warehouse",
+#     "source_type"               : "sql_server",
+#     "source_table"              : "Client",
+#     "source_schema"             : "dbo",
+#     "target_table"              : "client_base",
+#     "target_schema"             : "bronze_eqwarehouse",
+#     "load_type"                 : "incremental",
+#     "watermark_column"          : "StartDate",
+#     "watermark_type"            : "datetime",
+#     "batch_size"                : 50000,
+#     "partition_by_column_names" : "",
+#     "is_scd2"                   : 0,
+#     "src_busn_asst"             : "elic",
+#     "source_path"               : ""
 #   }
 #
 # ── p_config_type = "schema_config" ───────────────────────────────────────────
@@ -136,16 +142,19 @@ if p_config_type == "ingestion_config":
                 {
                     "source_id"                 : int(row["source_id"]),
                     "source_name"               : str(row["source_name"]),
+                    "source_type"               : str(row["source_type"])                  if row["source_type"]                  else "",
                     "source_table"              : str(row["entity_name"]),
-                    "source_schema"             : str(row["source_schema"]) if row["source_schema"] else "",
+                    "source_schema"             : str(row["source_schema"])                if row["source_schema"]                else "",
                     "target_table"              : str(row["target_table"]),
                     "target_schema"             : str(row["target_schema"]),
                     "load_type"                 : str(row["load_type"]),
-                    "watermark_column"          : str(row["watermark_column"]) if row["watermark_column"] else "",
-                    "watermark_type"            : str(row["watermark_type"])   if row["watermark_type"]   else "",
-                    "batch_size"                : int(row["batch_size"])        if row["batch_size"]       else 0,
-                    "partition_by_column_names" : str(row["partition_by_column_names"]) if row["partition_by_column_names"] else "",
-                    "is_scd2"                   : int(row["is_scd2"])           if row["is_scd2"] is not None else 0,
+                    "watermark_column"          : str(row["watermark_column"])             if row["watermark_column"]             else "",
+                    "watermark_type"            : str(row["watermark_type"])               if row["watermark_type"]               else "",
+                    "batch_size"                : int(row["batch_size"])                   if row["batch_size"]                   else 0,
+                    "partition_by_column_names" : str(row["partition_by_column_names"])    if row["partition_by_column_names"]    else "",
+                    "is_scd2"                   : int(row["is_scd2"])                      if row["is_scd2"] is not None          else 0,
+                    "src_busn_asst"             : str(row["src_busn_asst"])                if row["src_busn_asst"]                else "",
+                    "source_path"               : str(row["source_path"])                  if row["source_path"]                  else "",
                 }
                 for row in rows
             ],
