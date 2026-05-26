@@ -2,7 +2,7 @@
 # Layer:    Bronze
 # Purpose:  Metadata-driven ingestion from lh_landing → lh_bronze.
 #           Dispatches on source_type from ingestion_config:
-#             'api'  — reads raw_json column from landing, navigates source_path
+#             'api'  — reads raw_json column from landing (whole-text JSON string per file),
 #                      to the records array, flattens each record using _get()
 #                      with schema_config camelCase paths.  Handles __top__.*
 #                      envelope context and N/A pipeline-parameter context fields.
