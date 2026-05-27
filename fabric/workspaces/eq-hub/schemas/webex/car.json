@@ -2,7 +2,7 @@
   "table_name": "car",
   "description": "Webex Contact Activity Report — one row per contact. activities.nodes is a variable-count event list stored as JSON.",
   "source_path": "result.data",
-  "context_fields": [],
+  "context_fields": ["start_date", "end_date", "record_type", "source"],
   "fields": [
     {"column": "id",                     "source": "id",                   "type": "string"},
     {"column": "channel_type",           "source": "channelType",          "type": "string"},

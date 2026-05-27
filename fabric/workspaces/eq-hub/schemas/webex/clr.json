@@ -2,7 +2,7 @@
   "table_name": "clr",
   "description": "Webex Contact Leg Report — one row per contact leg. Nested dicts (customer, entryPoint, nextDestination, owner, queue, site, team) are inlined.",
   "source_path": "result.data",
-  "context_fields": [],
+  "context_fields": ["start_date", "end_date", "record_type", "source"],
   "fields": [
     {"column": "id",                                     "source": "id",                                  "type": "string"},
     {"column": "task_id",                                "source": "taskId",                              "type": "string"},

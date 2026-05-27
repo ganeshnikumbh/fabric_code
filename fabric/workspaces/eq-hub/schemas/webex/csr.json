@@ -2,7 +2,7 @@
   "table_name": "csr",
   "description": "Webex Contact Session Report — one row per contact session. Nested dicts inlined. matchedSkills and requiredSkills flattened via $0 indexing. globalVariables is a variable-length name/value list stored as JSON.",
   "source_path": "result.data",
-  "context_fields": [],
+  "context_fields": ["start_date", "end_date", "record_type", "source"],
   "fields": [
     {"column": "id",                                     "source": "id",                                  "type": "string"},
     {"column": "channel_type",                           "source": "channelType",                         "type": "string"},

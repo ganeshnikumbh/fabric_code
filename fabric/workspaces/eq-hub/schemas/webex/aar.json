@@ -2,7 +2,7 @@
   "table_name": "aar",
   "description": "Webex Agent Activity Report — one row per agent session. channelInfo array flattened via $0 indexing; channelInfo.activities (variable-count event list) stored as JSON.",
   "source_path": "result.data",
-  "context_fields": [],
+  "context_fields": ["start_date", "end_date", "record_type", "source"],
   "fields": [
     {"column": "agent_id",                         "source": "agentId",                             "type": "string"},
     {"column": "agent_name",                       "source": "agentName",                           "type": "string"},

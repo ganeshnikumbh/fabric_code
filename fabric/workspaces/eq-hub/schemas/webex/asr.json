@@ -2,7 +2,7 @@
   "table_name": "asr",
   "description": "Webex Agent Session Report — one row per agent session. agentSkills and channelInfo arrays flattened via $0 indexing.",
   "source_path": "result.data",
-  "context_fields": [],
+  "context_fields": ["start_date", "end_date", "record_type", "source"],
   "fields": [
     {"column": "agent_id",                                          "source": "agentId",                                              "type": "string"},
     {"column": "agent_name",                                        "source": "agentName",                                            "type": "string"},
