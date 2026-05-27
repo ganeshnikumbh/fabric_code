@@ -1,0 +1,21 @@
+{
+  "table_name": "aar",
+  "description": "Webex Agent Activity Report — one row per agent session. channelInfo array flattened via $0 indexing; channelInfo.activities (variable-count event list) stored as JSON.",
+  "source_path": "result.data",
+  "context_fields": [],
+  "fields": [
+    {"column": "agent_id",                         "source": "agentId",                             "type": "string"},
+    {"column": "agent_name",                       "source": "agentName",                           "type": "string"},
+    {"column": "agent_session_id",                 "source": "agentSessionId",                      "type": "string"},
+    {"column": "site_id",                          "source": "siteId",                              "type": "string"},
+    {"column": "site_name",                        "source": "siteName",                            "type": "string"},
+    {"column": "team_id",                          "source": "teamId",                              "type": "string"},
+    {"column": "team_name",                        "source": "teamName",                            "type": "string"},
+    {"column": "user_login_id",                    "source": "userLoginId",                         "type": "string"},
+    {"column": "channel_info_channel_id",          "source": "channelInfo.$0.channelId",            "type": "string"},
+    {"column": "channel_info_channel_type",        "source": "channelInfo.$0.channelType",          "type": "string"},
+    {"column": "channel_info_sub_channel_type",    "source": "channelInfo.$0.subChannelType",       "type": "string"},
+    {"column": "channel_info_agent_phone_number",  "source": "channelInfo.$0.agentPhoneNumber",     "type": "string"},
+    {"column": "channel_info_activities_json",     "source": "channelInfo.$0.activities",           "type": "json"}
+  ]
+}

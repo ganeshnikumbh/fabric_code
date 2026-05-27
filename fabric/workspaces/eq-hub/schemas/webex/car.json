@@ -1,0 +1,23 @@
+{
+  "table_name": "car",
+  "description": "Webex Contact Activity Report — one row per contact. activities.nodes is a variable-count event list stored as JSON.",
+  "source_path": "result.data",
+  "context_fields": [],
+  "fields": [
+    {"column": "id",                     "source": "id",                   "type": "string"},
+    {"column": "channel_type",           "source": "channelType",          "type": "string"},
+    {"column": "channel_sub_type",       "source": "channelSubType",       "type": "string"},
+    {"column": "destination",            "source": "destination",          "type": "string"},
+    {"column": "origin",                 "source": "origin",               "type": "string"},
+    {"column": "is_outdial",             "source": "isOutdial",            "type": "boolean"},
+    {"column": "is_email_sent",          "source": "isEmailSent",          "type": "boolean"},
+    {"column": "email_to_list",          "source": "emailToList",          "type": "string"},
+    {"column": "email_cc_list",          "source": "emailCcList",          "type": "string"},
+    {"column": "email_bcc_list",         "source": "emailBccList",         "type": "string"},
+    {"column": "email_reply_to",         "source": "emailReplyTo",         "type": "string"},
+    {"column": "matched_skills_profile", "source": "matchedSkillsProfile", "type": "string"},
+    {"column": "preferred_agent_name",   "source": "preferredAgentName",   "type": "string"},
+    {"column": "routing_type",           "source": "routingType",          "type": "string"},
+    {"column": "activity_nodes_json",    "source": "activities.nodes",     "type": "json"}
+  ]
+}
