@@ -279,11 +279,11 @@ try:
 
         def _build_spark_schema(fields):
             from pyspark.sql.types import (  # noqa: F811
-                BooleanType, DoubleType, IntegerType, StringType, StructField, StructType,
+                BooleanType, DoubleType, LongType, StringType, StructField, StructType,
             )
             _tmap = {
                 "string": StringType(), "boolean": BooleanType(),
-                "integer": IntegerType(), "float": DoubleType(),
+                "integer": LongType(), "float": DoubleType(),
                 "double": DoubleType(), "json": StringType(),
             }
             return StructType([
