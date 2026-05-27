@@ -3,9 +3,11 @@
 # Purpose:  Metadata-driven ingestion from lh_landing → lh_bronze.
 #           Dispatches on source_type from ingestion_config:
 #             'api'  — reads raw_json column from landing (whole-text JSON string per file),
-#                      to the records array, flattens each record using _get()
-#                      with schema_config camelCase paths.  Handles __top__.*
-#                      envelope context and N/A pipeline-parameter context fields.
+#                      extracts records using source_path, flattens each record using a
+#                      JSON schema file stored at:
+#                        /lakehouse/default/Files/{p_target_schema}/schemas/{p_target_table}.json
+#                      Schema file drives column names, source paths, types, and whether
+#                      to explode a nested array (array_explode_path).
 #             other  — flat column rename using build_col_maps / expand_json_fields
 #                      (same pattern as nb_bronze_ingestion_v2).
 #           Always appends to an existing target table; creates on first run.
@@ -14,7 +16,7 @@
 #   1. nb_get_ingestion_entities (p_config_type='ingestion_config') → JSON array
 #      → stored in pipeline variable v_ingestion_config_json
 #   2. nb_get_ingestion_entities (p_config_type='schema_config')    → JSON array
-#      → stored in pipeline variable v_schema_config_json
+#      → stored in pipeline variable v_schema_config_json  (used only for non-API sources)
 #   3. ForEach over ingestion_config items → calls this notebook per entity
 #      Parameters per iteration:
 #        p_source_table          : @item().source_table
@@ -26,18 +28,31 @@
 #        p_source_system         : e.g. 'HubSpot', 'Webex', 'EQ_Warehouse'
 #        p_ingestion_run_id      : pipeline run UUID
 #        p_ingestion_timestamp   : e.g. '2025-04-09T01:00:00Z'
-#        p_context_json          : optional — pipeline context for N/A schema_config rows
+#        p_context_json          : optional — JSON with pipeline context fields injected
+#                                  into context_fields listed in the schema file
 #                                  e.g. '{"object_type":"contacts"}' for crm_contacts
 #
-# API source_column_name conventions in schema_config:
-#   camelCase path           — standard resolve_json_path() traversal (e.g. 'properties.email')
-#   '__top__.<key>'          — extracted from the raw response envelope, not the record
-#                              (e.g. '__top__.start_date' for Webex context fields)
-#   'N/A'                    — injected from p_context_json keyed by target_column_name
-#                              (e.g. target 'object_type' ← p_context_json['object_type'])
-#   '__item__'               — the record itself (for string-array responses)
-#   '$first', '$first_key'   — first value / key of a dynamic-key dict
-#   '$N'                     — element at index N of a list (e.g. '$0')
+# JSON schema file format (for source_type='api'):
+#   Located at /lakehouse/default/Files/{target_schema}/schemas/{target_table}.json
+#   {
+#     "table_name"         : "aar_base",
+#     "source_path"        : "result.data",   ← overrides ingestion_config.source_path
+#     "array_explode_path" : "",              ← set for child tables (e.g. "activities.nodes")
+#     "context_fields"     : [],             ← field names injected from p_context_json
+#     "fields": [
+#       {"column": "id",    "source": "id",          "type": "string"},
+#       {"column": "email", "source": "customer.email","type": "string"},
+#       {"column": "x_json","source": "details",     "type": "json"}
+#     ]
+#   }
+#
+# source path conventions in schema file fields:
+#   dot.path             — standard resolve_json_path() traversal (supports nested dicts)
+#   '__top__.<key>'      — extracted from the raw response envelope, not the record
+#   '__parent__.<path>'  — from the parent record when in array-explode mode
+#   '__item__'           — the record itself (for string-array responses)
+#   '$first'/$first_key' — first value / key of a dynamic-key dict
+#   '$N'                 — element at index N of a list  (e.g. '$0')
 #
 # Dependencies:
 #   %run nb_utils   — all standard utilities
@@ -182,29 +197,47 @@ try:
     print(f"  partition_cols: {partition_cols or '(none)'}")
     print(f"  src_busn_asst : {src_busn_asst or '(none)'}")
 
-    # ── 3b. schema_config ────────────────────────────────────────────────────
-    # API sources: include all rows — N/A and __top__.* are handled in row builder.
-    # Flat sources: exclude N/A rows — no pipeline-context column to inject.
-    schema_config_df = schema_config_df_from_json(p_schema_config_json)  # noqa: F821  # type: ignore[name-defined]
-
-    _sc_filter = F.lower(F.col("source_table_name")) == p_source_table.lower()
-    if source_type != "api":
-        _sc_filter = _sc_filter & (F.col("source_column_name") != "N/A")
-
-    mappings = (
-        schema_config_df
-        .filter(_sc_filter)
-        .orderBy("ordinal_position")
-        .collect()
-    )
-
-    if not mappings:
-        raise ValueError(
-            f"No schema_config mappings for source_table_name='{p_source_table}'. "
-            f"Ensure column mappings are registered in schema_config."
+    # ── 3b. Column mappings ──────────────────────────────────────────────────
+    # API sources  → read JSON schema file from the default lakehouse Files section.
+    # Flat sources → read column mappings from p_schema_config_json parameter.
+    if source_type == "api":
+        _schema_file = f"/lakehouse/default/Files/{p_source_schema}/schemas/{p_source_table}.json"
+        print(f"  Schema file     : {_schema_file}")
+        try:
+            with open(_schema_file) as _sf:
+                _table_schema = json.load(_sf)
+        except FileNotFoundError:
+            raise ValueError(
+                f"Schema file not found: '{_schema_file}'. "
+                f"Create a schema JSON file at {p_source_schema}/schemas/{p_source_table}.json."
+            )
+        _schema_fields      = _table_schema.get("fields", [])
+        _context_fields     = _table_schema.get("context_fields", [])
+        _array_explode_path = (_table_schema.get("array_explode_path") or "").strip()
+        # schema file source_path overrides ingestion_config when explicitly set
+        if _table_schema.get("source_path") is not None:
+            source_path = _table_schema["source_path"].strip()
+        print(f"  Schema fields   : {len(_schema_fields)}")
+        print(f"  array_explode   : {_array_explode_path or '(none)'}")
+        print(f"  source_path     : {source_path or '(root)'}")
+        mappings = None
+    else:
+        schema_config_df = schema_config_df_from_json(p_schema_config_json)  # noqa: F821  # type: ignore[name-defined]
+        mappings = (
+            schema_config_df
+            .filter(
+                (F.lower(F.col("source_table_name")) == p_source_table.lower()) &
+                (F.col("source_column_name") != "N/A")
+            )
+            .orderBy("ordinal_position")
+            .collect()
         )
-
-    print(f"  Column mappings : {len(mappings)}")
+        if not mappings:
+            raise ValueError(
+                f"No schema_config mappings for source_table_name='{p_source_table}'. "
+                f"Ensure column mappings are registered in schema_config."
+            )
+        print(f"  Column mappings : {len(mappings)}")
 
     log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]
         notebook_name  = "nb_load_landing_to_bronze_v3",
@@ -225,51 +258,104 @@ try:
 
     if source_type == "api":
 
-        # ── 4a. API path ──────────────────────────────────────────────────────
-        # resolve_json_path, extract_api_records, cast_to_target_type, build_struct_from_mappings
-        # are injected by %run nb_utils.py
+        # ── 4a. API path — schema-file-driven ────────────────────────────────
+        # resolve_json_path and extract_api_records are injected by %run nb_utils.py
+
+        def _cast_field(val, field_type):
+            if val is None:
+                return None
+            if isinstance(val, (dict, list)):
+                return json.dumps(val)
+            t = (field_type or "string").lower()
+            if t == "boolean":
+                return bool(val)
+            elif t == "integer":
+                try:    return int(val)
+                except: return None
+            elif t in ("float", "double"):
+                try:    return float(val)
+                except: return None
+            return str(val)
+
+        def _build_spark_schema(fields):
+            from pyspark.sql.types import (  # noqa: F811
+                BooleanType, DoubleType, IntegerType, StringType, StructField, StructType,
+            )
+            _tmap = {
+                "string": StringType(), "boolean": BooleanType(),
+                "integer": IntegerType(), "float": DoubleType(),
+                "double": DoubleType(), "json": StringType(),
+            }
+            return StructType([
+                StructField(f["column"], _tmap.get(f["type"].lower(), StringType()), nullable=True)
+                for f in fields
+            ])
 
         _pipeline_context = {}
         if p_context_json and p_context_json.strip() not in ("", "{}"):
             _pipeline_context = json.loads(p_context_json)
+        _ctx_row = {cf: _pipeline_context.get(cf) for cf in _context_fields}
 
         _raw_json_rows = source_df.select("raw_json").collect()
         rows = []
-        for _rjr in _raw_json_rows:
-            _raw_str = _rjr["raw_json"]
-            if not _raw_str:
-                continue
-            _response = json.loads(_raw_str)
-            _records  = extract_api_records(_response, source_path)  # noqa: F821  # type: ignore[name-defined]
-            for _rec in _records:
-                _row = {}
-                for m in mappings:
-                    src  = (m["source_column_name"] or "").strip()
-                    tgt  = m["target_column_name"]
-                    dtyp = m["target_data_type"]
-                    if src == "N/A":
-                        _row[tgt] = _pipeline_context.get(tgt)
-                    elif src.startswith("__top__."):
-                        _top_key  = src[len("__top__."):]
-                        _row[tgt] = cast_to_target_type(_response.get(_top_key), dtyp)  # noqa: F821  # type: ignore[name-defined]
-                    else:
-                        _row[tgt] = cast_to_target_type(resolve_json_path(_rec, src), dtyp)  # noqa: F821  # type: ignore[name-defined]
-                rows.append(_row)
+
+        if _array_explode_path:
+            # ── child table: one output row per element in the nested array ──
+            print(f"  Mode : array-explode  (path='{_array_explode_path}')")
+            for _rjr in _raw_json_rows:
+                _raw_str = _rjr["raw_json"]
+                if not _raw_str:
+                    continue
+                _response       = json.loads(_raw_str)
+                _parent_records = extract_api_records(_response, source_path)  # noqa: F821  # type: ignore[name-defined]
+                for _parent_rec in _parent_records:
+                    _child_array = resolve_json_path(_parent_rec, _array_explode_path)  # noqa: F821  # type: ignore[name-defined]
+                    if not _child_array or not isinstance(_child_array, list):
+                        continue
+                    for _child_item in _child_array:
+                        _row = {}
+                        for _f in _schema_fields:
+                            _src = _f["source"]
+                            if _src.startswith("__parent__."):
+                                _val = resolve_json_path(_parent_rec, _src[len("__parent__."):])  # noqa: F821  # type: ignore[name-defined]
+                            elif _src.startswith("__top__."):
+                                _val = _response.get(_src[len("__top__."):])
+                            else:
+                                _val = resolve_json_path(_child_item, _src)  # noqa: F821  # type: ignore[name-defined]
+                            _row[_f["column"]] = _cast_field(_val, _f["type"])
+                        _row.update(_ctx_row)
+                        rows.append(_row)
+        else:
+            # ── parent table: one output row per record ───────────────────────
+            print(f"  Mode : standard")
+            for _rjr in _raw_json_rows:
+                _raw_str = _rjr["raw_json"]
+                if not _raw_str:
+                    continue
+                _response = json.loads(_raw_str)
+                _records  = extract_api_records(_response, source_path)  # noqa: F821  # type: ignore[name-defined]
+                for _rec in _records:
+                    _row = {}
+                    for _f in _schema_fields:
+                        _src = _f["source"]
+                        if _src.startswith("__top__."):
+                            _val = _response.get(_src[len("__top__."):])
+                        else:
+                            _val = resolve_json_path(_rec, _src)  # noqa: F821  # type: ignore[name-defined]
+                        _row[_f["column"]] = _cast_field(_val, _f["type"])
+                    _row.update(_ctx_row)
+                    rows.append(_row)
 
         print(f"  API records parsed : {len(rows):,}")
 
-        _api_schema    = build_struct_from_mappings(mappings)  # noqa: F821  # type: ignore[name-defined]
+        _api_schema    = _build_spark_schema(_schema_fields)
         transformed_df = (
             spark.createDataFrame(rows, schema=_api_schema)
             if rows
             else spark.createDataFrame([], schema=_api_schema)
         )
 
-        hash_cols_ordered = [
-            m["target_column_name"]
-            for m in mappings
-            if (m["include_in_md5hash"] == 1 or m["include_in_md5hash"] is True)
-        ]
+        hash_cols_ordered = [f["column"] for f in _schema_fields if f.get("hash", True)]
 
     else:
 
