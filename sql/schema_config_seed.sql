@@ -1053,7 +1053,7 @@ INSERT INTO schema_config
     (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
      target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
 VALUES
-  ( 986, 'HubSpot', 'events_event_types', 'events_event_types', 'eventTypes[]', 'event_type', 'STRING', 1, 1, 1, 1, GETUTCDATE());
+  ( 986, 'HubSpot', 'events_event_types', 'events_event_types_base', '__item__', 'event_type', 'STRING', 1, 1, 1, 1, GETUTCDATE());
 
 -- [H04–H14] CRM Objects — shared field set (9 fields × 11 object types)
 -- source_column_name = landing column (already flattened); properties are stored as JSON blob
@@ -1753,9 +1753,6 @@ UPDATE schema_config SET source_column_name = 'to'                              
 UPDATE schema_config SET source_column_name = 'allEmailCampaignIds'                 WHERE id = 983;
 UPDATE schema_config SET source_column_name = 'teamsWithAccess'                     WHERE id = 984;
 UPDATE schema_config SET source_column_name = 'workflowNames'                       WHERE id = 985;
-
--- [U03] events_event_types
-UPDATE schema_config SET source_column_name = '__item__' WHERE id = 986;
 
 -- [U08] crm_owners
 UPDATE schema_config SET source_column_name = 'firstName'              WHERE id = 1099;
