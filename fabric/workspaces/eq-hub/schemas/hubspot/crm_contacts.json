@@ -1,0 +1,33 @@
+{
+  "table_name": "crm_contacts",
+  "description": "HubSpot CRM contacts — GET /crm/objects/2025-09/contacts. One row per contact; top-level and properties.* fields fully flattened.",
+  "source_path": "results",
+  "has_pagination": true,
+  "context_fields": [],
+  "fields": [
+    {"column": "id",                              "source": "id",                                         "type": "string"},
+    {"column": "created_at",                      "source": "createdAt",                                  "type": "string"},
+    {"column": "updated_at",                      "source": "updatedAt",                                  "type": "string"},
+    {"column": "archived",                        "source": "archived",                                   "type": "boolean"},
+    {"column": "url",                             "source": "url",                                        "type": "string"},
+    {"column": "agent_id_c",                      "source": "properties.agent_id__c",                    "type": "string"},
+    {"column": "agent_number",                    "source": "properties.agent_number",                   "type": "string"},
+    {"column": "associatedcompanyid",             "source": "properties.associatedcompanyid",            "type": "string"},
+    {"column": "associatedcompanylastupdated",    "source": "properties.associatedcompanylastupdated",   "type": "string"},
+    {"column": "company",                         "source": "properties.company",                        "type": "string"},
+    {"column": "createdate",                      "source": "properties.createdate",                     "type": "string"},
+    {"column": "email",                           "source": "properties.email",                          "type": "string"},
+    {"column": "hs_email_click",                  "source": "properties.hs_email_click",                 "type": "string"},
+    {"column": "hs_email_first_click_date",       "source": "properties.hs_email_first_click_date",      "type": "string"},
+    {"column": "hs_email_first_open_date",        "source": "properties.hs_email_first_open_date",       "type": "string"},
+    {"column": "hs_email_first_reply_date",       "source": "properties.hs_email_first_reply_date",      "type": "string"},
+    {"column": "hs_email_first_send_date",        "source": "properties.hs_email_first_send_date",       "type": "string"},
+    {"column": "hs_email_last_click_date",        "source": "properties.hs_email_last_click_date",       "type": "string"},
+    {"column": "hs_email_last_email_name",        "source": "properties.hs_email_last_email_name",       "type": "string"},
+    {"column": "hs_email_last_open_date",         "source": "properties.hs_email_last_open_date",        "type": "string"},
+    {"column": "hs_email_last_reply_date",        "source": "properties.hs_email_last_reply_date",       "type": "string"},
+    {"column": "hs_email_last_send_date",         "source": "properties.hs_email_last_send_date",        "type": "string"},
+    {"column": "hs_object_id",                    "source": "properties.hs_object_id",                   "type": "string"},
+    {"column": "lastmodifieddate",                "source": "properties.lastmodifieddate",               "type": "string"}
+  ]
+}
