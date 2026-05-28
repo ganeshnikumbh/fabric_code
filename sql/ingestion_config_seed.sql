@@ -46,31 +46,6 @@ CREATE TABLE dbo.ingestion_config (
 GO
 
 
--- ── TABLE: source_load_control ───────────────────────────────────────────────
-
-IF OBJECT_ID('dbo.source_load_control', 'U') IS NOT NULL
-    DROP TABLE dbo.source_load_control;
-GO
-
-CREATE TABLE dbo.source_load_control (
-    id                  INT             NOT NULL    IDENTITY(1,1),
-    source_name         NVARCHAR(100)   NOT NULL,
-    entity_name         NVARCHAR(200)   NOT NULL,
-    last_load_date      DATETIME2       NULL,
-    bronze_run_status   NVARCHAR(20)    NOT NULL    CONSTRAINT df_slc_bronze_status DEFAULT ('pending'),
-    silver_run_status   NVARCHAR(20)    NOT NULL    CONSTRAINT df_slc_silver_status DEFAULT ('pending'),
-    created_date        DATETIME2       NOT NULL    CONSTRAINT df_slc_created DEFAULT (SYSUTCDATETIME()),
-    modified_date       DATETIME2       NULL,
-    CONSTRAINT pk_source_load_control PRIMARY KEY (id),
-    CONSTRAINT uq_source_load_control UNIQUE (source_name, entity_name)
-);
-GO
-
-CREATE INDEX ix_slc_source_entity
-    ON dbo.source_load_control (source_name, entity_name);
-GO
-
-
 -- ══════════════════════════════════════════════════════════════════════════════
 -- SEED: ingestion_config — EQ_Warehouse + EQ_ODS
 -- SET IDENTITY_INSERT preserves original source_ids so pipeline references
@@ -181,80 +156,40 @@ INSERT INTO dbo.ingestion_config
      load_type, watermark_column, watermark_type, batch_size, partition_by_column_names,
      is_scd2, api_endpoint, api_method, active_flag, src_busn_asst, source_path)
 VALUES
-(70, 'HubSpot', 'api', NULL, 'marketing_events',
-     'lh_landing', 'hubspot', 'marketing_events',
+(70, 'HubSpot', 'api', 'hubspot', 'marketing_events',
+     'lh_landing', 'bronze_hubspot', 'marketing_events_base',
      'full', NULL, NULL, NULL, NULL,
      0, '/marketing/marketing-events/{period}',            'GET', 1, 'elic', 'results'),
 
-(71, 'HubSpot', 'api', NULL, 'marketing_emails',
-     'lh_landing', 'hubspot', 'marketing_emails',
+(71, 'HubSpot', 'api', 'hubspot', 'marketing_emails',
+     'lh_landing', 'bronze_hubspot', 'marketing_emails_base',
      'full', NULL, NULL, NULL, NULL,
      0, '/marketing/v3/emails/',                           'GET', 1, 'elic', 'results'),
 
-(72, 'HubSpot', 'api', NULL, 'events_event_types',
-     'lh_landing', 'hubspot', 'events_event_types',
+(72, 'HubSpot', 'api', 'hubspot', 'events_event_types',
+     'lh_landing', 'bronze_hubspot', 'events_event_types_base',
      'full', NULL, NULL, NULL, NULL,
      0, '/events/v3/events/event-types',                   'GET', 1, 'elic', 'results'),
 
-(73, 'HubSpot', 'api', NULL, 'crm_object_type_contacts',
-     'lh_landing', 'hubspot', 'crm_contacts',
+(73, 'HubSpot', 'api', 'hubspot', 'crm_contacts',
+     'lh_landing', 'bronze_hubspot', 'crm_contacts_base',
      'full', NULL, NULL, NULL, NULL,
      0, '/crm/objects/2025-09/contacts',                   'GET', 1, 'elic', 'results'),
 
-(74, 'HubSpot', 'api', NULL, 'crm_object_type_companies',
-     'lh_landing', 'hubspot', 'crm_companies',
+(74, 'HubSpot', 'api', 'hubspot', 'crm_companies',
+     'lh_landing', 'bronze_hubspot', 'crm_companies_base',
      'full', NULL, NULL, NULL, NULL,
      0, '/crm/objects/2025-09/companies',                  'GET', 1, 'elic', 'results'),
 
-(75, 'HubSpot', 'api', NULL, 'crm_object_type_deals',
-     'lh_landing', 'hubspot', 'crm_deals',
+(75, 'HubSpot', 'api', 'hubspot', 'marketing_email_statistics',
+     'lh_landing', 'bronze_hubspot', 'marketing_email_statistics_base',
      'full', NULL, NULL, NULL, NULL,
-     0, '/crm/objects/2025-09/deals',                      'GET', 1, 'elic', 'results'),
+     0, '/marketing/v3/emails/{emailId}/statistics/list',  'GET', 1, 'elic', ''),
 
-(76, 'HubSpot', 'api', NULL, 'crm_object_type_tickets',
-     'lh_landing', 'hubspot', 'crm_tickets',
+(76, 'HubSpot', 'api', 'hubspot', 'event_details',
+     'lh_landing', 'bronze_hubspot', 'event_details_base',
      'full', NULL, NULL, NULL, NULL,
-     0, '/crm/objects/2025-09/tickets',                    'GET', 1, 'elic', 'results'),
-
-(77, 'HubSpot', 'api', NULL, 'crm_object_type_products',
-     'lh_landing', 'hubspot', 'crm_products',
-     'full', NULL, NULL, NULL, NULL,
-     0, '/crm/objects/2025-09/products',                   'GET', 1, 'elic', 'results'),
-
-(78, 'HubSpot', 'api', NULL, 'crm_object_type_line_items',
-     'lh_landing', 'hubspot', 'crm_line_items',
-     'full', NULL, NULL, NULL, NULL,
-     0, '/crm/objects/2025-09/line_items',                 'GET', 1, 'elic', 'results'),
-
-(79, 'HubSpot', 'api', NULL, 'crm_object_type_quotes',
-     'lh_landing', 'hubspot', 'crm_quotes',
-     'full', NULL, NULL, NULL, NULL,
-     0, '/crm/objects/2025-09/quotes',                     'GET', 1, 'elic', 'results'),
-
-(80, 'HubSpot', 'api', NULL, 'crm_object_type_calls',
-     'lh_landing', 'hubspot', 'crm_calls',
-     'full', NULL, NULL, NULL, NULL,
-     0, '/crm/objects/2025-09/calls',                      'GET', 1, 'elic', 'results'),
-
-(81, 'HubSpot', 'api', NULL, 'crm_object_type_meetings',
-     'lh_landing', 'hubspot', 'crm_meetings',
-     'full', NULL, NULL, NULL, NULL,
-     0, '/crm/objects/2025-09/meetings',                   'GET', 1, 'elic', 'results'),
-
-(82, 'HubSpot', 'api', NULL, 'crm_object_type_notes',
-     'lh_landing', 'hubspot', 'crm_notes',
-     'full', NULL, NULL, NULL, NULL,
-     0, '/crm/objects/2025-09/notes',                      'GET', 1, 'elic', 'results'),
-
-(83, 'HubSpot', 'api', NULL, 'crm_object_type_tasks',
-     'lh_landing', 'hubspot', 'crm_tasks',
-     'full', NULL, NULL, NULL, NULL,
-     0, '/crm/objects/2025-09/tasks',                      'GET', 1, 'elic', 'results'),
-
-(84, 'HubSpot', 'api', NULL, 'marketing_email_statistics',
-     'lh_landing', 'hubspot', 'marketing_email_statistics',
-     'full', NULL, NULL, NULL, NULL,
-     0, '/marketing/v3/emails/{emailId}/statistics/list',  'GET', 1, 'elic', '');
+     0, '/events/v3/events',                               'GET', 1, 'elic', 'results');
 GO
 
 SET IDENTITY_INSERT dbo.ingestion_config OFF;
@@ -273,71 +208,9 @@ INSERT INTO dbo.ingestion_config
      load_type, watermark_column, watermark_type, batch_size, partition_by_column_names,
      is_scd2, active_flag, src_busn_asst, source_path)
 VALUES
-('Webex', 'api', NULL, 'aar', 'lh_landing', 'webex', 'aar', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
-('Webex', 'api', NULL, 'asr', 'lh_landing', 'webex', 'asr', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
-('Webex', 'api', NULL, 'csr', 'lh_landing', 'webex', 'csr', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
-('Webex', 'api', NULL, 'clr', 'lh_landing', 'webex', 'clr', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
-('Webex', 'api', NULL, 'car', 'lh_landing', 'webex', 'car', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data');
-GO
-
-
--- ══════════════════════════════════════════════════════════════════════════════
--- SEED: source_load_control  (EQ_Warehouse entities — id auto-assigned)
--- ══════════════════════════════════════════════════════════════════════════════
-
-INSERT INTO dbo.source_load_control
-    (source_name, entity_name, last_load_date, bronze_run_status, silver_run_status)
-VALUES
-('EQ_Warehouse', 'Accounting',                        '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'AccountingAccount',                 '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'AccountingDetail',                  '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'AccountingReporting_Group',         '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'AccountValue',                      '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Activity',                          '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'ActivityFinancial',                 '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'ActivityType',                      '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'AdditionalClient_Group',            '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'AdditionalInfo_Group',              '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Agent',                             '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'AgentContract',                     '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'AgentLicense_Group',                '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'AgentPrincipal_Group',              '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'AgentSummary_Group',                '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'AgentTraining',                     '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'CAPRepayment',                      '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'CAPStatusChange',                   '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Client',                            '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'CommissionLevelRank',               '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Company',                           '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Contract',                          '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'ContractDeposit_Group',             '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'ContractValue_Group',               '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'ExternalAccount_Group',             '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Options',                           '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Ratios',                            '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Hierarchy',                         '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Hierarchy_Bridge',                  '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Hierarchy_Option',                  '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Hierarchy_SuperHierarchy',          '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'HierarchyTerritory',                '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'IndexValue_Group',                  '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Investment',                        '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'InvestmentDetail',                  '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Note_Group',                        '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Product',                           '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'ProductStateApproval',              '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'ProductStateApprovalDisclosure',    '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'ProductStateVariation',             '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'ProductVariationDetail',            '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'RecurringPayment_Group',            '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Reinsurance_Group',                 '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'RenewalRate_Group',                 '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Requirement_Group',                 '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Rider_Group',                       '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'State',                             '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Surrender',                         '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'Territory',                         '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'TrainingCourse',                    '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'TrainingProduct_Group',             '2026-04-13 00:00:00', 'success', 'pending'),
-('EQ_Warehouse', 'TrainingState_Group',               '2026-04-13 00:00:00', 'success', 'pending');
+('Webex', 'api', 'webex', 'aar', 'lh_landing', 'bronze_webex', 'aar_base', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
+('Webex', 'api', 'webex', 'asr', 'lh_landing', 'bronze_webex', 'asr_base', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
+('Webex', 'api', 'webex', 'csr', 'lh_landing', 'bronze_webex', 'csr_base', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
+('Webex', 'api', 'webex', 'clr', 'lh_landing', 'bronze_webex', 'clr_base', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
+('Webex', 'api', 'webex', 'car', 'lh_landing', 'bronze_webex', 'car_base', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data');
 GO

@@ -1215,9 +1215,62 @@ VALUES
   (1174, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_notsent',         'campaign_ratio_notsent',         'FLOAT', 62, 1, 0, 1, GETUTCDATE()),
   -- campaign blobs
   (1175, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_device_breakdown_json', 'campaign_device_breakdown_json', 'STRING',        63, 0, 0, 1, GETUTCDATE()),
-  (1176, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_qualifier_stats_json',  'campaign_qualifier_stats_json',  'STRING',        64, 0, 0, 1, GETUTCDATE());
+  (1176, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_qualifier_stats_json',  'campaign_qualifier_stats_json',  'STRING',        64, 0, 0, 1, GETUTCDATE()),
 
--- Total HubSpot: 266 column mappings across 16 landing tables (IDs 911–1176)
+-- [H17] event_details (IDs 1177–1227)
+  (1177, 'HubSpot', 'event_details', 'event_details_base', 'id',                                        'id',                                        'STRING',  1, 0, 1, 1, GETUTCDATE()),
+  (1178, 'HubSpot', 'event_details', 'event_details_base', 'objectType',                                'object_type',                               'STRING',  2, 1, 0, 1, GETUTCDATE()),
+  (1179, 'HubSpot', 'event_details', 'event_details_base', 'objectId',                                  'object_id',                                 'STRING',  3, 1, 0, 1, GETUTCDATE()),
+  (1180, 'HubSpot', 'event_details', 'event_details_base', 'eventType',                                 'event_type',                                'STRING',  4, 1, 0, 1, GETUTCDATE()),
+  (1181, 'HubSpot', 'event_details', 'event_details_base', 'occurredAt',                                'occurred_at',                               'STRING',  5, 1, 0, 1, GETUTCDATE()),
+  (1182, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_base_url',                   'hs_base_url',                               'STRING',  6, 1, 0, 1, GETUTCDATE()),
+  (1183, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_url',                        'hs_url',                                    'STRING',  7, 1, 0, 1, GETUTCDATE()),
+  (1184, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_query_params',               'hs_query_params',                           'STRING',  8, 1, 0, 1, GETUTCDATE()),
+  (1185, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_canonical_url',              'hs_canonical_url',                          'STRING',  9, 1, 0, 1, GETUTCDATE()),
+  (1186, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_url_domain',                 'hs_url_domain',                             'STRING', 10, 1, 0, 1, GETUTCDATE()),
+  (1187, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_url_path',                   'hs_url_path',                               'STRING', 11, 1, 0, 1, GETUTCDATE()),
+  (1188, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_analytics_normalized_page_url', 'hs_analytics_normalized_page_url',       'STRING', 12, 1, 0, 1, GETUTCDATE()),
+  (1189, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_is_virtual_url',             'hs_is_virtual_url',                         'STRING', 13, 1, 0, 1, GETUTCDATE()),
+  (1190, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_page_id',                    'hs_page_id',                                'STRING', 14, 1, 0, 1, GETUTCDATE()),
+  (1191, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_page_title',                 'hs_page_title',                             'STRING', 15, 1, 0, 1, GETUTCDATE()),
+  (1192, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_title',                      'hs_title',                                  'STRING', 16, 1, 0, 1, GETUTCDATE()),
+  (1193, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_targeted_content_aggregation', 'hs_targeted_content_aggregation',         'STRING', 17, 1, 0, 1, GETUTCDATE()),
+  (1194, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_is_virtual_referrer',        'hs_is_virtual_referrer',                    'STRING', 18, 1, 0, 1, GETUTCDATE()),
+  (1195, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_is_external',                'hs_is_external',                            'STRING', 19, 1, 0, 1, GETUTCDATE()),
+  (1196, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_is_amp',                     'hs_is_amp',                                 'STRING', 20, 1, 0, 1, GETUTCDATE()),
+  (1197, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_is_in_chat_view',            'hs_is_in_chat_view',                        'STRING', 21, 1, 0, 1, GETUTCDATE()),
+  (1198, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_is_new_cookie',              'hs_is_new_cookie',                          'STRING', 22, 1, 0, 1, GETUTCDATE()),
+  (1199, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_is_contact',                 'hs_is_contact',                             'STRING', 23, 1, 0, 1, GETUTCDATE()),
+  (1200, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_referrer',                   'hs_referrer',                               'STRING', 24, 1, 0, 1, GETUTCDATE()),
+  (1201, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_device_type',                'hs_device_type',                            'STRING', 25, 1, 0, 1, GETUTCDATE()),
+  (1202, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_device_name',                'hs_device_name',                            'STRING', 26, 1, 0, 1, GETUTCDATE()),
+  (1203, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_browser',                    'hs_browser',                                'STRING', 27, 1, 0, 1, GETUTCDATE()),
+  (1204, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_browser_type',               'hs_browser_type',                           'STRING', 28, 1, 0, 1, GETUTCDATE()),
+  (1205, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_browser_version_major',      'hs_browser_version_major',                  'STRING', 29, 1, 0, 1, GETUTCDATE()),
+  (1206, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_browser_fingerprint',        'hs_browser_fingerprint',                    'STRING', 30, 1, 0, 1, GETUTCDATE()),
+  (1207, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_operating_system',           'hs_operating_system',                       'STRING', 31, 1, 0, 1, GETUTCDATE()),
+  (1208, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_vendor',                     'hs_vendor',                                 'STRING', 32, 1, 0, 1, GETUTCDATE()),
+  (1209, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_user_agent',                 'hs_user_agent',                             'STRING', 33, 1, 0, 1, GETUTCDATE()),
+  (1210, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_country',                    'hs_country',                                'STRING', 34, 1, 0, 1, GETUTCDATE()),
+  (1211, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_region',                     'hs_region',                                 'STRING', 35, 1, 0, 1, GETUTCDATE()),
+  (1212, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_qualified_region',           'hs_qualified_region',                       'STRING', 36, 1, 0, 1, GETUTCDATE()),
+  (1213, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_city',                       'hs_city',                                   'STRING', 37, 1, 0, 1, GETUTCDATE()),
+  (1214, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_cf_bot_score',               'hs_cf_bot_score',                           'STRING', 38, 1, 0, 1, GETUTCDATE()),
+  (1215, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_hash_id',                    'hs_hash_id',                                'STRING', 39, 1, 0, 1, GETUTCDATE()),
+  (1216, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_log_line_timestamp',         'hs_log_line_timestamp',                     'STRING', 40, 1, 0, 1, GETUTCDATE()),
+  (1217, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_processed_timestamp',        'hs_processed_timestamp',                    'STRING', 41, 1, 0, 1, GETUTCDATE()),
+  (1218, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_visit_source',               'hs_visit_source',                           'STRING', 42, 1, 0, 1, GETUTCDATE()),
+  (1219, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_visit_source_details_1',     'hs_visit_source_details_1',                 'STRING', 43, 1, 0, 1, GETUTCDATE()),
+  (1220, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_visit_source_details_2',     'hs_visit_source_details_2',                 'STRING', 44, 1, 0, 1, GETUTCDATE()),
+  (1221, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_utm_campaign',               'hs_utm_campaign',                           'STRING', 45, 1, 0, 1, GETUTCDATE()),
+  (1222, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_leviathan_linked_vids',      'hs_leviathan_linked_vids',                  'STRING', 46, 1, 0, 1, GETUTCDATE()),
+  (1223, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_company_id',                 'hs_company_id',                             'STRING', 47, 1, 0, 1, GETUTCDATE()),
+  (1224, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_company_domain',             'hs_company_domain',                         'STRING', 48, 1, 0, 1, GETUTCDATE()),
+  (1225, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_company_domain_by_association', 'hs_company_domain_by_association',       'STRING', 49, 1, 0, 1, GETUTCDATE()),
+  (1226, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_historical_contact_associatedcompanyid', 'hs_historical_contact_associatedcompanyid', 'STRING', 50, 1, 0, 1, GETUTCDATE()),
+  (1227, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_historical_contact_lifecyclestage',      'hs_historical_contact_lifecyclestage',      'STRING', 51, 1, 0, 1, GETUTCDATE());
+
+-- Total HubSpot: 317 column mappings across 17 landing tables (IDs 911–1227)
 --   911–932  : marketing_events                                          (22 rows)
 --   933–985  : marketing_emails base cols                                (53 rows)
 --   986      : events_event_types                                         (1 row)
@@ -1229,6 +1282,7 @@ VALUES
 --   1097–1107: crm_owners                                                (11 rows)
 --   1108–1112: marketing_emails to_json expansion                         (5 rows)
 --   1113–1176: marketing_email_statistics (agg + campaign fully flattened)(64 rows)
+--   1177–1227: event_details (5 top-level + 46 properties.hs_* fields)   (51 rows)
 
 
 -- ============================================================
