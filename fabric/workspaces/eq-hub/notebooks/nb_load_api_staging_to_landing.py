@@ -45,7 +45,7 @@ p_target_schema  = "hubspot"      # target schema / subfolder name (e.g. "hubspo
 
 
 import json
-from pyspark.sql.functions import col, input_file_name, regexp_extract
+from pyspark.sql.functions import col, decode, regexp_extract
 
 _lakehouse_id = spark.conf.get("trident.lakehouse.id")
 _workspace_id = spark.conf.get("trident.workspace.id")
@@ -56,14 +56,17 @@ _STAGING_PATH = (
 )
 _FULL_TABLE = f"lh_landing.{p_target_schema}.{p_table_name}"
 
-# Read each file as a single text value — one row per file
+# Read each file as a single row using binaryFile format — immune to newlines/formatting.
+# wholetext on the text format is unreliable on Fabric ABFSS paths when the JSON spans
+# multiple lines (e.g. Copy Activity writes paginated responses as a JSON array).
 _df = (
     spark.read
-         .option("wholetext", "true")
-         .text(_STAGING_PATH)
-         .withColumnRenamed("value", "raw_json")
-         .withColumn("file_name", regexp_extract(input_file_name(), r"(/Files/.+)$", 1))
-         .select("file_name", "raw_json")
+         .format("binaryFile")
+         .load(_STAGING_PATH)
+         .select(
+             regexp_extract(col("path"), r"(/Files/.+)$", 1).alias("file_name"),
+             decode(col("content"), "UTF-8").alias("raw_json"),
+         )
 )
 
 
