@@ -878,9 +878,18 @@ def extract_api_records(response, source_path):
     source_path is a dot-notation key path to the records array
     (e.g. 'results', 'result.data').  An empty path means the response
     itself is the array, or a single-record response.
+
+    When the top-level response is a list (e.g. Fabric Copy Activity writes all
+    paginated API responses as a JSON array), each element is treated as a
+    separate page envelope and records are extracted from each then flattened.
     """
     if not source_path:
         return response if isinstance(response, list) else [response]
+    if isinstance(response, list):
+        records = []
+        for _page in response:
+            records.extend(extract_api_records(_page, source_path))
+        return records
     val = response
     for key in source_path.split("."):
         if not isinstance(val, dict):
