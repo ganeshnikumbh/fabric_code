@@ -435,6 +435,12 @@ def ingestion_config_df_from_json(json_str: str) -> DataFrame:
     data = json.loads(json_str)
     if isinstance(data, dict):
         data = [data]
+    # SQL BIT columns (e.g. is_scd2) serialize to JSON booleans, but the schema
+    # types them as IntegerType. Coerce any bool to int so Spark accepts them.
+    for item in data:
+        for key, value in item.items():
+            if isinstance(value, bool):
+                item[key] = int(value)
     return spark.createDataFrame(data, schema=get_ingestion_config_schema())
 
 
@@ -453,6 +459,12 @@ def schema_config_df_from_json(json_str: str) -> DataFrame:
     DataFrame with schema from get_schema_config_schema().
     """
     data = json.loads(json_str)
+    # SQL BIT columns (e.g. include_in_md5hash, is_primary_key) serialize to JSON
+    # booleans, but the schema types them as IntegerType. Coerce bool -> int.
+    for item in data:
+        for key, value in item.items():
+            if isinstance(value, bool):
+                item[key] = int(value)
     return spark.createDataFrame(data, schema=get_schema_config_schema())
 
 
