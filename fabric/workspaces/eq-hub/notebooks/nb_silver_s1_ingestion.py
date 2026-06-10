@@ -9,9 +9,9 @@
 #   2. nb_get_ingestion_entities (p_config_type='schema_config')    → v_schema_config_json
 #   3. ForEach over ingestion_config items → calls this notebook per entity
 #      Parameters per iteration:
-#        p_source_schema         : @item().target_schema           ← bronze schema, e.g. bronze_eqwarehouse
-#        p_source_table          : @item().target_table            ← bronze table,  e.g. client_base
-#        p_target_table          : @item().target_table            ← silver table   (same name convention)
+#        p_source_schema         : @item().bronze_schema           ← bronze schema, e.g. bronze_eqwarehouse
+#        p_source_table          : @item().bronze_table            ← bronze table,  e.g. client_base
+#        p_target_table          : @item().silver_table            ← silver table,  e.g. client
 #        p_ingestion_config_json : @variables('v_ingestion_config_json')
 #        p_schema_config_json    : @variables('v_schema_config_json')
 #
@@ -23,6 +23,7 @@
 #   schema_config.target_table_name = bronze table name (e.g. 'client_base') = p_source_table.
 #   Filtering schema_config by target_table_name gives both the column mappings AND the
 #   source_table_name (landing entity name, e.g. 'Client').
+#   ingestion_config lookup uses silver_table to match p_target_table (renamed from target_table).
 #
 # Pre-requisites:
 #   - Attach lh_silver as the default lakehouse before running.
@@ -124,7 +125,7 @@ try:
 
     ic_row = (
         ingestion_config_df
-        .filter(F.lower(F.col("target_table")) == p_target_table.lower())
+        .filter(F.lower(F.col("silver_table")) == p_target_table.lower())
         .limit(1)
         .collect()
     )

@@ -111,8 +111,10 @@ def get_ingestion_config(jdbc_url: str) -> DataFrame:
     """
     return read_mssql_query(
         jdbc_url,
-        "SELECT source_id, source_name, source_type, source_schema, entity_name, "
-        "       target_lakehouse, target_schema, target_table, "
+        "SELECT source_id, source_name, source_type, "
+        "       landing_lakehouse, landing_schema, landing_table_name, "
+        "       bronze_lakehouse, bronze_schema, bronze_table, "
+        "       silver_lakehouse, silver_schema, silver_table, "
         "       load_type, watermark_column, watermark_type, batch_size, "
         "       partition_by_column_names, is_scd2, src_busn_asst, source_path "
         "FROM dbo.ingestion_config "
@@ -131,8 +133,10 @@ def get_ingestion_config_by_source(jdbc_url: str, source_name: str) -> DataFrame
     """
     return read_mssql_query(
         jdbc_url,
-        f"SELECT source_id, source_name, source_type, source_schema, entity_name, "
-        f"       target_lakehouse, target_schema, target_table, "
+        f"SELECT source_id, source_name, source_type, "
+        f"       landing_lakehouse, landing_schema, landing_table_name, "
+        f"       bronze_lakehouse, bronze_schema, bronze_table, "
+        f"       silver_lakehouse, silver_schema, silver_table, "
         f"       load_type, watermark_column, watermark_type, batch_size, "
         f"       partition_by_column_names, is_scd2, src_busn_asst, source_path "
         f"FROM dbo.ingestion_config "
@@ -152,11 +156,13 @@ def get_ingestion_config_for_entity(
     """
     df = read_mssql_query(
         jdbc_url,
-        f"SELECT TOP 1 source_id, source_schema, load_type, watermark_column, watermark_type, "
+        f"SELECT TOP 1 source_id, landing_schema, bronze_lakehouse, bronze_schema, "
+        f"             silver_lakehouse, silver_schema, silver_table, "
+        f"             load_type, watermark_column, watermark_type, "
         f"             batch_size, partition_by_column_names, is_scd2, src_busn_asst "
         f"FROM dbo.ingestion_config "
-        f"WHERE LOWER(entity_name)  = LOWER('{source_table}') "
-        f"  AND LOWER(target_table) = LOWER('{target_table}') "
+        f"WHERE LOWER(landing_table_name) = LOWER('{source_table}') "
+        f"  AND LOWER(bronze_table)       = LOWER('{target_table}') "
         f"  AND active_flag = 1"
     )
     rows = df.collect()
@@ -356,9 +362,11 @@ def get_ingestion_config_schema() -> StructType:
 
     JSON shape per item:
     {
-      "source_id", "source_name", "source_type", "source_table", "source_schema",
-      "target_table", "target_schema", "load_type",
-      "watermark_column", "watermark_type", "batch_size",
+      "source_id", "source_name", "source_type",
+      "landing_table_name", "landing_schema", "landing_lakehouse",
+      "bronze_table", "bronze_schema", "bronze_lakehouse",
+      "silver_table", "silver_schema", "silver_lakehouse",
+      "load_type", "watermark_column", "watermark_type", "batch_size",
       "partition_by_column_names", "is_scd2", "src_busn_asst", "source_path"
     }
     """
@@ -366,10 +374,15 @@ def get_ingestion_config_schema() -> StructType:
         StructField("source_id",                 IntegerType(), nullable=True),
         StructField("source_name",               StringType(),  nullable=True),
         StructField("source_type",               StringType(),  nullable=True),
-        StructField("source_table",              StringType(),  nullable=True),
-        StructField("source_schema",             StringType(),  nullable=True),
-        StructField("target_table",              StringType(),  nullable=True),
-        StructField("target_schema",             StringType(),  nullable=True),
+        StructField("landing_table_name",        StringType(),  nullable=True),
+        StructField("landing_schema",            StringType(),  nullable=True),
+        StructField("landing_lakehouse",         StringType(),  nullable=True),
+        StructField("bronze_table",              StringType(),  nullable=True),
+        StructField("bronze_schema",             StringType(),  nullable=True),
+        StructField("bronze_lakehouse",          StringType(),  nullable=True),
+        StructField("silver_table",              StringType(),  nullable=True),
+        StructField("silver_schema",             StringType(),  nullable=True),
+        StructField("silver_lakehouse",          StringType(),  nullable=True),
         StructField("load_type",                 StringType(),  nullable=True),
         StructField("watermark_column",          StringType(),  nullable=True),
         StructField("watermark_type",            StringType(),  nullable=True),

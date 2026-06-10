@@ -1,6 +1,23 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# ## nb_gold_dim_date
+# 
+# New notebook
+
+# In[ ]:
+
+
+# The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
+# %run nb_utils.py
+
+
+# In[ ]:
+
+
 # Notebook: nb_gold_dim_date
 # Layer:    Gold
-# Purpose:  Full-refresh load of gold.dim_date from lh_silver.silver_s2.date_base.
+# Purpose:  Full-refresh load of gold.dim_date from lh_silver.dbo.date_base.
 #           Derives fiscal_year, fiscal_quarter, is_quarter_end from calendar
 #           attributes (fiscal year assumed to start 1-Jul — confirm with business).
 #
@@ -19,8 +36,6 @@ from pyspark.sql import functions as F
 
 spark = SparkSession.builder.appName("nb_gold_dim_date").getOrCreate()
 
-%run nb_utils.py
-
 _notebook_start = time.time()
 
 
@@ -29,9 +44,9 @@ _notebook_start = time.time()
 # Cell tag: parameters — Fabric Pipeline injects values at runtime.
 # ══════════════════════════════════════════════════════════════════════════════
 
-p_ingestion_date      = ""    # REQUIRED — e.g. "2025-04-09"
-p_ingestion_timestamp = ""    # REQUIRED — e.g. "2025-04-09T01:00:00Z"
-p_src_busn_asst       = ""    # REQUIRED — e.g. "elic"
+p_ingestion_date      = "2025-04-21"    # REQUIRED — e.g. "2025-04-09"
+p_ingestion_timestamp = "2025-04-21T01:00:00Z"    # REQUIRED — e.g. "2025-04-09T01:00:00Z"
+p_src_busn_asst       = "elic"    # REQUIRED — e.g. "elic"
 
 _required = {
     "p_ingestion_date"      : p_ingestion_date,
@@ -151,6 +166,40 @@ write_delta_create(  # noqa: F821  # type: ignore[name-defined]
     tbl_properties   = {"delta.enableChangeDataFeed": "true"},
 )
 
+# ── Unknown / default row (date_key = -1) ─────────────────────────────────────
+# write_delta_create does a full overwrite so the MERGE runs after every reload.
+from delta.tables import DeltaTable  # noqa: F821  # type: ignore[import]
+
+_unknown_df = spark.range(1).select(
+    F.lit(-1)       .cast("long")      .alias("date_key"),
+    F.lit(None)     .cast("date")      .alias("calendar_date"),
+    F.lit(0)        .cast("int")       .alias("day_of_month"),
+    F.lit(0)        .cast("int")       .alias("day_of_week"),
+    F.lit("Unknown")                   .alias("day_name"),
+    F.lit(0)        .cast("int")       .alias("week_of_year"),
+    F.lit(0)        .cast("int")       .alias("month"),
+    F.lit("Unknown")                   .alias("month_name"),
+    F.lit(0)        .cast("int")       .alias("quarter"),
+    F.lit(0)        .cast("int")       .alias("year"),
+    F.lit(0)        .cast("int")       .alias("fiscal_year"),
+    F.lit(0)        .cast("int")       .alias("fiscal_quarter"),
+    F.lit(None)     .cast("boolean")   .alias("is_weekday"),
+    F.lit(None)     .cast("boolean")   .alias("is_holiday"),
+    F.lit(None)     .cast("boolean")   .alias("is_month_end"),
+    F.lit(None)     .cast("boolean")   .alias("is_quarter_end"),
+    F.lit(p_src_busn_asst)             .alias("src_busn_asst"),
+    F.lit(None)     .cast("date")      .alias("ingestion_date"),
+    F.lit(None)     .cast("timestamp") .alias("ingestion_timestamp"),
+)
+
+(
+    DeltaTable.forName(spark, _TARGET_TABLE).alias("tgt")
+    .merge(_unknown_df.alias("src"), "tgt.date_key = src.date_key")
+    .whenNotMatchedInsertAll()
+    .execute()
+)
+print(f"  Unknown row (date_key=-1) ensured in '{_TARGET_TABLE}'")
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SECTION 5 — Summary
@@ -164,3 +213,4 @@ print(f"  Source rows      : {source_count:,}")
 print(f"  Rows written     : {gold_count:,}")
 print(f"  Elapsed          : {_elapsed}s")
 print("=" * 65)
+

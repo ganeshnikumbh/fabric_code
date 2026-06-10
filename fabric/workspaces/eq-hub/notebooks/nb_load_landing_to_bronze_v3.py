@@ -5,7 +5,7 @@
 #             'api'  — reads raw_json column from landing (whole-text JSON string per file),
 #                      extracts records using source_path, flattens each record using a
 #                      JSON schema file stored at:
-#                        /lakehouse/default/Files/{p_target_schema}/schemas/{p_target_table}.json
+#                        /lakehouse/default/Files/{p_landing_schema}/schemas/{p_landing_table_name}.json
 #                      Schema file drives column names, source paths, types, and whether
 #                      to explode a nested array (array_explode_path).
 #             other  — flat column rename using build_col_maps / expand_json_fields
@@ -19,9 +19,9 @@
 #      → stored in pipeline variable v_schema_config_json  (used only for non-API sources)
 #   3. ForEach over ingestion_config items → calls this notebook per entity
 #      Parameters per iteration:
-#        p_source_table          : @item().source_table
-#        p_source_schema         : @item().source_schema
-#        p_target_table          : @item().target_table
+#        p_landing_table_name    : @item().landing_table_name
+#        p_landing_schema        : @item().landing_schema
+#        p_bronze_table          : @item().bronze_table
 #        p_ingestion_config_json : @variables('v_ingestion_config_json')
 #        p_schema_config_json    : @variables('v_schema_config_json')
 #        p_ingestion_date        : pipeline run date, e.g. '2025-04-09'
@@ -33,7 +33,7 @@
 #                                  e.g. '{"object_type":"contacts"}' for crm_contacts
 #
 # JSON schema file format (for source_type='api'):
-#   Located at /lakehouse/default/Files/{target_schema}/schemas/{target_table}.json
+#   Located at /lakehouse/default/Files/{p_landing_schema}/schemas/{p_landing_table_name}.json
 #   {
 #     "table_name"         : "aar_base",
 #     "source_path"        : "result.data",   ← overrides ingestion_config.source_path
@@ -82,9 +82,9 @@ _notebook_start = time.time()
 # Cell tag: parameters — Fabric Pipeline injects values at runtime.
 # ══════════════════════════════════════════════════════════════════════════════
 
-p_source_table          = ""    # REQUIRED — entity_name in ingestion_config
-p_source_schema         = ""    # REQUIRED — schema in lh_landing (e.g. 'hubspot', 'webex', 'dbo')
-p_target_table          = ""    # REQUIRED — target Delta table in lh_bronze
+p_landing_table_name    = ""    # REQUIRED — landing_table_name in ingestion_config
+p_landing_schema        = ""    # REQUIRED — schema in lh_landing (e.g. 'hubspot', 'webex', 'dbo')
+p_bronze_table          = ""    # REQUIRED — target Delta table in lh_bronze
 p_ingestion_config_json = ""    # REQUIRED — full ingestion_config JSON array for the source
                                 #            Pipeline expression: @variables('v_ingestion_config_json')
 p_schema_config_json    = ""    # REQUIRED — full schema_config JSON array for the source
@@ -96,9 +96,9 @@ p_ingestion_timestamp   = ""    # e.g. '2025-04-09T01:00:00Z'
 p_context_json          = "{}"  # optional — JSON with pipeline context for N/A schema_config rows
 
 _required = {
-    "p_source_table"          : p_source_table,
-    "p_source_schema"         : p_source_schema,
-    "p_target_table"          : p_target_table,
+    "p_landing_table_name"    : p_landing_table_name,
+    "p_landing_schema"        : p_landing_schema,
+    "p_bronze_table"          : p_bronze_table,
     "p_ingestion_config_json" : p_ingestion_config_json,
     "p_schema_config_json"    : p_schema_config_json,
     "p_ingestion_date"        : p_ingestion_date,
@@ -108,7 +108,7 @@ _required = {
 }
 validate_required_params(_required)  # noqa: F821  # type: ignore[name-defined]
 
-qualified_target = p_target_table
+qualified_target = p_bronze_table
 source_row_count = 0
 final_row_count  = 0
 verified_count   = 0
@@ -116,9 +116,9 @@ verified_count   = 0
 print("=" * 65)
 print("  nb_load_landing_to_bronze_v3 — START")
 print("=" * 65)
-print(f"  source_table      : {p_source_table}")
-print(f"  source_schema     : {p_source_schema}")
-print(f"  target_table      : {p_target_table}")
+print(f"  landing_table_name: {p_landing_table_name}")
+print(f"  landing_schema    : {p_landing_schema}")
+print(f"  bronze_table      : {p_bronze_table}")
 print(f"  ingestion_date    : {p_ingestion_date}")
 print(f"  source_system     : {p_source_system}")
 print(f"  ingestion_run_id  : {p_ingestion_run_id}")
@@ -133,9 +133,9 @@ try:
     # ══════════════════════════════════════════════════════════════════════════
 
     _landing_ref = (
-        f"lh_landing.{p_source_schema}.{p_source_table}"
-        if p_source_schema.strip()
-        else f"lh_landing.{p_source_table}"
+        f"lh_landing.{p_landing_schema}.{p_landing_table_name}"
+        if p_landing_schema.strip()
+        else f"lh_landing.{p_landing_table_name}"
     )
     print(f"\n[1/5] Reading source: {_landing_ref}")
 
@@ -166,8 +166,8 @@ try:
     config_row = (
         ingestion_config_df
         .filter(
-            (F.lower(F.col("source_table")) == p_source_table.lower()) &
-            (F.lower(F.col("target_table")) == p_target_table.lower())
+            (F.lower(F.col("landing_table_name")) == p_landing_table_name.lower()) &
+            (F.lower(F.col("bronze_table")) == p_bronze_table.lower())
         )
         .limit(1)
         .collect()
@@ -176,24 +176,24 @@ try:
     if not config_row:
         raise ValueError(
             f"No ingestion_config row for "
-            f"source_table='{p_source_table}' / target_table='{p_target_table}'. "
+            f"landing_table_name='{p_landing_table_name}' / bronze_table='{p_bronze_table}'. "
             f"Ensure the entity is registered and active in ingestion_config."
         )
 
     config           = config_row[0]
     source_id        = config["source_id"]
-    source_type      = (config["source_type"]   or "").strip().lower()
-    source_schema    = (config["source_schema"]  or "").strip()
-    target_schema    = (config["target_schema"]  or "").strip()
-    source_path      = (config["source_path"]    or "").strip()
-    qualified_target = f"{target_schema}.{p_target_table}" if target_schema else p_target_table
+    source_type      = (config["source_type"]     or "").strip().lower()
+    landing_schema   = (config["landing_schema"]   or "").strip()
+    bronze_schema    = (config["bronze_schema"]    or "").strip()
+    source_path      = (config["source_path"]      or "").strip()
+    qualified_target = f"{bronze_schema}.{p_bronze_table}" if bronze_schema else p_bronze_table
     partition_cols   = [c.strip() for c in (config["partition_by_column_names"] or "").split(",") if c.strip()]
-    src_busn_asst    = (config["src_busn_asst"]  or "").strip() or None
+    src_busn_asst    = (config["src_busn_asst"]    or "").strip() or None
 
     print(f"  source_id     : {source_id}")
     print(f"  source_type   : {source_type or '(not set)'}")
     print(f"  source_path   : {source_path or '(root)'}")
-    print(f"  target_schema : {target_schema}")
+    print(f"  bronze_schema : {bronze_schema}")
     print(f"  partition_cols: {partition_cols or '(none)'}")
     print(f"  src_busn_asst : {src_busn_asst or '(none)'}")
 
@@ -201,7 +201,7 @@ try:
     # API sources  → read JSON schema file from the default lakehouse Files section.
     # Flat sources → read column mappings from p_schema_config_json parameter.
     if source_type == "api":
-        _schema_file = f"/lakehouse/default/Files/{p_source_schema}/schemas/{p_source_table}.json"
+        _schema_file = f"/lakehouse/default/Files/{p_landing_schema}/schemas/{p_landing_table_name}.json"
         print(f"  Schema file     : {_schema_file}")
         try:
             with open(_schema_file) as _sf:
@@ -209,7 +209,7 @@ try:
         except FileNotFoundError:
             raise ValueError(
                 f"Schema file not found: '{_schema_file}'. "
-                f"Create a schema JSON file at {p_source_schema}/schemas/{p_source_table}.json."
+                f"Create a schema JSON file at {p_landing_schema}/schemas/{p_landing_table_name}.json."
             )
         _schema_fields      = _table_schema.get("fields", [])
         _context_fields     = _table_schema.get("context_fields", [])
@@ -226,7 +226,7 @@ try:
         mappings = (
             schema_config_df
             .filter(
-                (F.lower(F.col("source_table_name")) == p_source_table.lower()) &
+                (F.lower(F.col("source_table_name")) == p_landing_table_name.lower()) &
                 (F.col("source_column_name") != "N/A")
             )
             .orderBy("ordinal_position")
@@ -234,7 +234,7 @@ try:
         )
         if not mappings:
             raise ValueError(
-                f"No schema_config mappings for source_table_name='{p_source_table}'. "
+                f"No schema_config mappings for source_table_name='{p_landing_table_name}'. "
                 f"Ensure column mappings are registered in schema_config."
             )
         print(f"  Column mappings : {len(mappings)}")
@@ -246,7 +246,7 @@ try:
         rows_before    = 0,
         rows_after     = source_row_count,
         execution_time = round(time.time() - _notebook_start, 6),
-        message        = f"Source rows read from {_landing_ref} | run_id={p_ingestion_run_id}",
+        message        = f"Source rows read from {_landing_ref} | landing_table={p_landing_table_name} | run_id={p_ingestion_run_id}",
     )
 
 
@@ -452,13 +452,13 @@ try:
         rows_before    = rows_before,
         rows_after     = verified_count,
         execution_time = _write_secs,
-        message        = f"source={p_source_table} | rows_written={final_row_count} | run_id={p_ingestion_run_id}",
+        message        = f"landing_table={p_landing_table_name} | rows_written={final_row_count} | run_id={p_ingestion_run_id}",
     )
 
     print("\n" + "=" * 65)
     print("  nb_load_landing_to_bronze_v3 — COMPLETE")
-    print(f"  source_table    : {p_source_table}")
-    print(f"  target_table    : lh_bronze.{qualified_target}")
+    print(f"  landing_table   : {p_landing_table_name}")
+    print(f"  bronze_table    : lh_bronze.{qualified_target}")
     print(f"  rows_read       : {source_row_count:,}")
     print(f"  rows_written    : {final_row_count:,}")
     print(f"  rows_in_target  : {verified_count:,}")
@@ -481,6 +481,6 @@ except Exception as _exc:
         rows_after     = 0,
         execution_time = _elapsed,
         error_message  = str(_exc),
-        message        = f"FAILED | source={p_source_table} | run_id={p_ingestion_run_id}",
+        message        = f"FAILED | landing_table={p_landing_table_name} | run_id={p_ingestion_run_id}",
     )
     raise

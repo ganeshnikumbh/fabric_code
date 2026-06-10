@@ -21,11 +21,16 @@
 #   {
 #     "source_id"                 : 14,
 #     "source_name"               : "EQ_Warehouse",
-#     "source_type"               : "sql_server",
-#     "source_table"              : "Client",
-#     "source_schema"             : "dbo",
-#     "target_table"              : "client_base",
-#     "target_schema"             : "bronze_eqwarehouse",
+#     "source_type"               : "sqlserver",
+#     "landing_table_name"        : "Client",
+#     "landing_schema"            : "dbo",
+#     "landing_lakehouse"         : "lh_landing",
+#     "bronze_table"              : "client_base",
+#     "bronze_schema"             : "bronze_eqwarehouse",
+#     "bronze_lakehouse"          : "lh_bronze",
+#     "silver_table"              : "client",
+#     "silver_schema"             : "silver_s1",
+#     "silver_lakehouse"          : "lh_silver",
 #     "load_type"                 : "incremental",
 #     "watermark_column"          : "StartDate",
 #     "watermark_type"            : "datetime",
@@ -121,14 +126,14 @@ output_json = "[]"
 # ── Branch A: ingestion_config ────────────────────────────────────────────────
 if p_config_type == "ingestion_config":
 
-    _table_filter = f" for entity_name='{p_table_name}'" if p_table_name else " (all entities)"
+    _table_filter = f" for landing_table_name='{p_table_name}'" if p_table_name else " (all entities)"
     print(f"\n[1/1] Reading dbo.ingestion_config for source_name='{p_source_name}'{_table_filter} ...")
 
     ingestion_df = get_ingestion_config_by_source(p_jdbc_url, p_source_name)  # noqa: F821 — injected by %run nb_utils
 
     if p_table_name:
         ingestion_df = ingestion_df.filter(
-            F.lower(F.col("entity_name")) == p_table_name.lower()
+            F.lower(F.col("landing_table_name")) == p_table_name.lower()
         )
 
     rows = ingestion_df.collect()
@@ -143,10 +148,15 @@ if p_config_type == "ingestion_config":
                     "source_id"                 : int(row["source_id"]),
                     "source_name"               : str(row["source_name"]),
                     "source_type"               : str(row["source_type"])                  if row["source_type"]                  else "",
-                    "source_table"              : str(row["entity_name"]),
-                    "source_schema"             : str(row["source_schema"])                if row["source_schema"]                else "",
-                    "target_table"              : str(row["target_table"]),
-                    "target_schema"             : str(row["target_schema"]),
+                    "landing_table_name"        : str(row["landing_table_name"]),
+                    "landing_schema"            : str(row["landing_schema"])               if row["landing_schema"]               else "",
+                    "landing_lakehouse"         : str(row["landing_lakehouse"])            if row["landing_lakehouse"]            else "",
+                    "bronze_table"              : str(row["bronze_table"]),
+                    "bronze_schema"             : str(row["bronze_schema"]),
+                    "bronze_lakehouse"          : str(row["bronze_lakehouse"]),
+                    "silver_table"              : str(row["silver_table"])                 if row["silver_table"]                 else "",
+                    "silver_schema"             : str(row["silver_schema"])                if row["silver_schema"]                else "",
+                    "silver_lakehouse"          : str(row["silver_lakehouse"])             if row["silver_lakehouse"]             else "",
                     "load_type"                 : str(row["load_type"]),
                     "watermark_column"          : str(row["watermark_column"])             if row["watermark_column"]             else "",
                     "watermark_type"            : str(row["watermark_type"])               if row["watermark_type"]               else "",
