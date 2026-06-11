@@ -1115,6 +1115,7 @@ def apply_scd2(
             (
                 new_records_df.write
                 .format("delta")
+                .option("mergeSchema", "true")
                 .mode("append")
                 .saveAsTable(qualified_target)
             )
@@ -1752,6 +1753,7 @@ class GoldLoader:
         surrogate_key_col: str,
         hash_col: str = "md5_hash",
         partition_cols: list = None,
+        evolve_schema: bool = True,
     ) -> None:
         """
         Persist the transformed DataFrame to a Gold Delta table.
@@ -1781,6 +1783,12 @@ class GoldLoader:
                             Used for surrogate key generation and MERGE condition.
         surrogate_key_col : Name of the BIGINT surrogate key column to add.
         hash_col          : Name of the MD5 hash column (default 'md5_hash').
+        evolve_schema     : When True (default), enables Delta schema evolution
+                            for this load — new columns appearing in df are added
+                            to the target table automatically (existing target
+                            columns are never dropped). Applies to both the SCD1
+                            MERGE and the SCD2 expire/append paths via the
+                            spark.databricks.delta.schema.autoMerge.enabled conf.
 
         Returns
         -------
@@ -1832,6 +1840,12 @@ class GoldLoader:
         _logger.info(
             "[GoldLoader.load] Computed '%s' from %s", hash_col, business_key_cols
         )
+
+        # Schema evolution: lets MERGE and append operations add new source
+        # columns to the target table instead of failing on schema mismatch.
+        if evolve_schema:
+            self.spark.conf.set("spark.databricks.delta.schema.autoMerge.enabled", "true")
+            _logger.info("[GoldLoader.load] Delta schema autoMerge enabled for '%s'", target_table)
 
         # Step 3a: SCD Type 2 — history tracking via apply_scd2
         if is_scd2:
