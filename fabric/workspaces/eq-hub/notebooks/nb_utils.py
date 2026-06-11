@@ -1751,6 +1751,7 @@ class GoldLoader:
         business_key_cols: list,
         surrogate_key_col: str,
         hash_col: str = "md5_hash",
+        partition_cols: list = None,
     ) -> None:
         """
         Persist the transformed DataFrame to a Gold Delta table.
@@ -1853,6 +1854,7 @@ class GoldLoader:
                 source_df         = df,
                 qualified_target  = target_table,
                 business_key_cols = business_key_cols,
+                partition_cols = partition_cols
             )
             _logger.info(
                 "[GoldLoader.load] apply_scd1 done — inserted=%d, updated=%d",
