@@ -311,26 +311,27 @@ try:
                      if c.lower() not in _MLV_AUDIT_COLS]
     _mlv_col_list = ",\n               ".join(_mlv_cols)
 
-    def _ensure_mlv(view_name: str, where_clause: str = ""):
-        """Refresh the MLV if it exists, otherwise create it."""
-        if spark.catalog.tableExists(view_name):
-            spark.sql(f"REFRESH MATERIALIZED LAKE VIEW {view_name} FULL")
-            print(f"  REFRESHED {view_name}")
-        else:
-            spark.sql(f"""
-                CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS {view_name} AS
-                SELECT {_mlv_col_list}
-                FROM   {_MLV_SRC_REF}
-                {where_clause}
-            """)
-            print(f"  CREATED   {view_name}")
+    # ensure_mlv_and_refresh is injected by %run nb_utils — refreshes the MLV if
+    # it exists, otherwise creates it. Returns 'refreshed' or 'created'.
+    _mlv_targets = (
+        [
+            (f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}_current", "WHERE is_current = 1"),
+            (f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}_history", ""),
+        ]
+        if is_scd2
+        else [(f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}", "")]
+    )
 
     try:
-        if is_scd2:
-            _ensure_mlv(f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}_current", "WHERE is_current = 1")
-            _ensure_mlv(f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}_history")
-        else:
-            _ensure_mlv(f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}")
+        for _mlv_name, _mlv_where in _mlv_targets:
+            _mlv_status = ensure_mlv_and_refresh(  # noqa: F821  # type: ignore[name-defined]
+                spark        = spark,
+                view_name    = _mlv_name,
+                source_ref   = _MLV_SRC_REF,
+                col_list     = _mlv_col_list,
+                where_clause = _mlv_where,
+            )
+            print(f"  {_mlv_status.upper():<9} {_mlv_name}")
     except Exception as _mlv_exc:
         # Non-fatal: silver_s1 load already succeeded. Replace with `raise` to
         # make a stale/failed MLV fail the pipeline activity instead.

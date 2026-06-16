@@ -1217,6 +1217,60 @@ def apply_scd1(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# ensure_mlv_and_refresh — create-or-full-refresh a Fabric Materialized Lake View
+# ─────────────────────────────────────────────────────────────────────────────
+
+def ensure_mlv_and_refresh(
+    spark: SparkSession,
+    view_name: str,
+    source_ref: str,
+    col_list: str,
+    where_clause: str = "",
+) -> str:
+    """
+    Ensure a Fabric Materialized Lake View (MLV) exists and is current.
+
+    NOTE — this targets a Materialized Lake View (the Spark/Lakehouse object
+    created with CREATE MATERIALIZED LAKE VIEW), which Fabric distinguishes from
+    a Warehouse Materialized View.
+
+    Behaviour:
+      - view exists  → REFRESH MATERIALIZED LAKE VIEW <view> FULL
+                       (recompute from source rather than incremental)
+      - view missing → CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS <view>
+                       selecting col_list FROM source_ref with where_clause.
+
+    Parameters
+    ----------
+    spark        : Active SparkSession.
+    view_name    : Fully qualified MLV name,
+                   e.g. 'lh_silver.silver_s2.client_base_current'.
+    source_ref   : Fully qualified source table the view reads from,
+                   e.g. 'lh_silver.silver_s1.client_base'.
+    col_list     : Comma-separated SELECT column list used on CREATE.
+    where_clause : Optional row filter applied on CREATE,
+                   e.g. 'WHERE is_current = 1'.  Empty string = no filter.
+
+    Returns
+    -------
+    str  'refreshed' if the view already existed, 'created' otherwise.
+    """
+    if spark.catalog.tableExists(view_name):
+        spark.sql(f"REFRESH MATERIALIZED LAKE VIEW {view_name} FULL")
+        _logger.info("[ensure_mlv_and_refresh] Refreshed '%s'", view_name)
+        return "refreshed"
+
+    spark.sql(f"""
+        CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS {view_name} AS
+        SELECT {col_list}
+        FROM   {source_ref}
+        {where_clause}
+    """)
+    _logger.info("[ensure_mlv_and_refresh] Created '%s'", view_name)
+    return "created"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Gold-layer transform utility functions
 #
 # Each function accepts df as its first positional argument and returns a
