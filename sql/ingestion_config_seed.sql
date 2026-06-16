@@ -225,9 +225,9 @@ INSERT INTO dbo.ingestion_config
      load_type, watermark_column, watermark_type, batch_size, partition_by_column_names,
      is_scd2, active_flag, src_busn_asst, source_path)
 VALUES
-('Webex', 'api', 'lh_landing', 'webex', 'agent_activity_record', 'lh_bronze', 'bronze_webex', 'agent_activity_record_base', 'lh_silver', 'silver_s1', 'agent_activity_record', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
-('Webex', 'api', 'lh_landing', 'webex', 'agent_session_record', 'lh_bronze', 'bronze_webex', 'agent_session_record_base', 'lh_silver', 'silver_s1', 'agent_session_record', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
-('Webex', 'api', 'lh_landing', 'webex', 'customer_session_record', 'lh_bronze', 'bronze_webex', 'customer_session_record_base', 'lh_silver', 'silver_s1', 'customer_session_record', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
-('Webex', 'api', 'lh_landing', 'webex', 'call_leg_record', 'lh_bronze', 'bronze_webex', 'call_leg_record_base', 'lh_silver', 'silver_s1', 'call_leg_record', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
-('Webex', 'api', 'lh_landing', 'webex', 'customer_activity_record', 'lh_bronze', 'bronze_webex', 'customer_activity_record_base', 'lh_silver', 'silver_s1', 'customer_activity_record', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data');
+('Webex', 'api', 'lh_landing', 'webex', 'agent_activity', 'lh_bronze', 'bronze_webex', 'agent_activity_base', 'lh_silver', 'silver_s1', 'agent_activity', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
+('Webex', 'api', 'lh_landing', 'webex', 'agent_session', 'lh_bronze', 'bronze_webex', 'agent_session_base', 'lh_silver', 'silver_s1', 'agent_session', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
+('Webex', 'api', 'lh_landing', 'webex', 'customer_session', 'lh_bronze', 'bronze_webex', 'customer_session_base', 'lh_silver', 'silver_s1', 'customer_session', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
+('Webex', 'api', 'lh_landing', 'webex', 'call_leg', 'lh_bronze', 'bronze_webex', 'call_leg_base', 'lh_silver', 'silver_s1', 'call_leg', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
+('Webex', 'api', 'lh_landing', 'webex', 'customer_activity', 'lh_bronze', 'bronze_webex', 'customer_activity_base', 'lh_silver', 'silver_s1', 'customer_activity', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data');
 GO
