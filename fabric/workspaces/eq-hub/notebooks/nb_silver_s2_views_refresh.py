@@ -1,9 +1,10 @@
 # Notebook: nb_silver_s2_views_refresh
 # Layer:    Silver S2
-# Purpose:  FULL-refreshes the Fabric Materialized Lake Views in lh_silver.dbo
-#           for a given source.  Reads active entities from dbo.ingestion_config
-#           via JDBC (same pattern as nb_silver_s2_views_ddl) to determine which
-#           views exist and whether each table is SCD2.
+# Purpose:  FULL-refreshes the Fabric Materialized Lake Views in lh_silver.dbo.
+#           Entities are read from the p_ingestion_config_json parameter — the
+#           full ingestion_config JSON array injected by the pipeline (same
+#           pattern as nb_silver_s1_ingestion) — so no JDBC / config-table query
+#           is needed.  Whether each table is SCD2 drives how many views exist.
 #
 #           NOTE — Fabric distinguishes a Materialized Lake View (MLV, a Spark/
 #           Lakehouse object created with CREATE MATERIALIZED LAKE VIEW) from a
@@ -14,11 +15,11 @@
 #           an incremental refresh.
 #
 # View naming (must match nb_silver_s2_views_ddl):
-#   is_scd2 = 1  →  <table>_current  and  <table>_history
-#   is_scd2 = 0  →  <table>
+#   is_scd2 = 1  →  <silver_table>_current  and  <silver_table>_history
+#   is_scd2 = 0  →  <silver_table>
 #
 # Pipeline / manual run:
-#   Parameters        : p_jdbc_url, p_source_name
+#   Parameters        : p_ingestion_config_json
 #   Default lakehouse : lh_silver
 #
 # Pre-requisites:
@@ -29,6 +30,7 @@
 import time
 
 from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
 
 spark = SparkSession.builder.appName("nb_silver_s2_views_refresh").getOrCreate()
 
@@ -39,15 +41,15 @@ _notebook_start = time.time()
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SECTION 1 — Parameters
+# Cell tag: parameters — Fabric Pipeline injects values at runtime.
 # ══════════════════════════════════════════════════════════════════════════════
 
-p_jdbc_url    = ""              # REQUIRED — Fabric SQL DB JDBC connection string
-p_source_name = "EQ_Warehouse"  # REQUIRED — source name to filter ingestion_config
+p_ingestion_config_json = ""    # REQUIRED — full ingestion_config JSON array
 
-if not p_jdbc_url or not p_jdbc_url.strip():
-    raise ValueError("Parameter 'p_jdbc_url' is required.")
-if not p_source_name or not p_source_name.strip():
-    raise ValueError("Parameter 'p_source_name' is required.")
+_required = {
+    "p_ingestion_config_json": p_ingestion_config_json,
+}
+validate_required_params(_required)  # noqa: F821  # type: ignore[name-defined]
 
 # Target lakehouse and schema where the materialized lake views live
 _TARGET_LH     = "lh_silver"
@@ -56,26 +58,26 @@ _TARGET_SCHEMA = "dbo"
 print("=" * 65)
 print("  nb_silver_s2_views_refresh — START")
 print("=" * 65)
-print(f"  source_name    : {p_source_name}")
 print(f"  target         : {_TARGET_LH}.{_TARGET_SCHEMA}")
 print(f"  refresh mode   : FULL")
 print("=" * 65)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SECTION 2 — Read active ingestion_config
+# SECTION 2 — Read entities from the ingestion_config JSON parameter
 # ══════════════════════════════════════════════════════════════════════════════
 
-print(f"\n[1/2] Reading active ingestion_config for source '{p_source_name}'")
+print(f"\n[1/2] Parsing ingestion_config JSON")
 
-active_rows = get_ingestion_config_by_source(p_jdbc_url, p_source_name).collect()  # noqa: F821  # type: ignore[name-defined]
-print(f"  Active entities : {len(active_rows)}")
+ingestion_config_df = ingestion_config_df_from_json(p_ingestion_config_json)  # noqa: F821  # type: ignore[name-defined]
+config_rows = ingestion_config_df.collect()
+print(f"  Entities in config : {len(config_rows)}")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SECTION 3 — Build the list of views to refresh, then full-refresh each
 #
-# For each active entity, derive the view name(s) using the same SCD2 rule as
+# For each entity, derive the view name(s) using the same SCD2 rule as
 # nb_silver_s2_views_ddl, so the two notebooks stay in lock-step.
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -83,15 +85,18 @@ print(f"\n[2/2] Full-refreshing materialized lake views in {_TARGET_LH}.{_TARGET
 
 # Collect (view_name) targets first so the summary reflects everything attempted.
 view_targets = []
-for row in active_rows:
-    target_table = row["target_table"]
+for row in config_rows:
+    silver_table = row["silver_table"]
     is_scd2      = bool(row["is_scd2"]) if row["is_scd2"] is not None else False
 
+    if not silver_table:
+        continue  # skip rows without a silver_table (no view is built for them)
+
     if is_scd2:
-        view_targets.append(f"{_TARGET_LH}.{_TARGET_SCHEMA}.{target_table}_current")
-        view_targets.append(f"{_TARGET_LH}.{_TARGET_SCHEMA}.{target_table}_history")
+        view_targets.append(f"{_TARGET_LH}.{_TARGET_SCHEMA}.{silver_table}_current")
+        view_targets.append(f"{_TARGET_LH}.{_TARGET_SCHEMA}.{silver_table}_history")
     else:
-        view_targets.append(f"{_TARGET_LH}.{_TARGET_SCHEMA}.{target_table}")
+        view_targets.append(f"{_TARGET_LH}.{_TARGET_SCHEMA}.{silver_table}")
 
 print(f"  Views to refresh : {len(view_targets)}")
 
