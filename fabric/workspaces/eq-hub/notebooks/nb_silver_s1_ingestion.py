@@ -280,6 +280,64 @@ try:
 
 
     # ══════════════════════════════════════════════════════════════════════════
+    # SECTION 5b — Refresh / create Silver S2 materialized lake view(s)
+    #
+    # The MLVs in lh_silver.silver_s2 sit over this silver_s1 table.  Naming and
+    # column rules mirror nb_silver_s2_views_ddl exactly:
+    #   is_scd2 = 1  →  <table>_current (WHERE is_current = 1)  and  <table>_history
+    #   is_scd2 = 0  →  <table>
+    #   audit columns are excluded from the view's SELECT.
+    #
+    # Existing MLV  → REFRESH ... FULL (recompute from the just-loaded table).
+    # Missing MLV   → CREATE.
+    #
+    # An MLV failure is logged as a WARNING and does NOT fail the notebook: the
+    # silver_s1 load above has already committed successfully.  Change the
+    # `raise` comment below if you want a stale MLV to fail the pipeline instead.
+    # ══════════════════════════════════════════════════════════════════════════
+
+    print(f"\n[MLV] Refreshing/creating silver_s2 materialized lake view(s) for '{p_target_table}'")
+
+    _MLV_LH      = "lh_silver"
+    _MLV_SCHEMA  = "silver_s2"
+    _MLV_SRC_REF = f"lh_silver.{qualified_target}"   # lh_silver.silver_s1.<table>
+
+    # Audit columns excluded from the view SELECT (matches nb_silver_s2_views_ddl)
+    _MLV_AUDIT_COLS = {
+        "ingestion_date", "data_timestamp", "source_system",
+        "ingestion_run_id", "ingestion_timestamp",
+    }
+    _mlv_cols     = [c for c in spark.table(qualified_target).columns
+                     if c.lower() not in _MLV_AUDIT_COLS]
+    _mlv_col_list = ",\n               ".join(_mlv_cols)
+
+    def _ensure_mlv(view_name: str, where_clause: str = ""):
+        """Refresh the MLV if it exists, otherwise create it."""
+        if spark.catalog.tableExists(view_name):
+            spark.sql(f"REFRESH MATERIALIZED LAKE VIEW {view_name} FULL")
+            print(f"  REFRESHED {view_name}")
+        else:
+            spark.sql(f"""
+                CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS {view_name} AS
+                SELECT {_mlv_col_list}
+                FROM   {_MLV_SRC_REF}
+                {where_clause}
+            """)
+            print(f"  CREATED   {view_name}")
+
+    try:
+        if is_scd2:
+            _ensure_mlv(f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}_current", "WHERE is_current = 1")
+            _ensure_mlv(f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}_history")
+        else:
+            _ensure_mlv(f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}")
+    except Exception as _mlv_exc:
+        # Non-fatal: silver_s1 load already succeeded. Replace with `raise` to
+        # make a stale/failed MLV fail the pipeline activity instead.
+        print(f"  WARNING: MLV refresh/create failed for '{p_target_table}': {_mlv_exc}")
+
+
+    # ══════════════════════════════════════════════════════════════════════════
     # SECTION 6 — Log operation
     # ══════════════════════════════════════════════════════════════════════════
 

@@ -1,6 +1,6 @@
 # Notebook: nb_silver_s2_views_refresh
 # Layer:    Silver S2
-# Purpose:  FULL-refreshes the Fabric Materialized Lake Views in lh_silver.dbo.
+# Purpose:  FULL-refreshes the Fabric Materialized Lake Views in lh_silver.silver_s2.
 #           Entities are read from the p_ingestion_config_json parameter — the
 #           full ingestion_config JSON array injected by the pipeline (same
 #           pattern as nb_silver_s1_ingestion) — so no JDBC / config-table query
@@ -53,7 +53,7 @@ validate_required_params(_required)  # noqa: F821  # type: ignore[name-defined]
 
 # Target lakehouse and schema where the materialized lake views live
 _TARGET_LH     = "lh_silver"
-_TARGET_SCHEMA = "dbo"
+_TARGET_SCHEMA = "silver_s2"
 
 print("=" * 65)
 print("  nb_silver_s2_views_refresh — START")
