@@ -414,7 +414,9 @@ try:
     # ══════════════════════════════════════════════════════════════════════════
     # SECTION 6 — Write to lh_bronze
     # NEW table  → write_delta_create (overwrite to establish schema)
-    # EXISTS     → append with mergeSchema=true
+    # EXISTS     → replaceWhere on ingestion_date: atomically replaces just this
+    #              date's rows (or appends if the date is new). Other dates are
+    #              untouched, and re-running for the same date does not duplicate.
     # ══════════════════════════════════════════════════════════════════════════
 
     print(f"\n[5/5] Target table validation & write")
@@ -431,15 +433,16 @@ try:
         print(f"  Action : CREATE")
         write_delta_create(final_df, qualified_target, partition_cols)  # noqa: F821  # type: ignore[name-defined]
     else:
-        print(f"  Action : APPEND")
+        print(f"  Action : REPLACE WHERE ingestion_date = '{p_ingestion_date}'")
         (
             final_df.write
             .format("delta")
             .option("mergeSchema", "true")
-            .mode("append")
+            .option("replaceWhere", f"ingestion_date = '{p_ingestion_date}'")
+            .mode("overwrite")
             .saveAsTable(qualified_target)
         )
-        print(f"  Appended to : lh_bronze.{qualified_target}")
+        print(f"  Written to : lh_bronze.{qualified_target}")
 
     _write_secs    = round(time.time() - _write_start, 6)
     verified_count = spark.table(qualified_target).count()
