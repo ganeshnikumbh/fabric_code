@@ -1007,6 +1007,7 @@ def apply_scd2(
     effective_timestamp_val: str = None,
     partition_cols: list = None,
     tbl_properties: dict = None,
+    audit_values: dict = None,
 ) -> tuple:
     """
     Apply SCD Type 2 (md5-hash-only) merge strategy into a Delta table.
@@ -1032,6 +1033,12 @@ def apply_scd2(
     partition_cols          : Column names to partition by on first-run table creation.
     tbl_properties          : Delta table properties for first-run create.
                               Defaults to {"delta.enableChangeDataFeed": "true"}.
+    audit_values            : Optional dict of audit-column values (keys matching
+                              add_audit_columns kwargs). When provided, those
+                              columns are appended AFTER the SCD2 structural
+                              columns so they are the final columns of the table.
+                              When None (e.g. the silver path, which adds its own
+                              audit columns before calling), nothing is appended.
 
     Returns
     -------
@@ -1057,6 +1064,11 @@ def apply_scd2(
         source_df = source_df.withColumn("expiration_timestamp", F.lit(_OPEN_TS).cast(TimestampType()))
     if "is_current"           not in _existing:
         source_df = source_df.withColumn("is_current",           F.lit(1).cast(IntegerType()))
+
+    # Append audit columns AFTER the SCD2 structural columns so they are the
+    # final columns of the table (gold path supplies values; silver passes None).
+    if audit_values:
+        source_df = add_audit_columns(source_df, **audit_values)
 
     table_exists  = spark.catalog.tableExists(qualified_target)
     rows_inserted = 0
@@ -1135,6 +1147,7 @@ def apply_scd1(
     business_key_cols: list,
     partition_cols: list = None,
     tbl_properties: dict = None,
+    audit_values: dict = None,
 ) -> tuple:
     """
     Apply SCD Type 1 UPSERT strategy into a Delta table.
@@ -1161,12 +1174,23 @@ def apply_scd1(
     partition_cols    : Column names to partition by on first-run table creation.
     tbl_properties    : Delta table properties for first-run create.
                         Defaults to {"delta.enableChangeDataFeed": "true"}.
+    audit_values      : Optional dict of audit-column values (keys matching
+                        add_audit_columns kwargs). When provided, those columns
+                        are appended as the final columns of the table. When None
+                        (e.g. the silver path, which adds its own audit columns
+                        before calling), nothing is appended.
 
     Returns
     -------
     tuple  (rows_inserted: int, rows_updated: int)
     """
     _tbl_props  = tbl_properties or {"delta.enableChangeDataFeed": "true"}
+
+    # Append audit columns as the final columns (gold path supplies values;
+    # silver passes None and adds its own audit columns before calling).
+    if audit_values:
+        source_df = add_audit_columns(source_df, **audit_values)
+
     table_exists = spark.catalog.tableExists(qualified_target)
     rows_inserted = 0
     rows_updated  = 0
@@ -1808,6 +1832,13 @@ class GoldLoader:
         hash_col: str = "md5_hash",
         partition_cols: list = None,
         evolve_schema: bool = True,
+        add_audit: bool = True,
+        ingestion_date: str = None,
+        data_timestamp=None,
+        source_system: str = None,
+        ingestion_run_id: str = None,
+        ingestion_timestamp: str = None,
+        src_busn_asst: str = None,
     ) -> None:
         """
         Persist the transformed DataFrame to a Gold Delta table.
@@ -1843,6 +1874,22 @@ class GoldLoader:
                             columns are never dropped). Applies to both the SCD1
                             MERGE and the SCD2 expire/append paths via the
                             spark.databricks.delta.schema.autoMerge.enabled conf.
+        add_audit         : When True (default), the standard pipeline audit
+                            columns are appended as the LAST columns of the table
+                            (inside apply_scd1 / apply_scd2, after any SCD
+                            structural columns): ingestion_date, data_timestamp,
+                            source_system, ingestion_run_id, ingestion_timestamp,
+                            src_busn_asst. Set False to skip.
+        ingestion_date    : Audit — run date string 'YYYY-MM-DD'. Defaults to
+                            today (UTC) when add_audit and not supplied.
+        data_timestamp    : Audit — business timestamp (str or Column). Defaults
+                            to ingestion_timestamp when not supplied.
+        source_system     : Audit — source system name, e.g. 'EQ_Warehouse'.
+        ingestion_run_id  : Audit — pipeline run id. Defaults to a generated
+                            UUID when add_audit and not supplied.
+        ingestion_timestamp: Audit — run timestamp string. Defaults to now (UTC)
+                            when add_audit and not supplied.
+        src_busn_asst     : Audit — business-unit tag, e.g. 'elic'.
 
         Returns
         -------
@@ -1895,6 +1942,30 @@ class GoldLoader:
             "[GoldLoader.load] Computed '%s' from %s", hash_col, business_key_cols
         )
 
+        # Step 2b: Resolve audit-column values. The columns themselves are
+        # appended inside apply_scd1 / apply_scd2 so they land as the LAST
+        # columns of the table (after any SCD structural columns too). Missing
+        # values default to a generated run id / current UTC timestamps so the
+        # columns are never left unpopulated by accident.
+        _audit_values = None
+        if add_audit:
+            from datetime import datetime, timezone
+            import uuid
+
+            _audit_ts = ingestion_timestamp or datetime.now(timezone.utc).isoformat()
+            _audit_values = {
+                "ingestion_date":      ingestion_date or _audit_ts[:10],
+                "data_timestamp":      data_timestamp if data_timestamp is not None else _audit_ts,
+                "source_system":       source_system,
+                "ingestion_run_id":    ingestion_run_id or str(uuid.uuid4()),
+                "ingestion_timestamp": _audit_ts,
+                "src_busn_asst":       src_busn_asst,
+            }
+            _logger.info(
+                "[GoldLoader.load] Audit columns will be appended (run_id=%s) for '%s'",
+                _audit_values["ingestion_run_id"], target_table,
+            )
+
         # Schema evolution: lets MERGE and append operations add new source
         # columns to the target table instead of failing on schema mismatch.
         if evolve_schema:
@@ -1908,6 +1979,7 @@ class GoldLoader:
                 spark            = self.spark,
                 source_df        = df,
                 qualified_target = target_table,
+                audit_values     = _audit_values,
             )
             _logger.info(
                 "[GoldLoader.load] apply_scd2 done — inserted=%d, expired=%d",
@@ -1922,7 +1994,8 @@ class GoldLoader:
                 source_df         = df,
                 qualified_target  = target_table,
                 business_key_cols = business_key_cols,
-                partition_cols = partition_cols
+                partition_cols    = partition_cols,
+                audit_values      = _audit_values,
             )
             _logger.info(
                 "[GoldLoader.load] apply_scd1 done — inserted=%d, updated=%d",
