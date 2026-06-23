@@ -1017,11 +1017,12 @@ def apply_scd2(
     source_df inside this function — any values set by callers are overwritten.
 
     Strategy matrix:
-      MD5 in source | MD5 in target (is_current=1) | Action
-      YES           | YES                          | SKIP  — unchanged
-      YES           | NO                           | INSERT — new / changed row
-      NO            | YES                          | EXPIRE — set expiration + is_current=0
-      NO            | NO                           | ignore — already expired
+      MD5 in source | target row state | Action
+      YES           | is_current = 1   | KEEP — already active, no change
+      YES           | is_current = 0   | REACTIVATE — set is_current=1, reopen expiration
+      YES           | absent           | INSERT — new / changed row
+      NO            | is_current = 1   | EXPIRE — set expiration + is_current=0
+      NO            | is_current = 0   | ignore — already expired
 
     Parameters
     ----------
@@ -1121,6 +1122,31 @@ def apply_scd2(
                 .execute()
             )
             _logger.info("[apply_scd2] Expired %d record(s) in '%s'", rows_updated, qualified_target)
+
+        # Reactivate matched records — md5 present in source but currently
+        # expired in target. md5 is unique across the table (new rows are only
+        # inserted when the md5 is absent), so a matched md5 sits on exactly one
+        # row; if that row is expired we set it active again (is_current=1) and
+        # reopen its expiration instead of leaving it expired.
+        reactivate_df = (
+            target_df.filter(F.col("is_current") == 0).select("md5_hash").distinct()
+            .join(source_df.select("md5_hash").distinct(), on="md5_hash", how="inner")
+        )
+        rows_reactivated = reactivate_df.count()
+        if rows_reactivated > 0:
+            (
+                _DeltaTable.forName(spark, qualified_target).alias("tgt")
+                .merge(
+                    source    = reactivate_df.alias("src"),
+                    condition = "tgt.md5_hash = src.md5_hash AND tgt.is_current = 0",
+                )
+                .whenMatchedUpdate(set={
+                    "is_current":           F.lit(1).cast(IntegerType()),
+                    "expiration_timestamp": F.lit(_OPEN_TS).cast(TimestampType()),
+                })
+                .execute()
+            )
+            _logger.info("[apply_scd2] Reactivated %d record(s) in '%s'", rows_reactivated, qualified_target)
 
         # Append new / changed records — md5 uniqueness guaranteed by left_anti above
         if rows_inserted > 0:

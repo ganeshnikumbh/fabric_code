@@ -121,8 +121,8 @@ _tokens = F.split(F.col("queue_name"), "_")
 
 _is_des_pattern = (
     (F.size(_tokens) >= 6) &
-    (_tokens.getItem(0) == F.lit("DES")) &
-    (_tokens.getItem(F.size(_tokens) - 1) == F.lit("CSQ"))
+    (_tokens[0] == F.lit("DES")) &
+    (F.element_at(_tokens, -1) == F.lit("CSQ"))   # -1 = last token, avoids Column-keyed getItem
 )
 
 queue_df = (
@@ -133,17 +133,17 @@ queue_df = (
     )
     # ── caller_type: token 2 when DES pattern matches ──────────────────────
     .withColumn("caller_type",
-        F.when(_is_des_pattern, _tokens.getItem(2))
+        F.when(_is_des_pattern, _tokens[2])
          .otherwise(F.lit("Unknown"))
     )
     # ── product: token 3 ──────────────────────────────────────────────────
     .withColumn("product",
-        F.when(_is_des_pattern, _tokens.getItem(3))
+        F.when(_is_des_pattern, _tokens[3])
          .otherwise(F.lit("Unknown"))
     )
     # ── call_reason: token 4 ──────────────────────────────────────────────
     .withColumn("call_reason",
-        F.when(_is_des_pattern, _tokens.getItem(4))
+        F.when(_is_des_pattern, _tokens[4])
          .otherwise(F.lit("Unknown"))
     )
     # ── is_outdial_queue ──────────────────────────────────────────────────
