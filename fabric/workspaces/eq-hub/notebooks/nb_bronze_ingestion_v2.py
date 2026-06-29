@@ -1,3 +1,34 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# ## nb_ingest_bronze_v2
+# 
+# null
+
+# In[1]:
+
+
+# The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
+# %%configure
+# {
+#     "defaultLakehouse": {
+#         "name":        { "variableName": "$(/**/vl_lakehouse_config/lh_landing_name)" },
+#         "id":          { "variableName": "$(/**/vl_lakehouse_config/lh_landing_id)" },
+#         "workspaceId": { "variableName": "$(/**/vl_lakehouse_config/lh_workspace_id)" }
+#     }
+# }
+
+
+# In[2]:
+
+
+# The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
+# %run nb_utils.py
+
+
+# In[4]:
+
+
 # Notebook: nb_bronze_ingestion_v2
 # Layer:    Bronze
 # Purpose:  Metadata-driven ingestion from lh_landing → lh_bronze.
@@ -19,29 +50,32 @@
 #        p_schema_config_json    : @variables('v_schema_config_json')      ← full array
 #
 # Dependencies:
-#   %run nb_utils   — ingestion_config_df_from_json, schema_config_df_from_json,
+#   # The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
+# %run nb_utils   — ingestion_config_df_from_json, schema_config_df_from_json,
 #                      build_col_maps
 #
 # Pre-requisites:
 #   - Attach lh_bronze as the default lakehouse before running.
 #   - lh_landing must be added to the notebook session
 #     (Notebook settings → Lakehouses → Add).
-#   - nb_log_operation notebook must exist in the same workspace with
-#     NO lakehouse attached (so FabricLogger writes to LH_EquiTrust_Monitoring).
-#   - fabric_logging_utils.py must be in nb_log_operation's Resources/builtin/ folder.
+#   - fabric_logging_utils.py must be uploaded to nb_utils notebook's
+#     Resources/builtin/ folder (one-time setup).
 
 import time
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
+from pyspark.sql.types import StringType, TimestampType
 
 spark = SparkSession.builder.appName("nb_bronze_ingestion_v2").getOrCreate()
 spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
 spark.conf.set("spark.sql.parquet.datetimeRebaseModeInRead", "LEGACY")
 
-%run nb_utils.py
 
 _notebook_start = time.time()
+
+
+# In[ ]:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -49,22 +83,57 @@ _notebook_start = time.time()
 # Cell tag: parameters — Fabric Pipeline injects values at runtime.
 # ══════════════════════════════════════════════════════════════════════════════
 
-p_source_table           = ""   # REQUIRED — entity_name in ingestion_config (e.g. "Client")
-p_source_schema          = ""   # REQUIRED — schema in source system / lh_landing (e.g. "dbo")
-p_target_table           = ""   # REQUIRED — target Delta table in lh_bronze (e.g. "client_base")
-p_ingestion_config_json  = ""   # REQUIRED — full ingestion_config JSON array for the source
+p_landing_table_name    = ""    # REQUIRED — landing_table_name in ingestion_config
+p_landing_schema        = ""    # REQUIRED — schema in lh_landing (e.g. 'hubspot', 'webex', 'dbo')
+p_bronze_table          = ""    # REQUIRED — target Delta table in lh_bronze
+p_ingestion_config_json = ""    # REQUIRED — full ingestion_config JSON array for the source
                                 #            Pipeline expression: @variables('v_ingestion_config_json')
-p_schema_config_json     = ""   # REQUIRED — full schema_config JSON array for the source
+p_schema_config_json    = ""    # REQUIRED — full schema_config JSON array for the source
                                 #            Pipeline expression: @variables('v_schema_config_json')
-p_ingestion_date         = ""   # e.g. "2025-04-09"     — pipeline run date
-p_source_system          = ""   # e.g. "EQ_Warehouse"
-p_ingestion_run_id       = ""   # UUID from pipeline
-p_ingestion_timestamp    = ""   # e.g. "2025-04-09T01:00:00Z"
+p_ingestion_date        = ""    # e.g. '2025-04-09'
+p_source_system         = ""    # e.g. 'HubSpot', 'Webex', 'EQ_Warehouse'
+p_ingestion_run_id      = ""    # UUID from pipeline
+p_ingestion_timestamp   = ""    # e.g. '2025-04-09T01:00:00Z'
+p_context_json          = "{}"  # optional — JSON with pipeline context for N/A schema_config rows
+
+
+# In[12]:
+
+
+# Variable Library read works here (normal cell, post-session)
+vl = notebookutils.variableLibrary.getLibrary("vl_lakehouse_config")
+
+bronze_lh = vl.lh_bronze_name          # e.g. "lh_bronze"
+
+# verify the default bound correctly before doing any work
+current_default = spark.conf.get("trident.lakehouse.name")
+print(f"Default (landing): {current_default}")
+print(f"Bronze target:     {bronze_lh}")
+
+
+# In[8]:
+
+
+# # This cell is generated from runtime parameters. Learn more: https://go.microsoft.com/fwlink/?linkid=2161015
+# p_source_table = "marketing_events"
+# p_source_schema = "hubspot"
+# p_target_table = "marketing_events_base"
+# p_ingestion_config_json = "[{\"source_id\": 70, \"source_name\": \"HubSpot\", \"source_type\": \"api\", \"source_table\": \"marketing_events\", \"source_schema\": \"hubspot\", \"target_table\": \"marketing_events_base\", \"target_schema\": \"bronze_hubspot\", \"load_type\": \"full\", \"watermark_column\": \"\", \"watermark_type\": \"\", \"batch_size\": 0, \"partition_by_column_names\": \"\", \"is_scd2\": 0, \"src_busn_asst\": \"elic\", \"source_path\": \"results\"}, {\"source_id\": 71, \"source_name\": \"HubSpot\", \"source_type\": \"api\", \"source_table\": \"marketing_emails\", \"source_schema\": \"hubspot\", \"target_table\": \"marketing_emails_base\", \"target_schema\": \"bronze_hubspot\", \"load_type\": \"full\", \"watermark_column\": \"\", \"watermark_type\": \"\", \"batch_size\": 0, \"partition_by_column_names\": \"\", \"is_scd2\": 0, \"src_busn_asst\": \"elic\", \"source_path\": \"results\"}, {\"source_id\": 73, \"source_name\": \"HubSpot\", \"source_type\": \"api\", \"source_table\": \"crm_contacts\", \"source_schema\": \"hubspot\", \"target_table\": \"crm_contacts_base\", \"target_schema\": \"bronze_hubspot\", \"load_type\": \"full\", \"watermark_column\": \"\", \"watermark_type\": \"\", \"batch_size\": 0, \"partition_by_column_names\": \"\", \"is_scd2\": 0, \"src_busn_asst\": \"elic\", \"source_path\": \"results\"}, {\"source_id\": 74, \"source_name\": \"HubSpot\", \"source_type\": \"api\", \"source_table\": \"crm_companies\", \"source_schema\": \"hubspot\", \"target_table\": \"crm_companies_base\", \"target_schema\": \"bronze_hubspot\", \"load_type\": \"full\", \"watermark_column\": \"\", \"watermark_type\": \"\", \"batch_size\": 0, \"partition_by_column_names\": \"\", \"is_scd2\": 0, \"src_busn_asst\": \"elic\", \"source_path\": \"results\"}, {\"source_id\": 84, \"source_name\": \"HubSpot\", \"source_type\": \"api\", \"source_table\": \"marketing_email_statistics\", \"source_schema\": \"hubspot\", \"target_table\": \"marketing_email_statistics_base\", \"target_schema\": \"bronze_hubspot\", \"load_type\": \"full\", \"watermark_column\": \"\", \"watermark_type\": \"\", \"batch_size\": 0, \"partition_by_column_names\": \"\", \"is_scd2\": 0, \"src_busn_asst\": \"elic\", \"source_path\": \"\"}, {\"source_id\": 94, \"source_name\": \"HubSpot\", \"source_type\": \"api\", \"source_table\": \"crm_owners\", \"source_schema\": \"hubspot\", \"target_table\": \"crm_owners_base\", \"target_schema\": \"bronze_hubspot\", \"load_type\": \"full\", \"watermark_column\": \"\", \"watermark_type\": \"\", \"batch_size\": 0, \"partition_by_column_names\": \"\", \"is_scd2\": 0, \"src_busn_asst\": \"elic\", \"source_path\": \"results\"}]"
+# p_schema_config_json = "[{\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"objectId\", \"target_column_name\": \"object_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"externalEventId\", \"target_column_name\": \"external_event_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"eventName\", \"target_column_name\": \"event_name\", \"target_data_type\": \"STRING\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"eventType\", \"target_column_name\": \"event_type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"eventStatus\", \"target_column_name\": \"event_status\", \"target_data_type\": \"STRING\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"eventStatusV2\", \"target_column_name\": \"event_status_v2\", \"target_data_type\": \"STRING\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"startDateTime\", \"target_column_name\": \"start_date_time\", \"target_data_type\": \"STRING\", \"ordinal_position\": 7, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"endDateTime\", \"target_column_name\": \"end_date_time\", \"target_data_type\": \"STRING\", \"ordinal_position\": 8, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"eventOrganizer\", \"target_column_name\": \"event_organizer\", \"target_data_type\": \"STRING\", \"ordinal_position\": 9, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"eventDescription\", \"target_column_name\": \"event_description\", \"target_data_type\": \"STRING\", \"ordinal_position\": 10, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"eventUrl\", \"target_column_name\": \"event_url\", \"target_data_type\": \"STRING\", \"ordinal_position\": 11, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"eventCancelled\", \"target_column_name\": \"event_cancelled\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 12, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"eventCompleted\", \"target_column_name\": \"event_completed\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 13, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"registrants\", \"target_column_name\": \"registrants\", \"target_data_type\": \"INT\", \"ordinal_position\": 14, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"attendees\", \"target_column_name\": \"attendees\", \"target_data_type\": \"INT\", \"ordinal_position\": 15, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"cancellations\", \"target_column_name\": \"cancellations\", \"target_data_type\": \"INT\", \"ordinal_position\": 16, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"noShows\", \"target_column_name\": \"no_shows\", \"target_data_type\": \"INT\", \"ordinal_position\": 17, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"appInfo.id\", \"target_column_name\": \"app_info_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 18, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"appInfo.name\", \"target_column_name\": \"app_info_name\", \"target_data_type\": \"STRING\", \"ordinal_position\": 19, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"createdAt\", \"target_column_name\": \"created_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 20, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"updatedAt\", \"target_column_name\": \"updated_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 21, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_events\", \"target_table_name\": \"marketing_events_base\", \"source_column_name\": \"N/A\", \"target_column_name\": \"period\", \"target_data_type\": \"STRING\", \"ordinal_position\": 22, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"id\", \"target_column_name\": \"id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"name\", \"target_column_name\": \"name\", \"target_data_type\": \"STRING\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"subject\", \"target_column_name\": \"subject\", \"target_data_type\": \"STRING\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"state\", \"target_column_name\": \"state\", \"target_data_type\": \"STRING\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"type\", \"target_column_name\": \"type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"subcategory\", \"target_column_name\": \"subcategory\", \"target_data_type\": \"STRING\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"language\", \"target_column_name\": \"language\", \"target_data_type\": \"STRING\", \"ordinal_position\": 7, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"archived\", \"target_column_name\": \"archived\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 8, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"isAb\", \"target_column_name\": \"is_ab\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 9, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"isPublished\", \"target_column_name\": \"is_published\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 10, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"isTransactional\", \"target_column_name\": \"is_transactional\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 11, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"sendOnPublish\", \"target_column_name\": \"send_on_publish\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 12, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"jitterSendTime\", \"target_column_name\": \"jitter_send_time\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 13, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"activeDomain\", \"target_column_name\": \"active_domain\", \"target_data_type\": \"STRING\", \"ordinal_position\": 14, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"campaign\", \"target_column_name\": \"campaign\", \"target_data_type\": \"STRING\", \"ordinal_position\": 15, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"campaignName\", \"target_column_name\": \"campaign_name\", \"target_data_type\": \"STRING\", \"ordinal_position\": 16, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"campaignUtm\", \"target_column_name\": \"campaign_utm\", \"target_data_type\": \"STRING\", \"ordinal_position\": 17, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"emailCampaignGroupId\", \"target_column_name\": \"email_campaign_group_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 18, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"primaryEmailCampaignId\", \"target_column_name\": \"primary_email_campaign_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 19, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"emailTemplateMode\", \"target_column_name\": \"email_template_mode\", \"target_data_type\": \"STRING\", \"ordinal_position\": 20, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"feedbackSurveyId\", \"target_column_name\": \"feedback_survey_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 21, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"folderId\", \"target_column_name\": \"folder_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 22, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"businessUnitId\", \"target_column_name\": \"business_unit_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 23, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"clonedFrom\", \"target_column_name\": \"cloned_from\", \"target_data_type\": \"STRING\", \"ordinal_position\": 24, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"previewKey\", \"target_column_name\": \"preview_key\", \"target_data_type\": \"STRING\", \"ordinal_position\": 25, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"publishDate\", \"target_column_name\": \"publish_date\", \"target_data_type\": \"STRING\", \"ordinal_position\": 26, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"publishedAt\", \"target_column_name\": \"published_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 27, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"unpublishedAt\", \"target_column_name\": \"unpublished_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 28, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"publishedByEmail\", \"target_column_name\": \"published_by_email\", \"target_data_type\": \"STRING\", \"ordinal_position\": 29, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"publishedById\", \"target_column_name\": \"published_by_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 30, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"publishedByName\", \"target_column_name\": \"published_by_name\", \"target_data_type\": \"STRING\", \"ordinal_position\": 31, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"createdAt\", \"target_column_name\": \"created_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 32, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"createdById\", \"target_column_name\": \"created_by_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 33, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"deletedAt\", \"target_column_name\": \"deleted_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 34, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"updatedAt\", \"target_column_name\": \"updated_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 35, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"updatedById\", \"target_column_name\": \"updated_by_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 36, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"from.fromName\", \"target_column_name\": \"from_name\", \"target_data_type\": \"STRING\", \"ordinal_position\": 37, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"from.replyTo\", \"target_column_name\": \"from_reply_to\", \"target_data_type\": \"STRING\", \"ordinal_position\": 38, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"from.customReplyTo\", \"target_column_name\": \"from_custom_reply_to\", \"target_data_type\": \"STRING\", \"ordinal_position\": 39, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"subscriptionDetails.subscriptionId\", \"target_column_name\": \"subscription_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 40, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"subscriptionDetails.subscriptionName\", \"target_column_name\": \"subscription_name\", \"target_data_type\": \"STRING\", \"ordinal_position\": 41, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"subscriptionDetails.officeLocationId\", \"target_column_name\": \"subscription_office_location_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 42, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"subscriptionDetails.preferencesGroupId\", \"target_column_name\": \"subscription_preferences_group_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 43, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"webversion.url\", \"target_column_name\": \"webversion_url\", \"target_data_type\": \"STRING\", \"ordinal_position\": 44, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"webversion.enabled\", \"target_column_name\": \"webversion_enabled\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 45, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"content\", \"target_column_name\": \"content_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 46, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"stats\", \"target_column_name\": \"stats_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 47, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"testing\", \"target_column_name\": \"testing_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 48, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"rssData\", \"target_column_name\": \"rss_data_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 49, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"to\", \"target_column_name\": \"to_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 50, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"allEmailCampaignIds\", \"target_column_name\": \"all_email_campaign_ids_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 51, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"teamsWithAccess\", \"target_column_name\": \"teams_with_access_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 52, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"workflowNames\", \"target_column_name\": \"workflow_names_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 53, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"events_event_types\", \"target_table_name\": \"events_event_types\", \"source_column_name\": \"__item__\", \"target_column_name\": \"event_type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"id\", \"target_column_name\": \"id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"createdAt\", \"target_column_name\": \"created_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"updatedAt\", \"target_column_name\": \"updated_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"archived\", \"target_column_name\": \"archived\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"archivedAt\", \"target_column_name\": \"archived_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"objectWriteTraceId\", \"target_column_name\": \"object_write_trace_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"url\", \"target_column_name\": \"url\", \"target_data_type\": \"STRING\", \"ordinal_position\": 7, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"properties\", \"target_column_name\": \"properties_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 8, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"N/A\", \"target_column_name\": \"object_type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 9, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_companies\", \"target_table_name\": \"crm_companies_base\", \"source_column_name\": \"id\", \"target_column_name\": \"id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_companies\", \"target_table_name\": \"crm_companies_base\", \"source_column_name\": \"createdAt\", \"target_column_name\": \"created_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_companies\", \"target_table_name\": \"crm_companies_base\", \"source_column_name\": \"updatedAt\", \"target_column_name\": \"updated_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_companies\", \"target_table_name\": \"crm_companies_base\", \"source_column_name\": \"archived\", \"target_column_name\": \"archived\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_companies\", \"target_table_name\": \"crm_companies_base\", \"source_column_name\": \"archivedAt\", \"target_column_name\": \"archived_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_companies\", \"target_table_name\": \"crm_companies_base\", \"source_column_name\": \"objectWriteTraceId\", \"target_column_name\": \"object_write_trace_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_companies\", \"target_table_name\": \"crm_companies_base\", \"source_column_name\": \"url\", \"target_column_name\": \"url\", \"target_data_type\": \"STRING\", \"ordinal_position\": 7, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_companies\", \"target_table_name\": \"crm_companies_base\", \"source_column_name\": \"properties\", \"target_column_name\": \"properties_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 8, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_companies\", \"target_table_name\": \"crm_companies_base\", \"source_column_name\": \"N/A\", \"target_column_name\": \"object_type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 9, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_deals\", \"target_table_name\": \"crm_deals_base\", \"source_column_name\": \"id\", \"target_column_name\": \"id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_deals\", \"target_table_name\": \"crm_deals_base\", \"source_column_name\": \"createdAt\", \"target_column_name\": \"created_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_deals\", \"target_table_name\": \"crm_deals_base\", \"source_column_name\": \"updatedAt\", \"target_column_name\": \"updated_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_deals\", \"target_table_name\": \"crm_deals_base\", \"source_column_name\": \"archived\", \"target_column_name\": \"archived\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_deals\", \"target_table_name\": \"crm_deals_base\", \"source_column_name\": \"archivedAt\", \"target_column_name\": \"archived_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_deals\", \"target_table_name\": \"crm_deals_base\", \"source_column_name\": \"objectWriteTraceId\", \"target_column_name\": \"object_write_trace_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_deals\", \"target_table_name\": \"crm_deals_base\", \"source_column_name\": \"url\", \"target_column_name\": \"url\", \"target_data_type\": \"STRING\", \"ordinal_position\": 7, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_deals\", \"target_table_name\": \"crm_deals_base\", \"source_column_name\": \"properties\", \"target_column_name\": \"properties_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 8, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_deals\", \"target_table_name\": \"crm_deals_base\", \"source_column_name\": \"N/A\", \"target_column_name\": \"object_type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 9, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tickets\", \"target_table_name\": \"crm_tickets_base\", \"source_column_name\": \"id\", \"target_column_name\": \"id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tickets\", \"target_table_name\": \"crm_tickets_base\", \"source_column_name\": \"createdAt\", \"target_column_name\": \"created_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tickets\", \"target_table_name\": \"crm_tickets_base\", \"source_column_name\": \"updatedAt\", \"target_column_name\": \"updated_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tickets\", \"target_table_name\": \"crm_tickets_base\", \"source_column_name\": \"archived\", \"target_column_name\": \"archived\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tickets\", \"target_table_name\": \"crm_tickets_base\", \"source_column_name\": \"archivedAt\", \"target_column_name\": \"archived_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tickets\", \"target_table_name\": \"crm_tickets_base\", \"source_column_name\": \"objectWriteTraceId\", \"target_column_name\": \"object_write_trace_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tickets\", \"target_table_name\": \"crm_tickets_base\", \"source_column_name\": \"url\", \"target_column_name\": \"url\", \"target_data_type\": \"STRING\", \"ordinal_position\": 7, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tickets\", \"target_table_name\": \"crm_tickets_base\", \"source_column_name\": \"properties\", \"target_column_name\": \"properties_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 8, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tickets\", \"target_table_name\": \"crm_tickets_base\", \"source_column_name\": \"N/A\", \"target_column_name\": \"object_type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 9, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_products\", \"target_table_name\": \"crm_products_base\", \"source_column_name\": \"id\", \"target_column_name\": \"id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_products\", \"target_table_name\": \"crm_products_base\", \"source_column_name\": \"createdAt\", \"target_column_name\": \"created_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_products\", \"target_table_name\": \"crm_products_base\", \"source_column_name\": \"updatedAt\", \"target_column_name\": \"updated_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_products\", \"target_table_name\": \"crm_products_base\", \"source_column_name\": \"archived\", \"target_column_name\": \"archived\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_products\", \"target_table_name\": \"crm_products_base\", \"source_column_name\": \"archivedAt\", \"target_column_name\": \"archived_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_products\", \"target_table_name\": \"crm_products_base\", \"source_column_name\": \"objectWriteTraceId\", \"target_column_name\": \"object_write_trace_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_products\", \"target_table_name\": \"crm_products_base\", \"source_column_name\": \"url\", \"target_column_name\": \"url\", \"target_data_type\": \"STRING\", \"ordinal_position\": 7, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_products\", \"target_table_name\": \"crm_products_base\", \"source_column_name\": \"properties\", \"target_column_name\": \"properties_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 8, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_products\", \"target_table_name\": \"crm_products_base\", \"source_column_name\": \"N/A\", \"target_column_name\": \"object_type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 9, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_line_items\", \"target_table_name\": \"crm_line_items_base\", \"source_column_name\": \"id\", \"target_column_name\": \"id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_line_items\", \"target_table_name\": \"crm_line_items_base\", \"source_column_name\": \"createdAt\", \"target_column_name\": \"created_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_line_items\", \"target_table_name\": \"crm_line_items_base\", \"source_column_name\": \"updatedAt\", \"target_column_name\": \"updated_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_line_items\", \"target_table_name\": \"crm_line_items_base\", \"source_column_name\": \"archived\", \"target_column_name\": \"archived\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_line_items\", \"target_table_name\": \"crm_line_items_base\", \"source_column_name\": \"archivedAt\", \"target_column_name\": \"archived_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_line_items\", \"target_table_name\": \"crm_line_items_base\", \"source_column_name\": \"objectWriteTraceId\", \"target_column_name\": \"object_write_trace_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_line_items\", \"target_table_name\": \"crm_line_items_base\", \"source_column_name\": \"url\", \"target_column_name\": \"url\", \"target_data_type\": \"STRING\", \"ordinal_position\": 7, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_line_items\", \"target_table_name\": \"crm_line_items_base\", \"source_column_name\": \"properties\", \"target_column_name\": \"properties_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 8, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_line_items\", \"target_table_name\": \"crm_line_items_base\", \"source_column_name\": \"N/A\", \"target_column_name\": \"object_type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 9, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_quotes\", \"target_table_name\": \"crm_quotes_base\", \"source_column_name\": \"id\", \"target_column_name\": \"id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_quotes\", \"target_table_name\": \"crm_quotes_base\", \"source_column_name\": \"createdAt\", \"target_column_name\": \"created_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_quotes\", \"target_table_name\": \"crm_quotes_base\", \"source_column_name\": \"updatedAt\", \"target_column_name\": \"updated_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_quotes\", \"target_table_name\": \"crm_quotes_base\", \"source_column_name\": \"archived\", \"target_column_name\": \"archived\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_quotes\", \"target_table_name\": \"crm_quotes_base\", \"source_column_name\": \"archivedAt\", \"target_column_name\": \"archived_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_quotes\", \"target_table_name\": \"crm_quotes_base\", \"source_column_name\": \"objectWriteTraceId\", \"target_column_name\": \"object_write_trace_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_quotes\", \"target_table_name\": \"crm_quotes_base\", \"source_column_name\": \"url\", \"target_column_name\": \"url\", \"target_data_type\": \"STRING\", \"ordinal_position\": 7, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_quotes\", \"target_table_name\": \"crm_quotes_base\", \"source_column_name\": \"properties\", \"target_column_name\": \"properties_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 8, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_quotes\", \"target_table_name\": \"crm_quotes_base\", \"source_column_name\": \"N/A\", \"target_column_name\": \"object_type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 9, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_calls\", \"target_table_name\": \"crm_calls_base\", \"source_column_name\": \"id\", \"target_column_name\": \"id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_calls\", \"target_table_name\": \"crm_calls_base\", \"source_column_name\": \"createdAt\", \"target_column_name\": \"created_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_calls\", \"target_table_name\": \"crm_calls_base\", \"source_column_name\": \"updatedAt\", \"target_column_name\": \"updated_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_calls\", \"target_table_name\": \"crm_calls_base\", \"source_column_name\": \"archived\", \"target_column_name\": \"archived\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_calls\", \"target_table_name\": \"crm_calls_base\", \"source_column_name\": \"archivedAt\", \"target_column_name\": \"archived_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_calls\", \"target_table_name\": \"crm_calls_base\", \"source_column_name\": \"objectWriteTraceId\", \"target_column_name\": \"object_write_trace_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_calls\", \"target_table_name\": \"crm_calls_base\", \"source_column_name\": \"url\", \"target_column_name\": \"url\", \"target_data_type\": \"STRING\", \"ordinal_position\": 7, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_calls\", \"target_table_name\": \"crm_calls_base\", \"source_column_name\": \"properties\", \"target_column_name\": \"properties_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 8, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_calls\", \"target_table_name\": \"crm_calls_base\", \"source_column_name\": \"N/A\", \"target_column_name\": \"object_type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 9, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_meetings\", \"target_table_name\": \"crm_meetings_base\", \"source_column_name\": \"id\", \"target_column_name\": \"id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_meetings\", \"target_table_name\": \"crm_meetings_base\", \"source_column_name\": \"createdAt\", \"target_column_name\": \"created_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_meetings\", \"target_table_name\": \"crm_meetings_base\", \"source_column_name\": \"updatedAt\", \"target_column_name\": \"updated_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_meetings\", \"target_table_name\": \"crm_meetings_base\", \"source_column_name\": \"archived\", \"target_column_name\": \"archived\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_meetings\", \"target_table_name\": \"crm_meetings_base\", \"source_column_name\": \"archivedAt\", \"target_column_name\": \"archived_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_meetings\", \"target_table_name\": \"crm_meetings_base\", \"source_column_name\": \"objectWriteTraceId\", \"target_column_name\": \"object_write_trace_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_meetings\", \"target_table_name\": \"crm_meetings_base\", \"source_column_name\": \"url\", \"target_column_name\": \"url\", \"target_data_type\": \"STRING\", \"ordinal_position\": 7, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_meetings\", \"target_table_name\": \"crm_meetings_base\", \"source_column_name\": \"properties\", \"target_column_name\": \"properties_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 8, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_meetings\", \"target_table_name\": \"crm_meetings_base\", \"source_column_name\": \"N/A\", \"target_column_name\": \"object_type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 9, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_notes\", \"target_table_name\": \"crm_notes_base\", \"source_column_name\": \"id\", \"target_column_name\": \"id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_notes\", \"target_table_name\": \"crm_notes_base\", \"source_column_name\": \"createdAt\", \"target_column_name\": \"created_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_notes\", \"target_table_name\": \"crm_notes_base\", \"source_column_name\": \"updatedAt\", \"target_column_name\": \"updated_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_notes\", \"target_table_name\": \"crm_notes_base\", \"source_column_name\": \"archived\", \"target_column_name\": \"archived\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_notes\", \"target_table_name\": \"crm_notes_base\", \"source_column_name\": \"archivedAt\", \"target_column_name\": \"archived_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_notes\", \"target_table_name\": \"crm_notes_base\", \"source_column_name\": \"objectWriteTraceId\", \"target_column_name\": \"object_write_trace_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_notes\", \"target_table_name\": \"crm_notes_base\", \"source_column_name\": \"url\", \"target_column_name\": \"url\", \"target_data_type\": \"STRING\", \"ordinal_position\": 7, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_notes\", \"target_table_name\": \"crm_notes_base\", \"source_column_name\": \"properties\", \"target_column_name\": \"properties_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 8, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_notes\", \"target_table_name\": \"crm_notes_base\", \"source_column_name\": \"N/A\", \"target_column_name\": \"object_type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 9, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tasks\", \"target_table_name\": \"crm_tasks_base\", \"source_column_name\": \"id\", \"target_column_name\": \"id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tasks\", \"target_table_name\": \"crm_tasks_base\", \"source_column_name\": \"createdAt\", \"target_column_name\": \"created_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tasks\", \"target_table_name\": \"crm_tasks_base\", \"source_column_name\": \"updatedAt\", \"target_column_name\": \"updated_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tasks\", \"target_table_name\": \"crm_tasks_base\", \"source_column_name\": \"archived\", \"target_column_name\": \"archived\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tasks\", \"target_table_name\": \"crm_tasks_base\", \"source_column_name\": \"archivedAt\", \"target_column_name\": \"archived_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tasks\", \"target_table_name\": \"crm_tasks_base\", \"source_column_name\": \"objectWriteTraceId\", \"target_column_name\": \"object_write_trace_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tasks\", \"target_table_name\": \"crm_tasks_base\", \"source_column_name\": \"url\", \"target_column_name\": \"url\", \"target_data_type\": \"STRING\", \"ordinal_position\": 7, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tasks\", \"target_table_name\": \"crm_tasks_base\", \"source_column_name\": \"properties\", \"target_column_name\": \"properties_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 8, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_tasks\", \"target_table_name\": \"crm_tasks_base\", \"source_column_name\": \"N/A\", \"target_column_name\": \"object_type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 9, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"properties.createdate\", \"target_column_name\": \"prop_createdate\", \"target_data_type\": \"TIMESTAMP\", \"ordinal_position\": 10, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"properties.email\", \"target_column_name\": \"prop_email\", \"target_data_type\": \"STRING\", \"ordinal_position\": 11, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"properties.firstname\", \"target_column_name\": \"prop_firstname\", \"target_data_type\": \"STRING\", \"ordinal_position\": 12, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"properties.hs_object_id\", \"target_column_name\": \"prop_hs_object_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 13, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"properties.lastmodifieddate\", \"target_column_name\": \"prop_lastmodifieddate\", \"target_data_type\": \"TIMESTAMP\", \"ordinal_position\": 14, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_contacts\", \"target_table_name\": \"crm_contacts_base\", \"source_column_name\": \"properties.lastname\", \"target_column_name\": \"prop_lastname\", \"target_data_type\": \"STRING\", \"ordinal_position\": 15, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_companies\", \"target_table_name\": \"crm_companies_base\", \"source_column_name\": \"properties.createdate\", \"target_column_name\": \"prop_createdate\", \"target_data_type\": \"TIMESTAMP\", \"ordinal_position\": 10, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_companies\", \"target_table_name\": \"crm_companies_base\", \"source_column_name\": \"properties.domain\", \"target_column_name\": \"prop_domain\", \"target_data_type\": \"STRING\", \"ordinal_position\": 11, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_companies\", \"target_table_name\": \"crm_companies_base\", \"source_column_name\": \"properties.hs_lastmodifieddate\", \"target_column_name\": \"prop_hs_lastmodifieddate\", \"target_data_type\": \"TIMESTAMP\", \"ordinal_position\": 12, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_companies\", \"target_table_name\": \"crm_companies_base\", \"source_column_name\": \"properties.hs_object_id\", \"target_column_name\": \"prop_hs_object_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 13, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_companies\", \"target_table_name\": \"crm_companies_base\", \"source_column_name\": \"properties.name\", \"target_column_name\": \"prop_name\", \"target_data_type\": \"STRING\", \"ordinal_position\": 14, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_owners\", \"target_table_name\": \"crm_owners_base\", \"source_column_name\": \"id\", \"target_column_name\": \"id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_owners\", \"target_table_name\": \"crm_owners_base\", \"source_column_name\": \"email\", \"target_column_name\": \"email\", \"target_data_type\": \"STRING\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_owners\", \"target_table_name\": \"crm_owners_base\", \"source_column_name\": \"firstName\", \"target_column_name\": \"first_name\", \"target_data_type\": \"STRING\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_owners\", \"target_table_name\": \"crm_owners_base\", \"source_column_name\": \"lastName\", \"target_column_name\": \"last_name\", \"target_data_type\": \"STRING\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_owners\", \"target_table_name\": \"crm_owners_base\", \"source_column_name\": \"type\", \"target_column_name\": \"type\", \"target_data_type\": \"STRING\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_owners\", \"target_table_name\": \"crm_owners_base\", \"source_column_name\": \"userId\", \"target_column_name\": \"user_id\", \"target_data_type\": \"INT\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_owners\", \"target_table_name\": \"crm_owners_base\", \"source_column_name\": \"userIdIncludingInactive\", \"target_column_name\": \"user_id_including_inactive\", \"target_data_type\": \"INT\", \"ordinal_position\": 7, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_owners\", \"target_table_name\": \"crm_owners_base\", \"source_column_name\": \"createdAt\", \"target_column_name\": \"created_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 8, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_owners\", \"target_table_name\": \"crm_owners_base\", \"source_column_name\": \"updatedAt\", \"target_column_name\": \"updated_at\", \"target_data_type\": \"STRING\", \"ordinal_position\": 9, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_owners\", \"target_table_name\": \"crm_owners_base\", \"source_column_name\": \"archived\", \"target_column_name\": \"archived\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 10, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"crm_owners\", \"target_table_name\": \"crm_owners_base\", \"source_column_name\": \"teams\", \"target_column_name\": \"teams_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 11, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"to.contactIds\", \"target_column_name\": \"to_contact_ids\", \"target_data_type\": \"STRING\", \"ordinal_position\": 54, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"to.contactIlsLists\", \"target_column_name\": \"to_contact_ils_lists\", \"target_data_type\": \"STRING\", \"ordinal_position\": 55, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"to.contactLists\", \"target_column_name\": \"to_contact_lists\", \"target_data_type\": \"STRING\", \"ordinal_position\": 56, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"to.limitSendFrequency\", \"target_column_name\": \"to_limit_send_frequency\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 57, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_emails\", \"target_table_name\": \"marketing_emails_base\", \"source_column_name\": \"to.suppressGraymail\", \"target_column_name\": \"to_suppress_graymail\", \"target_data_type\": \"BOOLEAN\", \"ordinal_position\": 58, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"emails.$0\", \"target_column_name\": \"email_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 1, \"include_in_md5hash\": 1, \"is_primary_key\": 1}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.sent\", \"target_column_name\": \"cnt_sent\", \"target_data_type\": \"INT\", \"ordinal_position\": 2, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.open\", \"target_column_name\": \"cnt_open\", \"target_data_type\": \"INT\", \"ordinal_position\": 3, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.delivered\", \"target_column_name\": \"cnt_delivered\", \"target_data_type\": \"INT\", \"ordinal_position\": 4, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.bounce\", \"target_column_name\": \"cnt_bounce\", \"target_data_type\": \"INT\", \"ordinal_position\": 5, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.unsubscribed\", \"target_column_name\": \"cnt_unsubscribed\", \"target_data_type\": \"INT\", \"ordinal_position\": 6, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.click\", \"target_column_name\": \"cnt_click\", \"target_data_type\": \"INT\", \"ordinal_position\": 7, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.reply\", \"target_column_name\": \"cnt_reply\", \"target_data_type\": \"INT\", \"ordinal_position\": 8, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.dropped\", \"target_column_name\": \"cnt_dropped\", \"target_data_type\": \"INT\", \"ordinal_position\": 9, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.selected\", \"target_column_name\": \"cnt_selected\", \"target_data_type\": \"INT\", \"ordinal_position\": 10, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.spamreport\", \"target_column_name\": \"cnt_spamreport\", \"target_data_type\": \"INT\", \"ordinal_position\": 11, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.suppressed\", \"target_column_name\": \"cnt_suppressed\", \"target_data_type\": \"INT\", \"ordinal_position\": 12, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.hardbounced\", \"target_column_name\": \"cnt_hardbounced\", \"target_data_type\": \"INT\", \"ordinal_position\": 13, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.softbounced\", \"target_column_name\": \"cnt_softbounced\", \"target_data_type\": \"INT\", \"ordinal_position\": 14, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.pending\", \"target_column_name\": \"cnt_pending\", \"target_data_type\": \"INT\", \"ordinal_position\": 15, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.contactslost\", \"target_column_name\": \"cnt_contactslost\", \"target_data_type\": \"INT\", \"ordinal_position\": 16, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.counters.notsent\", \"target_column_name\": \"cnt_notsent\", \"target_data_type\": \"INT\", \"ordinal_position\": 17, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.ratios.clickratio\", \"target_column_name\": \"ratio_click\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 18, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.ratios.clickthroughratio\", \"target_column_name\": \"ratio_clickthrough\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 19, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.ratios.deliveredratio\", \"target_column_name\": \"ratio_delivered\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 20, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.ratios.openratio\", \"target_column_name\": \"ratio_open\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 21, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.ratios.replyratio\", \"target_column_name\": \"ratio_reply\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 22, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.ratios.unsubscribedratio\", \"target_column_name\": \"ratio_unsubscribed\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 23, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.ratios.spamreportratio\", \"target_column_name\": \"ratio_spamreport\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 24, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.ratios.bounceratio\", \"target_column_name\": \"ratio_bounce\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 25, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.ratios.hardbounceratio\", \"target_column_name\": \"ratio_hardbounce\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 26, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.ratios.softbounceratio\", \"target_column_name\": \"ratio_softbounce\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 27, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.ratios.contactslostratio\", \"target_column_name\": \"ratio_contactslost\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 28, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.ratios.pendingratio\", \"target_column_name\": \"ratio_pending\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 29, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.ratios.notsentratio\", \"target_column_name\": \"ratio_notsent\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 30, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.deviceBreakdown\", \"target_column_name\": \"device_breakdown_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 31, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"aggregate.qualifierStats\", \"target_column_name\": \"qualifier_stats_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 32, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first_key\", \"target_column_name\": \"campaign_id\", \"target_data_type\": \"STRING\", \"ordinal_position\": 33, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.sent\", \"target_column_name\": \"campaign_cnt_sent\", \"target_data_type\": \"INT\", \"ordinal_position\": 34, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.open\", \"target_column_name\": \"campaign_cnt_open\", \"target_data_type\": \"INT\", \"ordinal_position\": 35, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.delivered\", \"target_column_name\": \"campaign_cnt_delivered\", \"target_data_type\": \"INT\", \"ordinal_position\": 36, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.bounce\", \"target_column_name\": \"campaign_cnt_bounce\", \"target_data_type\": \"INT\", \"ordinal_position\": 37, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.unsubscribed\", \"target_column_name\": \"campaign_cnt_unsubscribed\", \"target_data_type\": \"INT\", \"ordinal_position\": 38, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.click\", \"target_column_name\": \"campaign_cnt_click\", \"target_data_type\": \"INT\", \"ordinal_position\": 39, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.reply\", \"target_column_name\": \"campaign_cnt_reply\", \"target_data_type\": \"INT\", \"ordinal_position\": 40, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.dropped\", \"target_column_name\": \"campaign_cnt_dropped\", \"target_data_type\": \"INT\", \"ordinal_position\": 41, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.selected\", \"target_column_name\": \"campaign_cnt_selected\", \"target_data_type\": \"INT\", \"ordinal_position\": 42, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.spamreport\", \"target_column_name\": \"campaign_cnt_spamreport\", \"target_data_type\": \"INT\", \"ordinal_position\": 43, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.suppressed\", \"target_column_name\": \"campaign_cnt_suppressed\", \"target_data_type\": \"INT\", \"ordinal_position\": 44, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.hardbounced\", \"target_column_name\": \"campaign_cnt_hardbounced\", \"target_data_type\": \"INT\", \"ordinal_position\": 45, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.softbounced\", \"target_column_name\": \"campaign_cnt_softbounced\", \"target_data_type\": \"INT\", \"ordinal_position\": 46, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.pending\", \"target_column_name\": \"campaign_cnt_pending\", \"target_data_type\": \"INT\", \"ordinal_position\": 47, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.contactslost\", \"target_column_name\": \"campaign_cnt_contactslost\", \"target_data_type\": \"INT\", \"ordinal_position\": 48, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.counters.notsent\", \"target_column_name\": \"campaign_cnt_notsent\", \"target_data_type\": \"INT\", \"ordinal_position\": 49, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.ratios.clickratio\", \"target_column_name\": \"campaign_ratio_click\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 50, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.ratios.clickthroughratio\", \"target_column_name\": \"campaign_ratio_clickthrough\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 51, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.ratios.deliveredratio\", \"target_column_name\": \"campaign_ratio_delivered\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 52, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.ratios.openratio\", \"target_column_name\": \"campaign_ratio_open\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 53, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.ratios.replyratio\", \"target_column_name\": \"campaign_ratio_reply\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 54, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.ratios.unsubscribedratio\", \"target_column_name\": \"campaign_ratio_unsubscribed\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 55, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.ratios.spamreportratio\", \"target_column_name\": \"campaign_ratio_spamreport\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 56, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.ratios.bounceratio\", \"target_column_name\": \"campaign_ratio_bounce\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 57, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.ratios.hardbounceratio\", \"target_column_name\": \"campaign_ratio_hardbounce\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 58, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.ratios.softbounceratio\", \"target_column_name\": \"campaign_ratio_softbounce\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 59, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.ratios.contactslostratio\", \"target_column_name\": \"campaign_ratio_contactslost\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 60, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.ratios.pendingratio\", \"target_column_name\": \"campaign_ratio_pending\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 61, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.ratios.notsentratio\", \"target_column_name\": \"campaign_ratio_notsent\", \"target_data_type\": \"DECIMAL(10,3)\", \"ordinal_position\": 62, \"include_in_md5hash\": 1, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.deviceBreakdown\", \"target_column_name\": \"campaign_device_breakdown_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 63, \"include_in_md5hash\": 0, \"is_primary_key\": 0}, {\"source_name\": \"HubSpot\", \"source_table_name\": \"marketing_email_statistics\", \"target_table_name\": \"marketing_email_statistics_base\", \"source_column_name\": \"campaignAggregations.$first.qualifierStats\", \"target_column_name\": \"campaign_qualifier_stats_json\", \"target_data_type\": \"STRING\", \"ordinal_position\": 64, \"include_in_md5hash\": 0, \"is_primary_key\": 0}]"
+# p_ingestion_date = "2026-05-27"
+# p_source_system = "HubSpot"
+# p_ingestion_run_id = "670f1a4f-dd38-4500-a45b-973588e82775"
+# p_ingestion_timestamp = "2026-05-27T10:38:17.5060997Z"
+# p_context_json=""
+
+
+# In[7]:
+
 
 _required = {
-    "p_source_table"          : p_source_table,
-    "p_source_schema"         : p_source_schema,
-    "p_target_table"          : p_target_table,
+    "p_landing_table_name"    : p_landing_table_name,
+    "p_landing_schema"        : p_landing_schema,
+    "p_bronze_table"          : p_bronze_table,
     "p_ingestion_config_json" : p_ingestion_config_json,
     "p_schema_config_json"    : p_schema_config_json,
     "p_ingestion_date"        : p_ingestion_date,
@@ -74,23 +143,14 @@ _required = {
 }
 validate_required_params(_required)  # noqa: F821  # type: ignore[name-defined]
 
-# initialise placeholders so the except block can always reference them
-qualified_target = f"bronze_eqwarehouse.{p_target_table}"
+qualified_target = p_bronze_table
 source_row_count = 0
 final_row_count  = 0
 verified_count   = 0
 
-print("=" * 65)
-print("  nb_bronze_ingestion_v2 — START")
-print("=" * 65)
-print(f"  source_table      : {p_source_table}")
-print(f"  source_schema     : {p_source_schema}")
-print(f"  target_table      : {p_target_table}")
-print(f"  ingestion_date    : {p_ingestion_date}")
-print(f"  source_system     : {p_source_system}")
-print(f"  ingestion_run_id  : {p_ingestion_run_id}")
-print(f"  ingestion_timestamp: {p_ingestion_timestamp}")
-print("=" * 65)
+
+# In[12]:
+
 
 try:
 
@@ -99,11 +159,11 @@ try:
     # ══════════════════════════════════════════════════════════════════════════
 
     _landing_ref = (
-        f"lh_landing.{p_source_schema}.{p_source_table}"
-        if p_source_schema.strip()
-        else f"lh_landing.{p_source_table}"
+        f"lh_landing.{p_landing_schema}.{p_landing_table_name}"
+        if p_landing_schema.strip()
+        else f"lh_landing.{p_landing_table_name}"
     )
-    print(f"\n[1/5] Reading source table: {_landing_ref}")
+    print(f"\n[1/5] Reading source: {_landing_ref}")
 
     try:
         source_df = spark.table(_landing_ref)
@@ -122,8 +182,6 @@ try:
 
     # ══════════════════════════════════════════════════════════════════════════
     # SECTION 3 — Read Metadata from JSON parameters
-    # Creates DataFrames from the pre-fetched JSON strings and filters them —
-    # same pattern as the old notebook reading from lh_control, but no JDBC.
     # ══════════════════════════════════════════════════════════════════════════
 
     print(f"\n[2/5] Reading metadata from JSON parameters")
@@ -134,8 +192,8 @@ try:
     config_row = (
         ingestion_config_df
         .filter(
-            (F.lower(F.col("source_table")) == p_source_table.lower()) &
-            (F.lower(F.col("target_table")) == p_target_table.lower())
+            (F.lower(F.col("landing_table_name")) == p_landing_table_name.lower()) &
+            (F.lower(F.col("bronze_table")) == p_bronze_table.lower())
         )
         .limit(1)
         .collect()
@@ -143,97 +201,221 @@ try:
 
     if not config_row:
         raise ValueError(
-            f"No ingestion_config row found for "
-            f"source_table='{p_source_table}' / target_table='{p_target_table}'. "
+            f"No ingestion_config row for "
+            f"landing_table_name='{p_landing_table_name}' / bronze_table='{p_bronze_table}'. "
             f"Ensure the entity is registered and active in ingestion_config."
         )
 
     config           = config_row[0]
     source_id        = config["source_id"]
-    source_schema    = (config["source_schema"]    or "").strip()
-    target_schema    = (config["target_schema"]    or "bronze_eqwarehouse").strip()
-    qualified_target = f"{target_schema}.{p_target_table}"
-    partition_cols   = [c.strip() for c in (config["partition_by_column_names"] or "").split(",") if c.strip()]
-    src_busn_asst    = (config["src_busn_asst"] or "").strip() or None
+    source_type      = (config["source_type"]     or "").strip().lower()
+    landing_schema   = (config["landing_schema"]   or "").strip()
+    bronze_schema    = (config["bronze_schema"]    or "").strip()
+    source_path      = (config["source_path"]      or "").strip()
+    qualified_target = f"lh_bronze.{bronze_schema}.{p_bronze_table}" if bronze_schema else p_bronze_table
+    # partition_cols   = [c.strip() for c in (config["partition_by_column_names"] or "").split(",") if c.strip()]
+    partition_cols   = ['ingestion_date']
+    src_busn_asst    = (config["src_busn_asst"]    or "").strip() or None
 
-    print(f"  source_id        : {source_id}")
-    print(f"  source_schema    : {source_schema or '(none)'}")
-    print(f"  partition_cols   : {partition_cols or '(none)'}")
-    print(f"  src_busn_asst    : {src_busn_asst or '(none)'}")
+    print(f"  source_id     : {source_id}")
+    print(f"  source_type   : {source_type or '(not set)'}")
+    print(f"  source_path   : {source_path or '(root)'}")
+    print(f"  bronze_schema : {bronze_schema}")
+    print(f"  partition_cols: {partition_cols or '(none)'}")
+    print(f"  src_busn_asst : {src_busn_asst or '(none)'}")
 
-    # ── 3b. schema_config ────────────────────────────────────────────────────
-    schema_config_df = schema_config_df_from_json(p_schema_config_json)  # noqa: F821  # type: ignore[name-defined]
-
-    mappings = (
-        schema_config_df
-        .filter(
-            (F.lower(F.col("source_table_name")) == p_source_table.lower()) &
-            (F.col("source_column_name") != "N/A")
+    # ── 3b. Column mappings ──────────────────────────────────────────────────
+    # API sources  → read JSON schema file from the default lakehouse Files section.
+    # Flat sources → read column mappings from p_schema_config_json parameter.
+    if source_type == "api":
+        _schema_file = f"/lakehouse/default/Files/{p_landing_schema}/schemas/{p_landing_table_name}.json"
+        print(f"  Schema file     : {_schema_file}")
+        try:
+            with open(_schema_file) as _sf:
+                _table_schema = json.load(_sf)
+        except FileNotFoundError:
+            raise ValueError(
+                f"Schema file not found: '{_schema_file}'. "
+                f"Create a schema JSON file at {p_landing_schema}/schemas/{p_landing_table_name}.json."
+            )
+        _schema_fields      = _table_schema.get("fields", [])
+        _context_fields     = _table_schema.get("context_fields", [])
+        _array_explode_path = (_table_schema.get("array_explode_path") or "").strip()
+        # schema file source_path overrides ingestion_config when explicitly set
+        if _table_schema.get("source_path") is not None:
+            source_path = _table_schema["source_path"].strip()
+        print(f"  Schema fields   : {len(_schema_fields)}")
+        print(f"  array_explode   : {_array_explode_path or '(none)'}")
+        print(f"  source_path     : {source_path or '(root)'}")
+        mappings = None
+    else:
+        schema_config_df = schema_config_df_from_json(p_schema_config_json)  # noqa: F821  # type: ignore[name-defined]
+        mappings = (
+            schema_config_df
+            .filter(
+                (F.lower(F.col("source_table_name")) == p_landing_table_name.lower()) &
+                (F.col("source_column_name") != "N/A")
+            )
+            .orderBy("ordinal_position")
+            .collect()
         )
-        .orderBy("ordinal_position")
-        .collect()
-    )
+        if not mappings:
+            raise ValueError(
+                f"No schema_config mappings for source_table_name='{p_landing_table_name}'. "
+                f"Ensure column mappings are registered in schema_config."
+            )
+        print(f"  Column mappings : {len(mappings)}")
 
-    if not mappings:
-        raise ValueError(
-            f"No schema_config mappings found for source_table_name='{p_source_table}'. "
-            f"Ensure column mappings are registered in schema_config."
-        )
-
-    col_map, col_map_lower, hash_cols_ordered = build_col_maps(mappings)  # noqa: F821  # type: ignore[name-defined]  — injected by %run nb_utils
-
-    print(f"  Column mappings  : {len(col_map)} columns mapped")
-    print(f"  Hash columns     : {len(hash_cols_ordered)}")
-
-    log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]  — injected by %run nb_utils
-        notebook_name  = "nb_bronze_ingestion_v2",
+    log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]
+        notebook_name  = "nb_load_landing_to_bronze_v3",
         table_name     = qualified_target,
         operation_type = "EXTRACT",
         rows_before    = 0,
         rows_after     = source_row_count,
         execution_time = round(time.time() - _notebook_start, 6),
-        message        = f"Source rows read from {_landing_ref} | run_id={p_ingestion_run_id}",
+        message        = f"Source rows read from {_landing_ref} | landing_table={p_landing_table_name} | run_id={p_ingestion_run_id}",
     )
 
 
     # ══════════════════════════════════════════════════════════════════════════
-    # SECTION 4 — Column Transformation
-    # Rename source columns to target names using the schema_config mapping.
-    # Unmapped columns are dropped; mapped columns missing from source become NULL.
+    # SECTION 4 — Build Records DataFrame
     # ══════════════════════════════════════════════════════════════════════════
 
-    print(f"\n[3/5] Applying column transformations")
+    print(f"\n[3/5] Building records DataFrame  (source_type={source_type or 'flat'})")
 
-    source_columns_lower  = {c.lower(): c for c in source_df.columns}
-    select_exprs          = []
-    missing_in_source     = []
-    json_expand_count     = 0    # dot-notation rows — handled by expand_json_fields()
+    if source_type == "api":
 
-    for src_col, tgt_col in col_map.items():
-        if "." in src_col:
-            # Dot-notation: 'parent_col.json_key' — deferred to expand_json_fields().
-            # The parent column must appear as a plain mapping so it survives the select.
-            json_expand_count += 1
-            continue
-        actual_col = source_columns_lower.get(src_col.lower())
-        if actual_col is None:
-            missing_in_source.append(src_col)
+        # ── 4a. API path — schema-file-driven ────────────────────────────────
+        # resolve_json_path and extract_api_records are injected by # The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
+# %run nb_utils.py
+
+        def _cast_field(val, field_type):
+            if val is None:
+                return None
+            if isinstance(val, (dict, list)):
+                return json.dumps(val)
+            t = (field_type or "string").lower()
+            if t == "boolean":
+                return bool(val)
+            elif t == "integer":
+                try:    return int(val)
+                except: return None
+            elif t in ("float", "double"):
+                try:    return float(val)
+                except: return None
+            return str(val)
+
+        def _build_spark_schema(fields):
+            from pyspark.sql.types import (  # noqa: F811
+                BooleanType, DoubleType, LongType, StringType, StructField, StructType,
+            )
+            _tmap = {
+                "string": StringType(), "boolean": BooleanType(),
+                "integer": LongType(), "float": DoubleType(),
+                "double": DoubleType(), "json": StringType(),
+            }
+            return StructType([
+                StructField(f["column"], _tmap.get(f["type"].lower(), StringType()), nullable=True)
+                for f in fields
+            ])
+
+        _pipeline_context = {}
+        if p_context_json and p_context_json.strip() not in ("", "{}"):
+            _pipeline_context = json.loads(p_context_json)
+        _ctx_row = {cf: _pipeline_context.get(cf) for cf in _context_fields}
+
+        _raw_json_rows = source_df.select("raw_json").collect()
+        rows = []
+
+        if _array_explode_path:
+            # ── child table: one output row per element in the nested array ──
+            print(f"  Mode : array-explode  (path='{_array_explode_path}')")
+            for _rjr in _raw_json_rows:
+                _raw_str = _rjr["raw_json"]
+                if not _raw_str:
+                    continue
+                _response       = json.loads(_raw_str)
+                _parent_records = extract_api_records(_response, source_path)  # noqa: F821  # type: ignore[name-defined]
+                for _parent_rec in _parent_records:
+                    _child_array = resolve_json_path(_parent_rec, _array_explode_path)  # noqa: F821  # type: ignore[name-defined]
+                    if not _child_array or not isinstance(_child_array, list):
+                        continue
+                    for _child_item in _child_array:
+                        _row = {}
+                        for _f in _schema_fields:
+                            _src = _f["source"]
+                            if _src.startswith("__parent__."):
+                                _val = resolve_json_path(_parent_rec, _src[len("__parent__."):])  # noqa: F821  # type: ignore[name-defined]
+                            elif _src.startswith("__top__."):
+                                _val = _response.get(_src[len("__top__."):])
+                            else:
+                                _val = resolve_json_path(_child_item, _src)  # noqa: F821  # type: ignore[name-defined]
+                            _row[_f["column"]] = _cast_field(_val, _f["type"])
+                        _row.update(_ctx_row)
+                        rows.append(_row)
         else:
-            select_exprs.append(F.col(actual_col).alias(tgt_col))
+            # ── parent table: one output row per record ───────────────────────
+            print(f"  Mode : standard")
+            for _rjr in _raw_json_rows:
+                _raw_str = _rjr["raw_json"]
+                if not _raw_str:
+                    continue
+                _response = json.loads(_raw_str)
+                _records  = extract_api_records(_response, source_path)  # noqa: F821  # type: ignore[name-defined]
+                for _rec in _records:
+                    _row = {}
+                    for _f in _schema_fields:
+                        _src = _f["source"]
+                        if _src.startswith("__top__."):
+                            _val = _response.get(_src[len("__top__."):])
+                        else:
+                            _val = resolve_json_path(_rec, _src)  # noqa: F821  # type: ignore[name-defined]
+                        _row[_f["column"]] = _cast_field(_val, _f["type"])
+                    _row.update(_ctx_row)
+                    rows.append(_row)
 
-    if missing_in_source:
-        print(f"  WARNING: {len(missing_in_source)} mapped column(s) not in source — set to NULL: {missing_in_source}")
-        for src_col in missing_in_source:
-            select_exprs.append(F.lit(None).cast("string").alias(col_map[src_col]))
+        print(f"  API records parsed : {len(rows):,}")
 
-    transformed_df = source_df.select(*select_exprs)
+        _api_schema    = _build_spark_schema(_schema_fields)
+        transformed_df = (
+            spark.createDataFrame(rows, schema=_api_schema)
+            if rows
+            else spark.createDataFrame([], schema=_api_schema)
+        )
 
-    # JSON field expansion — runs after the base select so parent columns (e.g.
-    # 'properties_json') are already present in transformed_df.
-    if json_expand_count > 0:
-        transformed_df = expand_json_fields(transformed_df, mappings)  # noqa: F821  # type: ignore[name-defined]
+        hash_cols_ordered = [f["column"] for f in _schema_fields if f.get("hash", True)]
 
-    print(f"  Columns after mapping : {len(transformed_df.columns)} business columns")
+    else:
+
+        # ── 4b. Flat path (non-API) ───────────────────────────────────────────
+        col_map, col_map_lower, hash_cols_ordered = build_col_maps(mappings)  # noqa: F821  # type: ignore[name-defined]
+
+        source_columns_lower = {c.lower(): c for c in source_df.columns}
+        select_exprs         = []
+        missing_in_source    = []
+        json_expand_count    = 0
+
+        for src_col, tgt_col in col_map.items():
+            if "." in src_col:
+                json_expand_count += 1
+                continue
+            actual_col = source_columns_lower.get(src_col.lower())
+            if actual_col is None:
+                missing_in_source.append(src_col)
+            else:
+                select_exprs.append(F.col(actual_col).alias(tgt_col))
+
+        if missing_in_source:
+            print(f"  WARNING: {len(missing_in_source)} mapped column(s) not in source — set to NULL: {missing_in_source}")
+            for src_col in missing_in_source:
+                select_exprs.append(F.lit(None).cast("string").alias(col_map[src_col]))
+
+        transformed_df = source_df.select(*select_exprs)
+
+        if json_expand_count > 0:
+            transformed_df = expand_json_fields(transformed_df, mappings)  # noqa: F821  # type: ignore[name-defined]
+
+        print(f"  Columns after mapping : {len(transformed_df.columns)}")
 
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -242,7 +424,6 @@ try:
 
     print(f"\n[4/5] Applying audit columns and MD5 hash")
 
-    # ── Audit columns ─────────────────────────────────────────────────────────
     final_df = add_audit_columns(  # noqa: F821  # type: ignore[name-defined]
         transformed_df,
         ingestion_date      = p_ingestion_date,
@@ -252,8 +433,6 @@ try:
         ingestion_timestamp = p_ingestion_timestamp,
         src_busn_asst       = src_busn_asst,
     )
-
-    # ── MD5 hash ──────────────────────────────────────────────────────────────
     final_df = compute_md5_hash(final_df, hash_cols_ordered)  # noqa: F821  # type: ignore[name-defined]
 
     final_row_count = final_df.count()
@@ -262,7 +441,7 @@ try:
 
     # ══════════════════════════════════════════════════════════════════════════
     # SECTION 6 — Write to lh_bronze
-    # NEW table  → saveAsTable (overwrite to establish schema)
+    # NEW table  → write_delta_create (overwrite to establish schema)
     # EXISTS     → append with mergeSchema=true
     # ══════════════════════════════════════════════════════════════════════════
 
@@ -271,44 +450,44 @@ try:
     table_exists = spark.catalog.tableExists(qualified_target)
     rows_before  = spark.table(qualified_target).count() if table_exists else 0
 
-    print(f"  Target  : lh_bronze.{qualified_target}")
-    print(f"  Exists  : {table_exists}")
+    print(f"  Target : lh_bronze.{qualified_target}")
+    print(f"  Exists : {table_exists}")
 
     _write_start = time.time()
 
     if not table_exists:
-        print(f"  Action  : CREATE")
+        print(f"  Action : CREATE")
         write_delta_create(final_df, qualified_target, partition_cols)  # noqa: F821  # type: ignore[name-defined]
     else:
-        print(f"  Action  : APPEND")
+        print(f"  Action : REPLACE WHERE ingestion_date = '{p_ingestion_date}'")
         (
             final_df.write
             .format("delta")
             .option("mergeSchema", "true")
-            .mode("append")
+            .option("replaceWhere", f"ingestion_date = '{p_ingestion_date}'")
+            .mode("overwrite")
             .saveAsTable(qualified_target)
         )
-        print(f"  Appended to : lh_bronze.{qualified_target}")
+        print(f"  Written to : lh_bronze.{qualified_target}")
 
-    _write_secs  = round(time.time() - _write_start, 6)
+    _write_secs    = round(time.time() - _write_start, 6)
     verified_count = spark.table(qualified_target).count()
     print(f"  Verified rows in target : {verified_count:,}")
 
-    # ── Log success ───────────────────────────────────────────────────────────
-    log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]  — injected by %run nb_utils
-        notebook_name  = "nb_bronze_ingestion_v2",
+    log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]
+        notebook_name  = "nb_load_landing_to_bronze_v3",
         table_name     = qualified_target,
         operation_type = "LOAD",
         rows_before    = rows_before,
         rows_after     = verified_count,
         execution_time = _write_secs,
-        message        = f"source={p_source_table} | rows_written={final_row_count} | run_id={p_ingestion_run_id}",
+        message        = f"landing_table={p_landing_table_name} | rows_written={final_row_count} | run_id={p_ingestion_run_id}",
     )
 
     print("\n" + "=" * 65)
-    print("  nb_bronze_ingestion_v2 — COMPLETE")
-    print(f"  source_table    : {p_source_table}")
-    print(f"  target_table    : lh_bronze.{qualified_target}")
+    print("  nb_load_landing_to_bronze_v3 — COMPLETE")
+    print(f"  landing_table   : {p_landing_table_name}")
+    print(f"  bronze_table    : lh_bronze.{qualified_target}")
     print(f"  rows_read       : {source_row_count:,}")
     print(f"  rows_written    : {final_row_count:,}")
     print(f"  rows_in_target  : {verified_count:,}")
@@ -318,19 +497,20 @@ try:
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Error handler — log failure then re-raise so the pipeline marks the
-# activity as failed and surfaces the error in the pipeline run history.
+# activity as failed.
 # ══════════════════════════════════════════════════════════════════════════════
 
 except Exception as _exc:
     _elapsed = round(time.time() - _notebook_start, 6)
-    log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]  — injected by %run nb_utils
-        notebook_name  = "nb_bronze_ingestion_v2",
+    log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]
+        notebook_name  = "nb_load_landing_to_bronze_v3",
         table_name     = qualified_target,
         operation_type = "LOAD",
         rows_before    = 0,
         rows_after     = 0,
         execution_time = _elapsed,
         error_message  = str(_exc),
-        message        = f"FAILED | source={p_source_table} | run_id={p_ingestion_run_id}",
+        message        = f"FAILED | landing_table={p_landing_table_name} | run_id={p_ingestion_run_id}",
     )
     raise
+

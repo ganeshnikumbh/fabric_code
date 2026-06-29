@@ -1958,14 +1958,26 @@ class GoldLoader:
             surrogate_key_col, business_key_cols,
         )
 
-        # Step 2: MD5 hash of business key columns for merge-key computation.
-        # compute_md5_hash always writes to 'md5_hash'; rename if caller uses a
-        # different column name.
-        df = compute_md5_hash(df, business_key_cols)
+        # Step 2: MD5 change-detection hash. This must cover the tracked
+        # ATTRIBUTE columns, not just the business key — apply_scd2 detects
+        # changes solely by comparing md5_hash, so hashing the business key alone
+        # would keep the hash constant whenever only attributes change for an
+        # existing entity. The result: the old version is never expired and no
+        # new version is inserted (the target rows are never updated).
+        #
+        # At this point df holds business keys + attributes + the surrogate key;
+        # the SCD structural columns (effective/expiration/is_current) and audit
+        # columns are appended later inside apply_scd2 / apply_scd1, so they are
+        # correctly excluded here. We exclude only the surrogate key (a pure
+        # function of the business key — including it adds nothing and would
+        # break if the key algorithm changes). compute_md5_hash always writes to
+        # 'md5_hash'; rename if the caller uses a different column name.
+        _hash_input_cols = [c for c in df.columns if c != surrogate_key_col]
+        df = compute_md5_hash(df, _hash_input_cols)
         if hash_col != "md5_hash":
             df = df.withColumnRenamed("md5_hash", hash_col)
         _logger.info(
-            "[GoldLoader.load] Computed '%s' from %s", hash_col, business_key_cols
+            "[GoldLoader.load] Computed '%s' from %s", hash_col, _hash_input_cols
         )
 
         # Step 2b: Resolve audit-column values. The columns themselves are
