@@ -1,0 +1,19 @@
+{
+  "table_name": "event",
+  "description": "Salesforce Event object — one row per Event (calendar activity) record from the SOQL query. The API returns paginated page envelopes (totalSize/done/nextRecordsUrl/records); records are extracted from each page's 'records' array and flattened. attributes.type/url carry the SObject metadata; StartDateTime/EndDateTime are ISO timestamp strings stored as-is in bronze. WhoId/WhatId are the polymorphic relationship ids.",
+  "source_path": "records",
+  "context_fields": ["start_date", "end_date", "record_type", "source"],
+  "fields": [
+    {"column": "attributes_type", "source": "attributes.type", "type": "string"},
+    {"column": "attributes_url",  "source": "attributes.url",  "type": "string"},
+    {"column": "id",              "source": "Id",              "type": "string"},
+    {"column": "subject",         "source": "Subject",         "type": "string"},
+    {"column": "start_date_time", "source": "StartDateTime",   "type": "string"},
+    {"column": "end_date_time",   "source": "EndDateTime",     "type": "string"},
+    {"column": "location",        "source": "Location",        "type": "string"},
+    {"column": "description",     "source": "Description",     "type": "string"},
+    {"column": "owner_id",        "source": "OwnerId",         "type": "string"},
+    {"column": "who_id",          "source": "WhoId",           "type": "string"},
+    {"column": "what_id",         "source": "WhatId",          "type": "string"}
+  ]
+}
