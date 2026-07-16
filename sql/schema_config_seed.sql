@@ -2519,3 +2519,97 @@ VALUES
   ('Webex', 'customer_session', 'customer_session_base', 'N/A',                               'source',                             'STRING', 211, 0, 0, 1, GETUTCDATE());
 
 -- Total Webex: 485 rows (agent_activity 17 + agent_session 117 + call_leg 121 + customer_activity 19 + customer_session 211)
+
+
+-- ============================================================
+-- Salesforce source — schema_config seed data
+-- source_name = 'Salesforce'  (IDs auto-assigned by IDENTITY)
+-- source_column_name = field path within each SOQL record (PascalCase),
+--   or attributes.<key> for the SObject metadata envelope.
+-- context fields (start_date/end_date/record_type/source) use 'N/A'.
+-- include_in_md5hash: 1 for data scalars, 0 for metadata + context fields.
+-- Mirrors fabric/workspaces/eq-hub/schemas/salesforce/*.json.
+-- ============================================================
+
+SET IDENTITY_INSERT dbo.schema_config OFF;
+GO
+
+-- [SF01] account — 2 data fields + 2 metadata + 4 context
+INSERT INTO schema_config
+    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  ('Salesforce', 'account', 'account_base', 'attributes.type', 'attributes_type', 'STRING', 1, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'account', 'account_base', 'attributes.url',  'attributes_url',  'STRING', 2, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'account', 'account_base', 'Id',              'id',              'STRING', 3, 1, 1, 1, GETUTCDATE()),
+  ('Salesforce', 'account', 'account_base', 'Name',            'name',            'STRING', 4, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'account', 'account_base', 'N/A',             'start_date',      'STRING', 5, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'account', 'account_base', 'N/A',             'end_date',        'STRING', 6, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'account', 'account_base', 'N/A',             'record_type',     'STRING', 7, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'account', 'account_base', 'N/A',             'source',          'STRING', 8, 0, 0, 1, GETUTCDATE());
+
+-- [SF02] campaign — 9 data fields + 2 metadata + 4 context
+INSERT INTO schema_config
+    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  ('Salesforce', 'campaign', 'campaign_base', 'attributes.type', 'attributes_type',     'STRING',  1, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'campaign', 'campaign_base', 'attributes.url',  'attributes_url',      'STRING',  2, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'campaign', 'campaign_base', 'Id',              'id',                  'STRING',  3, 1, 1, 1, GETUTCDATE()),
+  ('Salesforce', 'campaign', 'campaign_base', 'Name',            'name',                'STRING',  4, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'campaign', 'campaign_base', 'Status',          'status',              'STRING',  5, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'campaign', 'campaign_base', 'StartDate',       'campaign_start_date', 'STRING',  6, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'campaign', 'campaign_base', 'EndDate',         'campaign_end_date',   'STRING',  7, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'campaign', 'campaign_base', 'Type',            'type',                'STRING',  8, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'campaign', 'campaign_base', 'IsActive',        'is_active',           'BOOLEAN', 9, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'campaign', 'campaign_base', 'Description',     'description',         'STRING', 10, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'campaign', 'campaign_base', 'OwnerId',         'owner_id',            'STRING', 11, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'campaign', 'campaign_base', 'N/A',             'start_date',          'STRING', 12, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'campaign', 'campaign_base', 'N/A',             'end_date',            'STRING', 13, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'campaign', 'campaign_base', 'N/A',             'record_type',         'STRING', 14, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'campaign', 'campaign_base', 'N/A',             'source',              'STRING', 15, 0, 0, 1, GETUTCDATE());
+
+-- [SF03] task — 9 data fields + 2 metadata + 4 context
+INSERT INTO schema_config
+    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  ('Salesforce', 'task', 'task_base', 'attributes.type', 'attributes_type', 'STRING',  1, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'task', 'task_base', 'attributes.url',  'attributes_url',  'STRING',  2, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'task', 'task_base', 'Id',              'id',              'STRING',  3, 1, 1, 1, GETUTCDATE()),
+  ('Salesforce', 'task', 'task_base', 'Subject',         'subject',         'STRING',  4, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'task', 'task_base', 'Status',          'status',          'STRING',  5, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'task', 'task_base', 'Priority',        'priority',        'STRING',  6, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'task', 'task_base', 'ActivityDate',    'activity_date',   'STRING',  7, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'task', 'task_base', 'Description',     'description',     'STRING',  8, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'task', 'task_base', 'OwnerId',         'owner_id',        'STRING',  9, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'task', 'task_base', 'WhoId',           'who_id',          'STRING', 10, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'task', 'task_base', 'WhatId',          'what_id',         'STRING', 11, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'task', 'task_base', 'N/A',             'start_date',      'STRING', 12, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'task', 'task_base', 'N/A',             'end_date',        'STRING', 13, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'task', 'task_base', 'N/A',             'record_type',     'STRING', 14, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'task', 'task_base', 'N/A',             'source',          'STRING', 15, 0, 0, 1, GETUTCDATE());
+
+-- [SF04] event — 9 data fields + 2 metadata + 4 context
+INSERT INTO schema_config
+    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
+     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+VALUES
+  ('Salesforce', 'event', 'event_base', 'attributes.type', 'attributes_type', 'STRING',  1, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'event', 'event_base', 'attributes.url',  'attributes_url',  'STRING',  2, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'event', 'event_base', 'Id',              'id',              'STRING',  3, 1, 1, 1, GETUTCDATE()),
+  ('Salesforce', 'event', 'event_base', 'Subject',         'subject',         'STRING',  4, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'event', 'event_base', 'StartDateTime',   'start_date_time', 'STRING',  5, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'event', 'event_base', 'EndDateTime',     'end_date_time',   'STRING',  6, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'event', 'event_base', 'Location',        'location',        'STRING',  7, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'event', 'event_base', 'Description',     'description',     'STRING',  8, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'event', 'event_base', 'OwnerId',         'owner_id',        'STRING',  9, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'event', 'event_base', 'WhoId',           'who_id',          'STRING', 10, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'event', 'event_base', 'WhatId',          'what_id',         'STRING', 11, 1, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'event', 'event_base', 'N/A',             'start_date',      'STRING', 12, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'event', 'event_base', 'N/A',             'end_date',        'STRING', 13, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'event', 'event_base', 'N/A',             'record_type',     'STRING', 14, 0, 0, 1, GETUTCDATE()),
+  ('Salesforce', 'event', 'event_base', 'N/A',             'source',          'STRING', 15, 0, 0, 1, GETUTCDATE());
+
+-- Total Salesforce: 53 rows (account 8 + campaign 15 + task 15 + event 15)
+GO

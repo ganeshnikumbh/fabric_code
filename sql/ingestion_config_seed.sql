@@ -231,3 +231,25 @@ VALUES
 ('Webex', 'api', 'lh_landing', 'webex', 'call_leg', 'lh_bronze', 'bronze_webex', 'call_leg_base', 'lh_silver', 'silver_s1', 'call_leg', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data'),
 ('Webex', 'api', 'lh_landing', 'webex', 'customer_activity', 'lh_bronze', 'bronze_webex', 'customer_activity_base', 'lh_silver', 'silver_s1', 'customer_activity', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'result.data');
 GO
+
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- SEED: ingestion_config — Salesforce API sources
+-- No explicit source_id — IDENTITY assigns the next available value.
+-- source_path = 'records' — each paginated page envelope exposes its rows under
+-- the 'records' key (see fabric/workspaces/eq-hub/schemas/salesforce/*.json).
+-- ══════════════════════════════════════════════════════════════════════════════
+
+INSERT INTO dbo.ingestion_config
+    (source_name, source_type,
+     landing_lakehouse, landing_schema, landing_table_name,
+     bronze_lakehouse, bronze_schema, bronze_table,
+     silver_lakehouse, silver_schema, silver_table,
+     load_type, watermark_column, watermark_type, batch_size, partition_by_column_names,
+     is_scd2, active_flag, src_busn_asst, source_path)
+VALUES
+('Salesforce', 'api', 'lh_landing', 'salesforce', 'account',  'lh_bronze', 'bronze_salesforce', 'account_base',  'lh_silver', 'silver_s1', 'account',  'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'records'),
+('Salesforce', 'api', 'lh_landing', 'salesforce', 'campaign', 'lh_bronze', 'bronze_salesforce', 'campaign_base', 'lh_silver', 'silver_s1', 'campaign', 'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'records'),
+('Salesforce', 'api', 'lh_landing', 'salesforce', 'task',     'lh_bronze', 'bronze_salesforce', 'task_base',     'lh_silver', 'silver_s1', 'task',     'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'records'),
+('Salesforce', 'api', 'lh_landing', 'salesforce', 'event',    'lh_bronze', 'bronze_salesforce', 'event_base',    'lh_silver', 'silver_s1', 'event',    'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'records');
+GO
