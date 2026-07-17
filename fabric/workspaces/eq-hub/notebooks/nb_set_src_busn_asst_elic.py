@@ -122,11 +122,9 @@ for lakehouse in p_lakehouses:
                 # below, which will set every row to the target value.
 
             # Only count/update rows that are not already the target value.
-            pending = spark.sql(
-                f"""SELECT COUNT(*) AS n FROM {qualified}
-                    WHERE {p_target_column} IS NULL
-                       OR {p_target_column} <> '{p_target_value}'"""
-            ).collect()[0]["n"]
+            pending = spark.table(qualified).filter(
+                f"{p_target_column} IS NULL OR {p_target_column} <> '{p_target_value}'"
+            ).count()
 
             if pending == 0:
                 print(f"  OK         {qualified:<60} — already set")

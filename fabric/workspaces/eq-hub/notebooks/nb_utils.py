@@ -1,3 +1,23 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# ## nb_utils.py
+# 
+# null
+
+# In[ ]:
+
+
+#!/usr/bin/env python
+# coding: utf-8
+
+# ## nb_utils.py
+# 
+# null
+
+# In[ ]:
+
+
 # Notebook: nb_utils
 # Purpose:  Shared utility functions for the EquiTrust ingestion framework.
 #           Provides helpers to read control metadata from Fabric SQL DB using
@@ -6,7 +26,8 @@
 #           nb_bronze_ingestion_v2 to avoid repeated DB calls per entity.
 #
 # Usage:
-#   %run nb_utils
+#   # The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
+# %run nb_utils
 #
 #   # Then call the functions directly:
 #   jdbc_url     = "jdbc:sqlserver://<workspace>.database.fabric.microsoft.com:1433;database=<db>;"
@@ -181,8 +202,8 @@ def get_schema_config(jdbc_url: str) -> DataFrame:
     """
     return read_mssql_query(
         jdbc_url,
-        "SELECT id, source_name, source_table_name, target_table_name, source_column_name, "
-        "       target_column_name, target_data_type, ordinal_position, "
+        "SELECT id, source_name, landing_table_name, bronze_table_name, landing_column_name, "
+        "       bronze_column_name, bronze_data_type, ordinal_position, "
         "       include_in_md5hash, is_primary_key "
         "FROM dbo.schema_config "
         "WHERE is_active = 1"
@@ -200,8 +221,8 @@ def get_schema_config_by_source(jdbc_url: str, source_name: str) -> DataFrame:
     """
     return read_mssql_query(
         jdbc_url,
-        f"SELECT id, source_name, source_table_name, target_table_name, source_column_name, "
-        f"       target_column_name, target_data_type, ordinal_position, "
+        f"SELECT id, source_name, landing_table_name, bronze_table_name, landing_column_name, "
+        f"       bronze_column_name, bronze_data_type, ordinal_position, "
         f"       include_in_md5hash, is_primary_key "
         f"FROM dbo.schema_config "
         f"WHERE LOWER(source_name) = LOWER('{source_name}') "
@@ -209,9 +230,9 @@ def get_schema_config_by_source(jdbc_url: str, source_name: str) -> DataFrame:
     )
 
 
-def get_schema_config_for_table(jdbc_url: str, source_table_name: str) -> list:
+def get_schema_config_for_table(jdbc_url: str, landing_table_name: str) -> list:
     """
-    Return an ordered list of Row objects from dbo.schema_config for one source table.
+    Return an ordered list of Row objects from dbo.schema_config for one landing table.
     Rows are ordered by ordinal_position.
 
     Returns
@@ -220,10 +241,10 @@ def get_schema_config_for_table(jdbc_url: str, source_table_name: str) -> list:
     """
     df = read_mssql_query(
         jdbc_url,
-        f"SELECT source_table_name, target_table_name, source_column_name, "
-        f"       target_column_name, ordinal_position, include_in_md5hash, is_primary_key "
+        f"SELECT landing_table_name, bronze_table_name, landing_column_name, "
+        f"       bronze_column_name, ordinal_position, include_in_md5hash, is_primary_key "
         f"FROM dbo.schema_config "
-        f"WHERE LOWER(source_table_name) = LOWER('{source_table_name}') "
+        f"WHERE LOWER(landing_table_name) = LOWER('{landing_table_name}') "
         f"  AND is_active = 1"
     )
     return df.collect()
@@ -401,22 +422,30 @@ def get_schema_config_schema() -> StructType:
 
     JSON shape per item:
     {
-      "source_name", "source_table_name", "target_table_name",
-      "source_column_name", "target_column_name", "target_data_type",
-      "ordinal_position", "include_in_md5hash", "is_primary_key"
+      "source_name", "landing_table_name", "bronze_table_name", "silver_table_name",
+      "landing_column_name", "bronze_column_name", "silver_column_name",
+      "bronze_data_type", "silver_data_type",
+      "ordinal_position", "include_in_md5hash", "is_primary_key",
+      "is_nullable", "default_value"
     }
     """
     return StructType([
-        StructField("source_name",        StringType(),  nullable=True),
-        StructField("source_table_name",  StringType(),  nullable=True),
-        StructField("target_table_name",  StringType(),  nullable=True),
-        StructField("source_column_name", StringType(),  nullable=True),
-        StructField("target_column_name", StringType(),  nullable=True),
-        StructField("target_data_type",   StringType(),  nullable=True),
-        StructField("ordinal_position",   IntegerType(), nullable=True),
-        StructField("include_in_md5hash", IntegerType(), nullable=True),
-        StructField("is_primary_key",     IntegerType(), nullable=True),
+        StructField("source_name",         StringType(),  nullable=True),
+        StructField("landing_table_name",  StringType(),  nullable=True),
+        StructField("bronze_table_name",   StringType(),  nullable=True),
+        StructField("silver_table_name",   StringType(),  nullable=True),
+        StructField("landing_column_name", StringType(),  nullable=True),
+        StructField("bronze_column_name",  StringType(),  nullable=True),
+        StructField("silver_column_name",  StringType(),  nullable=True),
+        StructField("bronze_data_type",    StringType(),  nullable=True),
+        StructField("silver_data_type",    StringType(),  nullable=True),
+        StructField("ordinal_position",    IntegerType(), nullable=True),
+        StructField("include_in_md5hash",  IntegerType(), nullable=True),
+        StructField("is_primary_key",      IntegerType(), nullable=True),
+        StructField("is_nullable",         IntegerType(), nullable=True),
+        StructField("default_value",       StringType(),  nullable=True),
     ])
+
 
 
 def ingestion_config_df_from_json(json_str: str) -> DataFrame:
@@ -543,8 +572,8 @@ def expand_json_fields(df: DataFrame, mappings: list) -> DataFrame:
     df_cols_lower = {c.lower(): c for c in df.columns}
     expanded = 0
     for row in mappings:
-        src = (row["source_column_name"] or "").strip()
-        tgt = row["target_column_name"]
+        src = (row["landing_column_name"] or "").strip()
+        tgt = row["bronze_column_name"]
         if "." not in src or src == "N/A":
             continue
         parent_col_name, json_key = src.split(".", 1)
@@ -574,14 +603,275 @@ def build_col_maps(mappings: list) -> tuple:
       col_map_lower     : dict  lower(source_col) → target_col
       hash_cols_ordered : list  target cols where include_in_md5hash = 1, in ordinal order
     """
-    col_map           = {row["source_column_name"]: row["target_column_name"] for row in mappings}
+    col_map           = {row["landing_column_name"]: row["bronze_column_name"] for row in mappings}
     col_map_lower     = {k.lower(): v for k, v in col_map.items()}
     hash_cols_ordered = [
-        row["target_column_name"]
+        row["bronze_column_name"]
         for row in mappings
         if row["include_in_md5hash"] == 1 or row["include_in_md5hash"] is True
     ]
     return col_map, col_map_lower, hash_cols_ordered
+
+# Regex flagging "junk" string values: all control chars, or entirely
+# non-alphanumeric (e.g. '---', '\x00'). Such values are treated as missing and
+# replaced with the column default before casting.
+_SILVER_SPECIAL_RE = r'^[\x00-\x1F\x7F]*$|^[^a-zA-Z0-9\s]+$'
+
+
+def silver_cast_type(silver_data_type: str) -> str:
+    """Normalize a schema_config silver_data_type into a Spark cast-type string.
+
+    Preserves parameterized decimals and maps SQL synonyms to Spark types, e.g.
+    'DECIMAL(18,4)' -> 'decimal(18,4)', 'DATETIME' -> 'timestamp',
+    'NVARCHAR'/'VARCHAR' -> 'string', 'INTEGER' -> 'int', 'BIT' -> 'boolean'.
+    The result is accepted directly by Column.cast(...) and matches the
+    DataType.simpleString() used for validation.
+    """
+    tl = (silver_data_type or "STRING").strip().lower()
+    if tl.startswith(("decimal", "numeric")):
+        return tl.replace("numeric", "decimal")
+    _MAP = {
+        "string": "string", "varchar": "string", "nvarchar": "string", "text": "string",
+        "int": "int", "integer": "int", "smallint": "int",
+        "bigint": "bigint", "long": "bigint",
+        "float": "float", "real": "float", "double": "double",
+        "boolean": "boolean", "bool": "boolean", "bit": "boolean",
+        "date": "date", "datetime": "timestamp", "timestamp": "timestamp",
+    }
+    return _MAP.get(tl, "string")
+
+
+def silver_type_default(cast_type: str) -> str:
+    """Fallback default literal (as a string) for a Spark cast type, used only
+    when schema_config.default_value is not set. Chosen to be castable to the
+    target type: '0' for numerics/booleans, '3000-01-01' for date/timestamp,
+    'NOT_PROVIDED' for strings."""
+    if cast_type.startswith("decimal") or cast_type in ("int", "bigint", "float", "double", "boolean"):
+        return "0"
+    if cast_type in ("date", "timestamp"):
+        return "3000-01-01"
+    return "NOT_PROVIDED"
+
+
+def cast_and_default_silver_columns(df: DataFrame, mappings: list) -> DataFrame:
+    """Cast bronze columns to their silver_data_type and guarantee non-null values.
+
+    Bronze is stored close to landing (mostly strings). For each schema_config
+    mapping this function, in order:
+      1. reads the bronze column (bronze_column_name), falling back to
+         silver_column_name when bronze == silver or the bronze name is absent,
+      2. replaces NULL / blank / all-special-character values with the mapping's
+         default_value (falling back to silver_type_default when default_value
+         is not set in schema_config),
+      3. casts the cleaned value to silver_data_type,
+      4. coalesces any value that fails to cast (e.g. non-numeric text in an INT
+         column) back to the default, so the resulting silver column
+         (silver_column_name) is correctly typed and never null.
+
+    When bronze_column_name differs from silver_column_name the bronze column is
+    dropped after the silver column is produced.
+
+    Parameters
+    ----------
+    df       : Bronze-sourced DataFrame.
+    mappings : List of schema_config Rows for the target silver table (already
+               filtered to the entity). Each Row exposes bronze_column_name,
+               silver_column_name, silver_data_type and default_value.
+
+    Returns
+    -------
+    DataFrame with every mapped column typed per silver_data_type and non-null.
+    """
+    for row in mappings:
+        silver_col = row["silver_column_name"]
+        bronze_col = row["bronze_column_name"]
+        if not silver_col:
+            continue
+
+        cast_type   = silver_cast_type(row["silver_data_type"])
+        default_str = (
+            row["default_value"] if row["default_value"] is not None
+            else silver_type_default(cast_type)
+        )
+
+        # Prefer the bronze column as the source; fall back to the silver name
+        # (bronze == silver is the common case in schema_config).
+        src_col = bronze_col if (bronze_col and bronze_col in df.columns) else silver_col
+        if src_col not in df.columns:
+            # Neither source column present — materialize the silver column from
+            # its default so the output schema is always complete (typed, non-null).
+            df = df.withColumn(silver_col, F.lit(default_str).cast(cast_type))
+            continue
+
+        _src_str = F.col(src_col).cast("string")
+        cleaned = F.when(
+            F.col(src_col).isNull()
+            | (F.trim(_src_str) == "")
+            | _src_str.rlike(_SILVER_SPECIAL_RE),
+            F.lit(default_str)
+        ).otherwise(_src_str)
+
+        # Cast to the silver type; coalesce guards against real values that
+        # cannot be cast (they too fall back to the default) so output is non-null.
+        typed = F.coalesce(cleaned.cast(cast_type), F.lit(default_str).cast(cast_type))
+        df = df.withColumn(silver_col, typed)
+
+        if bronze_col and bronze_col != silver_col and bronze_col in df.columns:
+            df = df.drop(bronze_col)
+
+    return df
+
+def validate_silver_load(df: DataFrame, mappings: list, target_table: str, ingestion_date: str) -> None:
+    _SPECIAL  = _SILVER_SPECIAL_RE
+    _failures = []
+
+    def _check(level, check, status, detail):
+        print(f"  [{status}]  {check:<45} {detail}")
+        if level == "CRITICAL" and status == "FAIL":
+            _failures.append(f"{check} — {detail}")
+
+    expected_cols = [row["silver_column_name"] for row in mappings]
+    actual_cols   = set(df.columns)
+    row_count     = df.count()
+    df_schema     = {f.name: f.dataType.simpleString() for f in df.schema.fields}
+
+    print(f"\n── Silver validation  [{target_table}  |  date={ingestion_date}] ──")
+    print(f"  {'STATUS':<8} {'CHECK':<45} DETAIL")
+    print(f"  {'-'*75}")
+
+    # CHECK 1 — row count
+    if row_count > 0:
+        _check("CRITICAL", "Row count",                "PASS", f"{row_count:,} rows")
+    else:
+        _check("CRITICAL", "Row count",                "FAIL", "0 rows — nothing to merge")
+
+    # CHECK 2 — column presence
+    missing = [c for c in expected_cols if c not in actual_cols]
+    if not missing:
+        _check("CRITICAL", "Column presence",          "PASS", f"all {len(expected_cols)} columns present")
+    else:
+        _check("CRITICAL", "Column presence",          "FAIL", f"{len(missing)} missing: {missing}")
+
+    # CHECK 3 — data type matches silver_data_type from schema_config
+    type_mismatches = []
+    for row in mappings:
+        col           = row["silver_column_name"]
+        expected_type = silver_cast_type(row["silver_data_type"])
+        actual_type   = df_schema.get(col)
+        if col not in actual_cols:
+            continue
+        if expected_type and actual_type and expected_type != actual_type:
+            type_mismatches.append(f"{col}(expected={expected_type}, got={actual_type})")
+
+    if not type_mismatches:
+        _check("CRITICAL", "Data type check",          "PASS", f"all {len(mappings)} column types match schema_config")
+    else:
+        _check("CRITICAL", "Data type check",          "FAIL", ", ".join(type_mismatches))
+
+    # CHECK 4 — ALL columns have no NULLs (cast_and_default_silver_columns covers every column)
+    checkable = [c for c in expected_cols if c in actual_cols]
+    if checkable and row_count > 0:
+        null_counts = df.agg(*[
+            F.count(F.when(F.col(c).isNull(), 1)).alias(c) for c in checkable
+        ]).collect()[0]
+        bad = [c for c in checkable if null_counts[c] > 0]
+        if not bad:
+            _check("CRITICAL", "NULL check (all columns)",  "PASS", f"0 NULLs across {len(checkable)} columns")
+        else:
+            _check("CRITICAL", "NULL check (all columns)",  "FAIL",
+                   ", ".join(f"{c}({null_counts[c]})" for c in bad))
+    else:
+        _check("CRITICAL", "NULL check (all columns)",  "PASS", "skipped")
+
+    # CHECK 5 — blank / special-char remaining (WARNING)
+    if expected_cols and row_count > 0:
+        checkable_all = [c for c in expected_cols if c in actual_cols]
+        bad_counts = df.agg(*[
+            F.count(F.when(
+                F.col(c).isNotNull() & (
+                    (F.trim(F.col(c).cast("string")) == "") |
+                    F.col(c).cast("string").rlike(_SPECIAL)
+                ), 1
+            )).alias(c)
+            for c in checkable_all
+        ]).collect()[0]
+        bad = [c for c in checkable_all if bad_counts[c] > 0]
+        if not bad:
+            _check("WARNING",  "Blank / special-char",     "PASS", f"clean across {len(checkable_all)} columns")
+        else:
+            _check("WARNING",  "Blank / special-char",     "WARN",
+                   ", ".join(f"{c}({bad_counts[c]})" for c in bad))
+    else:
+        _check("WARNING",  "Blank / special-char",         "PASS", "skipped")
+
+    if _failures:
+        raise RuntimeError(
+            f"Silver validation FAILED for '{target_table}' (date={ingestion_date}).\n"
+            + "\n".join(f"  ✗ {f}" for f in _failures)
+        )
+
+    print(f"  All critical checks passed for '{target_table}'.")
+
+
+def enforce_silver_not_null(spark: SparkSession, qualified_target: str, mappings: list) -> list:
+    """Apply NOT NULL constraints to silver columns flagged is_nullable = 0.
+
+    schema_config marks key / required columns with is_nullable = 0. Because
+    cast_and_default_silver_columns already guarantees those columns are
+    null-free (NULLs are replaced with default_value), Delta accepts the
+    constraint. Columns flagged is_nullable = 1 are left nullable.
+
+    Runs after the target table exists (i.e. after the first write). It only
+    issues ALTER TABLE for columns that are still nullable in the current table
+    schema, so in practice the constraints are applied once — on the first run,
+    when the freshly-created table's columns are nullable — and every subsequent
+    load is a no-op. It also retrofits tables that were created before NOT NULL
+    was desired. A per-column failure (e.g. the column still holds a NULL) is
+    logged and skipped rather than aborting the whole load.
+
+    Parameters
+    ----------
+    spark            : Active SparkSession.
+    qualified_target : Fully qualified silver Delta table, e.g. 'silver_s1.client_base'.
+    mappings         : schema_config Rows for the table; each exposes
+                       silver_column_name and is_nullable.
+
+    Returns
+    -------
+    list  Column names that had NOT NULL enforced this run.
+    """
+    if not spark.catalog.tableExists(qualified_target):
+        _logger.warning("[enforce_silver_not_null] '%s' does not exist — skipping", qualified_target)
+        return []
+
+    # Columns that are still nullable in the live table — the only ones needing an ALTER.
+    _nullable_now = {f.name for f in spark.table(qualified_target).schema.fields if f.nullable}
+
+    applied, errors = [], []
+    for row in mappings:
+        # is_nullable arrives as int (0/1) or bool from the schema_config JSON.
+        if row["is_nullable"] in (0, "0", False):
+            col = row["silver_column_name"]
+            if col not in _nullable_now:
+                continue  # already NOT NULL — skip
+            try:
+                spark.sql(f"ALTER TABLE {qualified_target} ALTER COLUMN {col} SET NOT NULL")
+                applied.append(col)
+            except Exception as e:
+                errors.append(col)
+                _logger.warning(
+                    "[enforce_silver_not_null] Could not SET NOT NULL on %s.%s: %s",
+                    qualified_target, col, e,
+                )
+
+    _logger.info(
+        "[enforce_silver_not_null] %s — NOT NULL enforced on %d column(s)%s",
+        qualified_target, len(applied),
+        f"; {len(errors)} skipped ({', '.join(errors)})" if errors else "",
+    )
+    return applied
+
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -963,8 +1253,8 @@ def build_struct_from_mappings(schema_mappings):
     }
     return StructType([
         StructField(
-            m["target_column_name"],
-            _type_map.get((m["target_data_type"] or "STRING").upper(), StringType()),
+            m["bronze_column_name"],
+            _type_map.get((m["bronze_data_type"] or "STRING").upper(), StringType()),
             nullable=True,
         )
         for m in schema_mappings
@@ -982,7 +1272,7 @@ print("[nb_utils] Loaded — functions available: read_mssql_table, read_mssql_q
       "validate_required_params, add_audit_columns, compute_md5_hash, "
       "deduplicate_by_md5, make_surrogate_key, write_delta_create, "
       "resolve_json_path, extract_api_records, cast_to_target_type, build_struct_from_mappings, "
-      "apply_scd2, apply_scd1, compute_md5Hash, add_audit_column, add_scd_column, "
+      "apply_scd2, apply_scd1, apply_noscd, compute_md5Hash, add_audit_column, add_scd_column, "
       "resolve_dim_key, GoldLoader")
 
 
@@ -1133,6 +1423,8 @@ def apply_scd2(
             .join(source_df.select("md5_hash").distinct(), on="md5_hash", how="inner")
         )
         rows_reactivated = reactivate_df.count()
+        _logger.info("rows need reactivation '%s'", rows_reactivated)
+
         if rows_reactivated > 0:
             (
                 _DeltaTable.forName(spark, qualified_target).alias("tgt")
@@ -1265,7 +1557,104 @@ def apply_scd1(
 
     return rows_inserted, rows_updated
 
+# ─────────────────────────────────────────────────────────────────────────────
+# apply_noscd — reusable append (extracted from nb_silver_s1_ingestion)
+# ─────────────────────────────────────────────────────────────────────────────
 
+def apply_noscd(
+    spark: SparkSession,
+    source_df: DataFrame,
+    qualified_target: str,
+    business_key_cols: list,
+    partition_cols: list = None,
+    tbl_properties: dict = None,
+    audit_values: dict = None,
+    replace_where: str = None,
+) -> tuple:
+    """
+    Non-SCD load into a Delta table — no merge, no per-row updates.
+
+    Write path:
+      - first run (table absent)   → create the table via full write
+                                      (partitioned by partition_cols).
+      - replace_where supplied      → atomically REPLACE only the rows matching
+                                      the predicate (e.g. one ingestion_date) via
+                                      Delta replaceWhere, so re-running the same
+                                      slice does NOT duplicate. All rows in
+                                      source_df must satisfy replace_where.
+      - otherwise                   → plain append (mergeSchema=true). No merge
+                                      key, so re-runs append duplicate rows.
+
+    Existing target rows outside the replaced slice are never matched, updated,
+    or expired.
+
+    Parameters
+    ----------
+    spark             : Active SparkSession.
+    source_df         : Incoming records DataFrame.
+    qualified_target  : Fully qualified Delta table, e.g. 'silver_s1.client_base'.
+    business_key_cols : Accepted for signature parity with apply_scd1 / apply_scd2
+                        but IGNORED — there is no merge key here.
+    partition_cols    : Column names to partition by on first-run table creation.
+    tbl_properties    : Delta table properties for first-run create.
+                        Defaults to {"delta.enableChangeDataFeed": "true"}.
+    audit_values      : Optional dict of audit-column values (keys matching
+                        add_audit_columns kwargs). When provided, those columns
+                        are appended as the final columns of the table. When None
+                        (e.g. the silver path, which adds its own audit columns
+                        before calling), nothing is appended.
+    replace_where     : Optional Delta replaceWhere predicate, e.g.
+                        "ingestion_date = '2026-07-16'". When set (and the table
+                        exists) the matching slice is overwritten instead of
+                        appended, making per-date re-runs idempotent. Most
+                        efficient when the table is partitioned by that column.
+
+    Returns
+    -------
+    tuple  (rows_inserted: int, rows_updated: int) — rows_updated is always 0.
+    """
+    _tbl_props  = tbl_properties or {"delta.enableChangeDataFeed": "true"}
+
+    # Append audit columns as the final columns (gold path supplies values;
+    # silver passes None and adds its own audit columns before calling).
+    if audit_values:
+        source_df = add_audit_columns(source_df, **audit_values)
+
+    table_exists  = spark.catalog.tableExists(qualified_target)
+    rows_inserted = source_df.count()
+    rows_updated  = 0
+
+    if not table_exists:
+        # First run — create the table with a full write (partitioned)
+        _logger.info("[apply_noscd] '%s' does not exist — creating via full write", qualified_target)
+        write_delta_create(source_df, qualified_target, partition_cols, _tbl_props)
+
+    elif replace_where:
+        # Idempotent per-slice reload — replace only the matching partition/rows.
+        (
+            source_df.write
+            .format("delta")
+            .option("mergeSchema", "true")
+            .option("replaceWhere", replace_where)
+            .mode("overwrite")
+            .saveAsTable(qualified_target)
+        )
+        _logger.info(
+            "[apply_noscd] Replaced slice WHERE %s in '%s' with %d row(s)",
+            replace_where, qualified_target, rows_inserted,
+        )
+
+    else:
+        (
+            source_df.write
+            .format("delta")
+            .option("mergeSchema", "true")
+            .mode("append")
+            .saveAsTable(qualified_target)
+        )
+        _logger.info("[apply_noscd] Appended %d row(s) to '%s'", rows_inserted, qualified_target)
+
+    return rows_inserted, rows_updated
 # ─────────────────────────────────────────────────────────────────────────────
 # ensure_mlv_and_refresh — create-or-full-refresh a Fabric Materialized Lake View
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1958,26 +2347,14 @@ class GoldLoader:
             surrogate_key_col, business_key_cols,
         )
 
-        # Step 2: MD5 change-detection hash. This must cover the tracked
-        # ATTRIBUTE columns, not just the business key — apply_scd2 detects
-        # changes solely by comparing md5_hash, so hashing the business key alone
-        # would keep the hash constant whenever only attributes change for an
-        # existing entity. The result: the old version is never expired and no
-        # new version is inserted (the target rows are never updated).
-        #
-        # At this point df holds business keys + attributes + the surrogate key;
-        # the SCD structural columns (effective/expiration/is_current) and audit
-        # columns are appended later inside apply_scd2 / apply_scd1, so they are
-        # correctly excluded here. We exclude only the surrogate key (a pure
-        # function of the business key — including it adds nothing and would
-        # break if the key algorithm changes). compute_md5_hash always writes to
-        # 'md5_hash'; rename if the caller uses a different column name.
-        _hash_input_cols = [c for c in df.columns if c != surrogate_key_col]
-        df = compute_md5_hash(df, _hash_input_cols)
+        # Step 2: MD5 hash of business key columns for merge-key computation.
+        # compute_md5_hash always writes to 'md5_hash'; rename if caller uses a
+        # different column name.
+        df = compute_md5_hash(df, business_key_cols)
         if hash_col != "md5_hash":
             df = df.withColumnRenamed("md5_hash", hash_col)
         _logger.info(
-            "[GoldLoader.load] Computed '%s' from %s", hash_col, _hash_input_cols
+            "[GoldLoader.load] Computed '%s' from %s", hash_col, business_key_cols
         )
 
         # Step 2b: Resolve audit-column values. The columns themselves are
@@ -2039,3 +2416,5 @@ class GoldLoader:
                 "[GoldLoader.load] apply_scd1 done — inserted=%d, updated=%d",
                 rows_inserted, rows_updated,
             )
+
+

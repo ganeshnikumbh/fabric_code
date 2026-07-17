@@ -5,7 +5,7 @@
 # 
 # null
 
-# In[1]:
+# In[ ]:
 
 
 # The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
@@ -19,14 +19,14 @@
 # }
 
 
-# In[2]:
+# In[ ]:
 
 
 # The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
 # %run nb_utils.py
 
 
-# In[4]:
+# In[ ]:
 
 
 # Notebook: nb_bronze_ingestion_v2
@@ -97,7 +97,7 @@ p_ingestion_timestamp   = ""    # e.g. '2025-04-09T01:00:00Z'
 p_context_json          = "{}"  # optional — JSON with pipeline context for N/A schema_config rows
 
 
-# In[12]:
+# In[ ]:
 
 
 # Variable Library read works here (normal cell, post-session)
@@ -111,7 +111,7 @@ print(f"Default (landing): {current_default}")
 print(f"Bronze target:     {bronze_lh}")
 
 
-# In[8]:
+# In[ ]:
 
 
 # # This cell is generated from runtime parameters. Learn more: https://go.microsoft.com/fwlink/?linkid=2161015
@@ -127,7 +127,7 @@ print(f"Bronze target:     {bronze_lh}")
 # p_context_json=""
 
 
-# In[7]:
+# In[ ]:
 
 
 _required = {
@@ -149,7 +149,7 @@ final_row_count  = 0
 verified_count   = 0
 
 
-# In[12]:
+# In[ ]:
 
 
 try:
@@ -253,15 +253,15 @@ try:
         mappings = (
             schema_config_df
             .filter(
-                (F.lower(F.col("source_table_name")) == p_landing_table_name.lower()) &
-                (F.col("source_column_name") != "N/A")
+                (F.lower(F.col("landing_table_name")) == p_landing_table_name.lower()) &
+                (F.col("landing_column_name") != "N/A")
             )
             .orderBy("ordinal_position")
             .collect()
         )
         if not mappings:
             raise ValueError(
-                f"No schema_config mappings for source_table_name='{p_landing_table_name}'. "
+                f"No schema_config mappings for landing_table_name='{p_landing_table_name}'. "
                 f"Ensure column mappings are registered in schema_config."
             )
         print(f"  Column mappings : {len(mappings)}")

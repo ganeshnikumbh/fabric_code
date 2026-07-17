@@ -1,4 +1,4 @@
--- ============================================================
+--Temp_schema_config
 -- schema_config — DDL + seed data
 -- ============================================================
 
@@ -9,933 +9,820 @@ GO
 CREATE TABLE dbo.schema_config (
     id                  INT             NOT NULL    IDENTITY(1,1),
     source_name         NVARCHAR(100)   NOT NULL,
-    source_table_name   NVARCHAR(200)   NOT NULL,
-    target_table_name   NVARCHAR(200)   NOT NULL,
-    source_column_name  NVARCHAR(200)   NOT NULL,
-    target_column_name  NVARCHAR(200)   NOT NULL,
-    target_data_type    NVARCHAR(100)   NOT NULL,
+    landing_table_name  NVARCHAR(200)   NOT NULL,
+    landing_column_name NVARCHAR(200)   NOT NULL,
+    landing_data_type   NVARCHAR(100)   NOT NULL,
+    bronze_table_name   NVARCHAR(200)   NOT NULL,
+    bronze_column_name  NVARCHAR(200)   NOT NULL,
+    bronze_data_type    NVARCHAR(100)   NOT NULL,
+    silver_table_name   NVARCHAR(200)   NOT NULL,
+    silver_column_name  NVARCHAR(200)   NOT NULL,
+    silver_data_type    NVARCHAR(100)   NOT NULL,
     ordinal_position    INT             NOT NULL,
     include_in_md5hash  BIT             NOT NULL    CONSTRAINT df_schema_config_hash     DEFAULT (1),
     is_primary_key      BIT             NOT NULL    CONSTRAINT df_schema_config_pk       DEFAULT (0),
+    is_nullable         BIT             NOT NULL    CONSTRAINT df_schema_config_nullable DEFAULT (1),
+    default_value       NVARCHAR(200)   NULL,
     is_active           BIT             NOT NULL    CONSTRAINT df_schema_config_active   DEFAULT (1),
     created_at          DATETIME2       NOT NULL    CONSTRAINT df_schema_config_created  DEFAULT (SYSUTCDATETIME()),
     CONSTRAINT pk_schema_config PRIMARY KEY (id)
 );
 GO
-CREATE INDEX ix_schema_config_source_name  ON dbo.schema_config (source_name);
-GO
-CREATE INDEX ix_schema_config_table_name   ON dbo.schema_config (source_table_name);
+
 GO
 
--- ── Existing seed rows (EQ_Warehouse, EQ_ODS, HubSpot) — explicit IDs ─────
-SET IDENTITY_INSERT dbo.schema_config ON;
-GO
-
-
--- [01] Territory (4 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [01] Territory
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (   1, 'EQ_Warehouse', 'Territory'                                 , 'territory_base', 'TerritoryPK'                               , 'territory_id'                              , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  (   2, 'EQ_Warehouse', 'Territory'                                 , 'territory_base', 'TerritoryName'                             , 'territory_name'                            , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  (   3, 'EQ_Warehouse', 'Territory'                                 , 'territory_base', 'ClientFK'                                  , 'client_id'                                 , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  (   4, 'EQ_Warehouse', 'Territory'                                 , 'territory_base', 'TerritoryActive'                           , 'is_territory_active'                       , 'BOOLEAN'             ,   4, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Territory', 'TerritoryPK', 'STRING', 'territory_base_temp', 'territory_id', 'STRING', 'territory_temp', 'territory_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Territory', 'TerritoryName', 'STRING', 'territory_base_temp', 'territory_name', 'STRING', 'territory_temp', 'territory_name', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Territory', 'ClientFK', 'STRING', 'territory_base_temp', 'client_id', 'STRING', 'territory_temp', 'client_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Territory', 'TerritoryActive', 'STRING', 'territory_base_temp', 'is_territory_active', 'STRING', 'territory_temp', 'is_territory_active', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [02] HierarchyTerritory (8 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [02] HierarchyTerritory
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (   8, 'EQ_Warehouse', 'HierarchyTerritory'                        , 'hierarchy_territory_base', 'HierarchyTerritoryPK'                      , 'hierarchy_territory_id'                    , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  (   9, 'EQ_Warehouse', 'HierarchyTerritory'                        , 'hierarchy_territory_base', 'HierarchySetKey'                           , 'hierarchy_set_key'                         , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  (  10, 'EQ_Warehouse', 'HierarchyTerritory'                        , 'hierarchy_territory_base', 'TerritoryFK'                               , 'territory_id'                              , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'HierarchyTerritory', 'HierarchyTerritoryPK', 'STRING', 'hierarchy_territory_base_temp', 'hierarchy_territory_id', 'STRING', 'hierarchy_territory_temp', 'hierarchy_territory_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'HierarchyTerritory', 'HierarchySetKey', 'STRING', 'hierarchy_territory_base_temp', 'hierarchy_set_key', 'STRING', 'hierarchy_territory_temp', 'hierarchy_set_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'HierarchyTerritory', 'TerritoryFK', 'STRING', 'hierarchy_territory_base_temp', 'territory_id', 'STRING', 'hierarchy_territory_temp', 'territory_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [03] Hierarchy_SuperHierarchy (10 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [03] Hierarchy_SuperHierarchy
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (  16, 'EQ_Warehouse', 'Hierarchy_SuperHierarchy'                  , 'hierarchy_super_hierarchy_base', 'SuperHierarchyPK'                          , 'super_hierarchy_id'                        , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  (  17, 'EQ_Warehouse', 'Hierarchy_SuperHierarchy'                  , 'hierarchy_super_hierarchy_base', 'AgentContractFK'                           , 'agent_contract_id'                         , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  (  18, 'EQ_Warehouse', 'Hierarchy_SuperHierarchy'                  , 'hierarchy_super_hierarchy_base', 'HierarchySetKey'                           , 'hierarchy_set_key'                         , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  (  19, 'EQ_Warehouse', 'Hierarchy_SuperHierarchy'                  , 'hierarchy_super_hierarchy_base', 'ReverseLevel'                              , 'reverse_level'                             , 'DECIMAL(18,4)'       ,   4, 1, 0, 1, GETUTCDATE()),
-  (  20, 'EQ_Warehouse', 'Hierarchy_SuperHierarchy'                  , 'hierarchy_super_hierarchy_base', 'DisplayName'                               , 'display_name'                              , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Hierarchy_SuperHierarchy', 'SuperHierarchyPK', 'STRING', 'hierarchy_super_hierarchy_base_temp', 'super_hierarchy_id', 'STRING', 'hierarchy_super_hierarchy_temp', 'super_hierarchy_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_SuperHierarchy', 'AgentContractFK', 'STRING', 'hierarchy_super_hierarchy_base_temp', 'agent_contract_id', 'STRING', 'hierarchy_super_hierarchy_temp', 'agent_contract_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_SuperHierarchy', 'HierarchySetKey', 'STRING', 'hierarchy_super_hierarchy_base_temp', 'hierarchy_set_key', 'STRING', 'hierarchy_super_hierarchy_temp', 'hierarchy_set_key', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_SuperHierarchy', 'ReverseLevel', 'STRING', 'hierarchy_super_hierarchy_base_temp', 'reverse_level', 'STRING', 'hierarchy_super_hierarchy_temp', 'reverse_level', 'DECIMAL(18,4)', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_SuperHierarchy', 'DisplayName', 'STRING', 'hierarchy_super_hierarchy_base_temp', 'display_name', 'STRING', 'hierarchy_super_hierarchy_temp', 'display_name', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
--- [04] Hierarchy_Option (9 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [04] Hierarchy_Option
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (  26, 'EQ_Warehouse', 'Hierarchy_Option'                          , 'hierarchy_option_base', 'HierarchyOptionPK'                         , 'hierarchy_option_id'                       , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  (  27, 'EQ_Warehouse', 'Hierarchy_Option'                          , 'hierarchy_option_base', 'HierarchyBridgeFK'                         , 'hierarchy_bridge_id'                       , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  (  28, 'EQ_Warehouse', 'Hierarchy_Option'                          , 'hierarchy_option_base', 'AgentContractFK'                           , 'agent_contract_id'                         , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  (  29, 'EQ_Warehouse', 'Hierarchy_Option'                          , 'hierarchy_option_base', 'AccessRemovedInd'                          , 'is_access_removed'                         , 'BOOLEAN'             ,   4, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Hierarchy_Option', 'HierarchyOptionPK', 'STRING', 'hierarchy_option_base_temp', 'hierarchy_option_id', 'STRING', 'hierarchy_option_temp', 'hierarchy_option_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_Option', 'HierarchyBridgeFK', 'STRING', 'hierarchy_option_base_temp', 'hierarchy_bridge_id', 'STRING', 'hierarchy_option_temp', 'hierarchy_bridge_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_Option', 'AgentContractFK', 'STRING', 'hierarchy_option_base_temp', 'agent_contract_id', 'STRING', 'hierarchy_option_temp', 'agent_contract_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_Option', 'AccessRemovedInd', 'STRING', 'hierarchy_option_base_temp', 'is_access_removed', 'STRING', 'hierarchy_option_temp', 'is_access_removed', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [05] Hierarchy_Bridge (15 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [05] Hierarchy_Bridge
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (  35, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'hierarchy_bridge_base', 'HierarchyBridgePK'                         , 'hierarchy_bridge_id'                       , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  (  36, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'hierarchy_bridge_base', 'HierarchyGroupKey'                         , 'hierarchy_group_key'                       , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  (  37, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'hierarchy_bridge_base', 'HierarchySetKey'                           , 'hierarchy_set_key'                         , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  (  38, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'hierarchy_bridge_base', 'SplitPercent'                              , 'split_percent'                             , 'DECIMAL(18,4)'       ,   4, 1, 0, 1, GETUTCDATE()),
-  (  39, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'hierarchy_bridge_base', 'ServicingAgentIndicator'                   , 'servicing_agent_indicator'                 , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  (  40, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'hierarchy_bridge_base', 'CommissionOnlyIndicator'                   , 'commission_only_indicator'                 , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  (  41, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'hierarchy_bridge_base', 'CommissionOption'                          , 'commission_option'                         , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  (  42, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'hierarchy_bridge_base', 'HierarchyOrder'                            , 'hierarchy_order'                           , 'INT'                 ,   8, 1, 0, 1, GETUTCDATE()),
-  (  43, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'hierarchy_bridge_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE()),
-  (  44, 'EQ_Warehouse', 'Hierarchy_Bridge'                          , 'hierarchy_bridge_base', 'StopDate'                                  , 'stop_timestamp'                            , 'TIMESTAMP'           ,  10, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Hierarchy_Bridge', 'HierarchyBridgePK', 'STRING', 'hierarchy_bridge_base_temp', 'hierarchy_bridge_id', 'STRING', 'hierarchy_bridge_temp', 'hierarchy_bridge_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_Bridge', 'HierarchyGroupKey', 'STRING', 'hierarchy_bridge_base_temp', 'hierarchy_group_key', 'STRING', 'hierarchy_bridge_temp', 'hierarchy_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_Bridge', 'HierarchySetKey', 'STRING', 'hierarchy_bridge_base_temp', 'hierarchy_set_key', 'STRING', 'hierarchy_bridge_temp', 'hierarchy_set_key', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_Bridge', 'SplitPercent', 'STRING', 'hierarchy_bridge_base_temp', 'split_percent', 'STRING', 'hierarchy_bridge_temp', 'split_percent', 'DECIMAL(18,4)', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_Bridge', 'ServicingAgentIndicator', 'STRING', 'hierarchy_bridge_base_temp', 'servicing_agent_indicator', 'STRING', 'hierarchy_bridge_temp', 'servicing_agent_indicator', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_Bridge', 'CommissionOnlyIndicator', 'STRING', 'hierarchy_bridge_base_temp', 'commission_only_indicator', 'STRING', 'hierarchy_bridge_temp', 'commission_only_indicator', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_Bridge', 'CommissionOption', 'STRING', 'hierarchy_bridge_base_temp', 'commission_option', 'STRING', 'hierarchy_bridge_temp', 'commission_option', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_Bridge', 'HierarchyOrder', 'STRING', 'hierarchy_bridge_base_temp', 'hierarchy_order', 'STRING', 'hierarchy_bridge_temp', 'hierarchy_order', 'INT', 8, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_Bridge', 'StartDate', 'STRING', 'hierarchy_bridge_base_temp', 'start_timestamp', 'STRING', 'hierarchy_bridge_temp', 'start_timestamp', 'TIMESTAMP', 9, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy_Bridge', 'StopDate', 'STRING', 'hierarchy_bridge_base_temp', 'stop_timestamp', 'STRING', 'hierarchy_bridge_temp', 'stop_timestamp', 'TIMESTAMP', 10, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [06] Hierarchy (5 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [06] Hierarchy
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (  51, 'EQ_Warehouse', 'Hierarchy'                                 , 'hierarchy_base', 'HierarchyPK'                               , 'hierarchy_id'                              , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  (  52, 'EQ_Warehouse', 'Hierarchy'                                 , 'hierarchy_base', 'HierarchySetKey'                           , 'hierarchy_set_key'                         , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  (  53, 'EQ_Warehouse', 'Hierarchy'                                 , 'hierarchy_base', 'AgentContractFK'                           , 'agent_contract_id'                         , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  (  54, 'EQ_Warehouse', 'Hierarchy'                                 , 'hierarchy_base', 'Level'                                     , 'level'                                     , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE()),
-  (  55, 'EQ_Warehouse', 'Hierarchy'                                 , 'hierarchy_base', 'ReverseLevel'                              , 'reverse_level'                             , 'INT'                 ,   5, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Hierarchy', 'HierarchyPK', 'STRING', 'hierarchy_base_temp', 'hierarchy_id', 'STRING', 'hierarchy_temp', 'hierarchy_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy', 'HierarchySetKey', 'STRING', 'hierarchy_base_temp', 'hierarchy_set_key', 'STRING', 'hierarchy_temp', 'hierarchy_set_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy', 'AgentContractFK', 'STRING', 'hierarchy_base_temp', 'agent_contract_id', 'STRING', 'hierarchy_temp', 'agent_contract_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy', 'Level', 'STRING', 'hierarchy_base_temp', 'level', 'STRING', 'hierarchy_temp', 'level', 'INT', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Hierarchy', 'ReverseLevel', 'STRING', 'hierarchy_base_temp', 'reverse_level', 'STRING', 'hierarchy_temp', 'reverse_level', 'INT', 5, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [07] CommissionLevelRank (8 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [07] CommissionLevelRank
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (  60, 'EQ_Warehouse', 'CommissionLevelRank'                       , 'commission_level_rank_base', 'CommissionLevelRankPK'                     , 'commission_level_rank_id'                  , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  (  61, 'EQ_Warehouse', 'CommissionLevelRank'                       , 'commission_level_rank_base', 'CommissionLevel'                           , 'commission_level'                          , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  (  62, 'EQ_Warehouse', 'CommissionLevelRank'                       , 'commission_level_rank_base', 'Rank'                                      , 'rank'                                      , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'CommissionLevelRank', 'CommissionLevelRankPK', 'STRING', 'commission_level_rank_base_temp', 'commission_level_rank_id', 'STRING', 'commission_level_rank_temp', 'commission_level_rank_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CommissionLevelRank', 'CommissionLevel', 'STRING', 'commission_level_rank_base_temp', 'commission_level', 'STRING', 'commission_level_rank_temp', 'commission_level', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CommissionLevelRank', 'Rank', 'STRING', 'commission_level_rank_base_temp', 'rank', 'STRING', 'commission_level_rank_temp', 'rank', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [08] AgentContract (16 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [08] AgentContract
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (  68, 'EQ_Warehouse', 'AgentContract'                             , 'agent_contract_base', 'AgentContractPK'                           , 'agent_contract_id'                         , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  (  69, 'EQ_Warehouse', 'AgentContract'                             , 'agent_contract_base', 'AgentNumber'                               , 'agent_number'                              , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  (  70, 'EQ_Warehouse', 'AgentContract'                             , 'agent_contract_base', 'AgentFK'                                   , 'agent_id'                                  , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  (  71, 'EQ_Warehouse', 'AgentContract'                             , 'agent_contract_base', 'Context'                                   , 'context'                                   , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  (  72, 'EQ_Warehouse', 'AgentContract'                             , 'agent_contract_base', 'Status'                                    , 'status'                                    , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  (  73, 'EQ_Warehouse', 'AgentContract'                             , 'agent_contract_base', 'CommissionLevel'                           , 'commission_level'                          , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  (  74, 'EQ_Warehouse', 'AgentContract'                             , 'agent_contract_base', 'SituationCode'                             , 'situation_code'                            , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  (  75, 'EQ_Warehouse', 'AgentContract'                             , 'agent_contract_base', 'ContractEffectiveDate'                     , 'contract_effective_timestamp'              , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE()),
-  (  76, 'EQ_Warehouse', 'AgentContract'                             , 'agent_contract_base', 'ContractTerminationDate'                   , 'contract_termination_timestamp'            , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE()),
-  (  77, 'EQ_Warehouse', 'AgentContract'                             , 'agent_contract_base', 'CurrentRecord'                             , 'is_current_record'                         , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
-  (  78, 'EQ_Warehouse', 'AgentContract'                             , 'agent_contract_base', 'SetToCurrentDate'                          , 'set_to_current_timestamp'                  , 'TIMESTAMP'           ,  11, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'AgentContract', 'AgentContractPK', 'STRING', 'agent_contract_base_temp', 'agent_contract_id', 'STRING', 'agent_contract_temp', 'agent_contract_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentContract', 'AgentNumber', 'STRING', 'agent_contract_base_temp', 'agent_number', 'STRING', 'agent_contract_temp', 'agent_number', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentContract', 'AgentFK', 'STRING', 'agent_contract_base_temp', 'agent_id', 'STRING', 'agent_contract_temp', 'agent_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentContract', 'Context', 'STRING', 'agent_contract_base_temp', 'context', 'STRING', 'agent_contract_temp', 'context', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentContract', 'Status', 'STRING', 'agent_contract_base_temp', 'status', 'STRING', 'agent_contract_temp', 'status', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentContract', 'CommissionLevel', 'STRING', 'agent_contract_base_temp', 'commission_level', 'STRING', 'agent_contract_temp', 'commission_level', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentContract', 'SituationCode', 'STRING', 'agent_contract_base_temp', 'situation_code', 'STRING', 'agent_contract_temp', 'situation_code', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentContract', 'ContractEffectiveDate', 'STRING', 'agent_contract_base_temp', 'contract_effective_timestamp', 'STRING', 'agent_contract_temp', 'contract_effective_timestamp', 'TIMESTAMP', 8, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentContract', 'ContractTerminationDate', 'STRING', 'agent_contract_base_temp', 'contract_termination_timestamp', 'STRING', 'agent_contract_temp', 'contract_termination_timestamp', 'TIMESTAMP', 9, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentContract', 'CurrentRecord', 'STRING', 'agent_contract_base_temp', 'is_current_record', 'STRING', 'agent_contract_temp', 'is_current_record', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentContract', 'SetToCurrentDate', 'STRING', 'agent_contract_base_temp', 'set_to_current_timestamp', 'STRING', 'agent_contract_temp', 'set_to_current_timestamp', 'TIMESTAMP', 11, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [09] TrainingState_Group (10 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [09] TrainingState_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (  84, 'EQ_Warehouse', 'TrainingState_Group'                       , 'training_state_group_base', 'TrainingStateGroupPK'                      , 'training_state_group_id'                   , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  (  85, 'EQ_Warehouse', 'TrainingState_Group'                       , 'training_state_group_base', 'TrainingStateGroupKey'                     , 'training_state_group_key'                  , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  (  86, 'EQ_Warehouse', 'TrainingState_Group'                       , 'training_state_group_base', 'State'                                     , 'state_code'                                , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  (  87, 'EQ_Warehouse', 'TrainingState_Group'                       , 'training_state_group_base', 'Required'                                  , 'is_required'                               , 'BOOLEAN'             ,   4, 1, 0, 1, GETUTCDATE()),
-  (  88, 'EQ_Warehouse', 'TrainingState_Group'                       , 'training_state_group_base', 'EffectiveDate'                             , 'effective_timestamp'                       , 'TIMESTAMP'           ,   5, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'TrainingState_Group', 'TrainingStateGroupPK', 'STRING', 'training_state_group_base_temp', 'training_state_group_id', 'STRING', 'training_state_group_temp', 'training_state_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'TrainingState_Group', 'TrainingStateGroupKey', 'STRING', 'training_state_group_base_temp', 'training_state_group_key', 'STRING', 'training_state_group_temp', 'training_state_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'TrainingState_Group', 'State', 'STRING', 'training_state_group_base_temp', 'state_code', 'STRING', 'training_state_group_temp', 'state_code', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'TrainingState_Group', 'Required', 'STRING', 'training_state_group_base_temp', 'is_required', 'STRING', 'training_state_group_temp', 'is_required', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'TrainingState_Group', 'EffectiveDate', 'STRING', 'training_state_group_base_temp', 'effective_timestamp', 'STRING', 'training_state_group_temp', 'effective_timestamp', 'TIMESTAMP', 5, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [10] TrainingProduct_Group (9 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [10] TrainingProduct_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (  94, 'EQ_Warehouse', 'TrainingProduct_Group'                     , 'training_product_group_base', 'TrainingProductGroupPK'                    , 'training_product_group_id'                 , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  (  95, 'EQ_Warehouse', 'TrainingProduct_Group'                     , 'training_product_group_base', 'TrainingProductGroupKey'                   , 'training_product_group_key'                , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  (  96, 'EQ_Warehouse', 'TrainingProduct_Group'                     , 'training_product_group_base', 'ProductFK'                                 , 'product_id'                                , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  (  97, 'EQ_Warehouse', 'TrainingProduct_Group'                     , 'training_product_group_base', 'Required'                                  , 'is_required'                               , 'BOOLEAN'             ,   4, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'TrainingProduct_Group', 'TrainingProductGroupPK', 'STRING', 'training_product_group_base_temp', 'training_product_group_id', 'STRING', 'training_product_group_temp', 'training_product_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'TrainingProduct_Group', 'TrainingProductGroupKey', 'STRING', 'training_product_group_base_temp', 'training_product_group_key', 'STRING', 'training_product_group_temp', 'training_product_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'TrainingProduct_Group', 'ProductFK', 'STRING', 'training_product_group_base_temp', 'product_id', 'STRING', 'training_product_group_temp', 'product_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'TrainingProduct_Group', 'Required', 'STRING', 'training_product_group_base_temp', 'is_required', 'STRING', 'training_product_group_temp', 'is_required', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [11] Rider_Group (20 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [11] Rider_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 103, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'RiderGroupPK'                              , 'rider_group_id'                            , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 104, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'RiderGroupKey'                             , 'rider_group_key'                           , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 105, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'Code'                                      , 'rider_code'                                , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 106, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'Description'                               , 'description'                               , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 107, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'BaseValue'                                 , 'base_value'                                , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 108, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'EligibilityDate'                           , 'eligibility_timestamp'                     , 'TIMESTAMP'           ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 109, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'FeePercent'                                , 'fee_percent'                               , 'DECIMAL(18,4)'       ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 110, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'Lives'                                     , 'lives'                                     , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 111, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'PayValue'                                  , 'pay_value'                                 , 'DECIMAL(18,4)'       ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 112, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'Frequency'                                 , 'frequency'                                 , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 113, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'WellnessEnrollment'                        , 'is_wellness_enrollment'                    , 'BOOLEAN'             ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 114, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'WellnessCredits'                           , 'wellness_credits'                          , 'DECIMAL(18,4)'       ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 115, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'StartAge'                                  , 'start_age'                                 , 'INT'                 ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 116, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 117, 'EQ_Warehouse', 'Rider_Group'                               , 'rider_group_base', 'StopDate'                                  , 'stop_timestamp'                            , 'TIMESTAMP'           ,  15, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Rider_Group', 'RiderGroupPK', 'STRING', 'rider_group_base_temp', 'rider_group_id', 'STRING', 'rider_group_temp', 'rider_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Rider_Group', 'RiderGroupKey', 'STRING', 'rider_group_base_temp', 'rider_group_key', 'STRING', 'rider_group_temp', 'rider_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Rider_Group', 'Code', 'STRING', 'rider_group_base_temp', 'rider_code', 'STRING', 'rider_group_temp', 'rider_code', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Rider_Group', 'Description', 'STRING', 'rider_group_base_temp', 'description', 'STRING', 'rider_group_temp', 'description', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Rider_Group', 'BaseValue', 'STRING', 'rider_group_base_temp', 'base_value', 'STRING', 'rider_group_temp', 'base_value', 'DECIMAL(18,4)', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Rider_Group', 'EligibilityDate', 'STRING', 'rider_group_base_temp', 'eligibility_timestamp', 'STRING', 'rider_group_temp', 'eligibility_timestamp', 'TIMESTAMP', 6, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Rider_Group', 'FeePercent', 'STRING', 'rider_group_base_temp', 'fee_percent', 'STRING', 'rider_group_temp', 'fee_percent', 'DECIMAL(18,4)', 7, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Rider_Group', 'Lives', 'STRING', 'rider_group_base_temp', 'lives', 'STRING', 'rider_group_temp', 'lives', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Rider_Group', 'PayValue', 'STRING', 'rider_group_base_temp', 'pay_value', 'STRING', 'rider_group_temp', 'pay_value', 'DECIMAL(18,4)', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Rider_Group', 'Frequency', 'STRING', 'rider_group_base_temp', 'frequency', 'STRING', 'rider_group_temp', 'frequency', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Rider_Group', 'WellnessEnrollment', 'STRING', 'rider_group_base_temp', 'is_wellness_enrollment', 'STRING', 'rider_group_temp', 'is_wellness_enrollment', 'BOOLEAN', 11, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Rider_Group', 'WellnessCredits', 'STRING', 'rider_group_base_temp', 'wellness_credits', 'STRING', 'rider_group_temp', 'wellness_credits', 'DECIMAL(18,4)', 12, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Rider_Group', 'StartAge', 'STRING', 'rider_group_base_temp', 'start_age', 'STRING', 'rider_group_temp', 'start_age', 'INT', 13, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Rider_Group', 'StartDate', 'STRING', 'rider_group_base_temp', 'start_timestamp', 'STRING', 'rider_group_temp', 'start_timestamp', 'TIMESTAMP', 14, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Rider_Group', 'StopDate', 'STRING', 'rider_group_base_temp', 'stop_timestamp', 'STRING', 'rider_group_temp', 'stop_timestamp', 'TIMESTAMP', 15, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [12] Requirement_Group (14 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [12] Requirement_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 123, 'EQ_Warehouse', 'Requirement_Group'                         , 'requirement_group_base', 'RequirementGroupPK'                        , 'requirement_group_id'                      , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 124, 'EQ_Warehouse', 'Requirement_Group'                         , 'requirement_group_base', 'RequirementGroupKey'                       , 'requirement_group_key'                     , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 125, 'EQ_Warehouse', 'Requirement_Group'                         , 'requirement_group_base', 'Code'                                      , 'requirement_code'                          , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 126, 'EQ_Warehouse', 'Requirement_Group'                         , 'requirement_group_base', 'Description'                               , 'description'                               , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 127, 'EQ_Warehouse', 'Requirement_Group'                         , 'requirement_group_base', 'Status'                                    , 'status'                                    , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 128, 'EQ_Warehouse', 'Requirement_Group'                         , 'requirement_group_base', 'EffectiveDate'                             , 'effective_timestamp'                       , 'TIMESTAMP'           ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 129, 'EQ_Warehouse', 'Requirement_Group'                         , 'requirement_group_base', 'FollowUpDate'                              , 'follow_up_timestamp'                       , 'TIMESTAMP'           ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 130, 'EQ_Warehouse', 'Requirement_Group'                         , 'requirement_group_base', 'ReceivedDate'                              , 'received_timestamp'                        , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 131, 'EQ_Warehouse', 'Requirement_Group'                         , 'requirement_group_base', 'ExecutedDate'                              , 'executed_timestamp'                        , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Requirement_Group', 'RequirementGroupPK', 'STRING', 'requirement_group_base_temp', 'requirement_group_id', 'STRING', 'requirement_group_temp', 'requirement_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Requirement_Group', 'RequirementGroupKey', 'STRING', 'requirement_group_base_temp', 'requirement_group_key', 'STRING', 'requirement_group_temp', 'requirement_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Requirement_Group', 'Code', 'STRING', 'requirement_group_base_temp', 'requirement_code', 'STRING', 'requirement_group_temp', 'requirement_code', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Requirement_Group', 'Description', 'STRING', 'requirement_group_base_temp', 'description', 'STRING', 'requirement_group_temp', 'description', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Requirement_Group', 'Status', 'STRING', 'requirement_group_base_temp', 'status', 'STRING', 'requirement_group_temp', 'status', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Requirement_Group', 'EffectiveDate', 'STRING', 'requirement_group_base_temp', 'effective_timestamp', 'STRING', 'requirement_group_temp', 'effective_timestamp', 'TIMESTAMP', 6, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Requirement_Group', 'FollowUpDate', 'STRING', 'requirement_group_base_temp', 'follow_up_timestamp', 'STRING', 'requirement_group_temp', 'follow_up_timestamp', 'TIMESTAMP', 7, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Requirement_Group', 'ReceivedDate', 'STRING', 'requirement_group_base_temp', 'received_timestamp', 'STRING', 'requirement_group_temp', 'received_timestamp', 'TIMESTAMP', 8, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Requirement_Group', 'ExecutedDate', 'STRING', 'requirement_group_base_temp', 'executed_timestamp', 'STRING', 'requirement_group_temp', 'executed_timestamp', 'TIMESTAMP', 9, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [13] RenewalRate_Group (11 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [13] RenewalRate_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 137, 'EQ_Warehouse', 'RenewalRate_Group'                         , 'renewal_rate_group_base', 'RenewalRateGroupPK'                        , 'renewal_rate_group_id'                     , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 138, 'EQ_Warehouse', 'RenewalRate_Group'                         , 'renewal_rate_group_base', 'RenewalRateGroupKey'                       , 'renewal_rate_group_key'                    , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 139, 'EQ_Warehouse', 'RenewalRate_Group'                         , 'renewal_rate_group_base', 'EffectiveDate'                             , 'effective_timestamp'                       , 'TIMESTAMP'           ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 140, 'EQ_Warehouse', 'RenewalRate_Group'                         , 'renewal_rate_group_base', 'Year'                                      , 'year'                                      , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 141, 'EQ_Warehouse', 'RenewalRate_Group'                         , 'renewal_rate_group_base', 'YearDisplay'                               , 'year_display'                              , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 142, 'EQ_Warehouse', 'RenewalRate_Group'                         , 'renewal_rate_group_base', 'Rate'                                      , 'rate'                                      , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'RenewalRate_Group', 'RenewalRateGroupPK', 'STRING', 'renewal_rate_group_base_temp', 'renewal_rate_group_id', 'STRING', 'renewal_rate_group_temp', 'renewal_rate_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RenewalRate_Group', 'RenewalRateGroupKey', 'STRING', 'renewal_rate_group_base_temp', 'renewal_rate_group_key', 'STRING', 'renewal_rate_group_temp', 'renewal_rate_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RenewalRate_Group', 'Rate', 'STRING', 'renewal_rate_group_base_temp', 'rate', 'STRING', 'renewal_rate_group_temp', 'rate', 'DECIMAL(18,4)', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RenewalRate_Group', 'EffectiveDate', 'STRING', 'renewal_rate_group_base_temp', 'effective_timestamp', 'STRING', 'renewal_rate_group_temp', 'effective_timestamp', 'TIMESTAMP', 4, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [14] Reinsurance_Group (9 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [14] Reinsurance_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 148, 'EQ_Warehouse', 'Reinsurance_Group'                         , 'reinsurance_group_base', 'ReinsuranceGroupPK'                        , 'reinsurance_group_id'                      , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 149, 'EQ_Warehouse', 'Reinsurance_Group'                         , 'reinsurance_group_base', 'ReinsuranceGroupKey'                       , 'reinsurance_group_key'                     , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 150, 'EQ_Warehouse', 'Reinsurance_Group'                         , 'reinsurance_group_base', 'TreatyCode'                                , 'treaty_code'                               , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 151, 'EQ_Warehouse', 'Reinsurance_Group'                         , 'reinsurance_group_base', 'CoinsurancePercentage'                     , 'coinsurance_percentage'                    , 'DECIMAL(18,4)'       ,   4, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Reinsurance_Group', 'ReinsuranceGroupPK', 'STRING', 'reinsurance_group_base_temp', 'reinsurance_group_id', 'STRING', 'reinsurance_group_temp', 'reinsurance_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Reinsurance_Group', 'ReinsuranceGroupKey', 'STRING', 'reinsurance_group_base_temp', 'reinsurance_group_key', 'STRING', 'reinsurance_group_temp', 'reinsurance_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Reinsurance_Group', 'TreatyCode', 'STRING', 'reinsurance_group_base_temp', 'treaty_code', 'STRING', 'reinsurance_group_temp', 'treaty_code', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Reinsurance_Group', 'CoinsurancePercentage', 'STRING', 'reinsurance_group_base_temp', 'coinsurance_percentage', 'STRING', 'reinsurance_group_temp', 'coinsurance_percentage', 'DECIMAL(18,4)', 4, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [15] RecurringPayment_Group (21 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [15] RecurringPayment_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 157, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'RecurringPaymentGroupPK'                   , 'recurring_payment_group_id'                , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 158, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'RecurringPaymentGroupKey'                  , 'recurring_payment_group_key'               , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 159, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'ActivityTypeFK'                            , 'activity_type_id'                          , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 160, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'PayeeFK'                                   , 'payee_id'                                  , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 161, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'NextEffectiveDate'                         , 'next_effective_timestamp'                  , 'TIMESTAMP'           ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 162, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'PausedInd'                                 , 'is_paused'                                 , 'BOOLEAN'             ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 163, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'DistributionType'                          , 'distribution_type'                         , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 164, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'Lives'                                     , 'lives'                                     , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 165, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'Frequency'                                 , 'frequency'                                 , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 166, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'WithdrawalType'                            , 'withdrawal_type'                           , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 167, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'FirstDate'                                 , 'first_timestamp'                           , 'TIMESTAMP'           ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 168, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'PriorDate'                                 , 'prior_timestamp'                           , 'TIMESTAMP'           ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 169, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'PriorActivityFK'                           , 'prior_activity_id'                         , 'INT'                 ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 170, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'EligibleRMDDate'                           , 'eligible_rmd_timestamp'                    , 'TIMESTAMP'           ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 171, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'CalculatedAmount'                          , 'calculated_amount'                         , 'DECIMAL(18,4)'       ,  15, 1, 0, 1, GETUTCDATE()),
-  ( 172, 'EQ_Warehouse', 'RecurringPayment_Group'                    , 'recurring_payment_group_base', 'GrossNet'                                  , 'gross_net'                                 , 'STRING'              ,  16, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'RecurringPayment_Group', 'RecurringPaymentGroupPK', 'STRING', 'recurring_payment_group_base_temp', 'recurring_payment_group_id', 'STRING', 'recurring_payment_group_temp', 'recurring_payment_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'RecurringPaymentGroupKey', 'STRING', 'recurring_payment_group_base_temp', 'recurring_payment_group_key', 'STRING', 'recurring_payment_group_temp', 'recurring_payment_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'ActivityTypeFK', 'STRING', 'recurring_payment_group_base_temp', 'activity_type_id', 'STRING', 'recurring_payment_group_temp', 'activity_type_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'PayeeFK', 'STRING', 'recurring_payment_group_base_temp', 'payee_id', 'STRING', 'recurring_payment_group_temp', 'payee_id', 'INT', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'NextEffectiveDate', 'STRING', 'recurring_payment_group_base_temp', 'next_effective_timestamp', 'STRING', 'recurring_payment_group_temp', 'next_effective_timestamp', 'TIMESTAMP', 5, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'PausedInd', 'STRING', 'recurring_payment_group_base_temp', 'is_paused', 'STRING', 'recurring_payment_group_temp', 'is_paused', 'BOOLEAN', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'DistributionType', 'STRING', 'recurring_payment_group_base_temp', 'distribution_type', 'STRING', 'recurring_payment_group_temp', 'distribution_type', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'Lives', 'STRING', 'recurring_payment_group_base_temp', 'lives', 'STRING', 'recurring_payment_group_temp', 'lives', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'Frequency', 'STRING', 'recurring_payment_group_base_temp', 'frequency', 'STRING', 'recurring_payment_group_temp', 'frequency', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'WithdrawalType', 'STRING', 'recurring_payment_group_base_temp', 'withdrawal_type', 'STRING', 'recurring_payment_group_temp', 'withdrawal_type', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'FirstDate', 'STRING', 'recurring_payment_group_base_temp', 'first_timestamp', 'STRING', 'recurring_payment_group_temp', 'first_timestamp', 'TIMESTAMP', 11, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'PriorDate', 'STRING', 'recurring_payment_group_base_temp', 'prior_timestamp', 'STRING', 'recurring_payment_group_temp', 'prior_timestamp', 'TIMESTAMP', 12, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'PriorActivityFK', 'STRING', 'recurring_payment_group_base_temp', 'prior_activity_id', 'STRING', 'recurring_payment_group_temp', 'prior_activity_id', 'INT', 13, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'EligibleRMDDate', 'STRING', 'recurring_payment_group_base_temp', 'eligible_rmd_timestamp', 'STRING', 'recurring_payment_group_temp', 'eligible_rmd_timestamp', 'TIMESTAMP', 14, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'CalculatedAmount', 'STRING', 'recurring_payment_group_base_temp', 'calculated_amount', 'STRING', 'recurring_payment_group_temp', 'calculated_amount', 'DECIMAL(18,4)', 15, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'RecurringPayment_Group', 'GrossNet', 'STRING', 'recurring_payment_group_base_temp', 'gross_net', 'STRING', 'recurring_payment_group_temp', 'gross_net', 'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
--- [16] Note_Group (21 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [16] Note_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 178, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'NoteGroupPK'                               , 'note_group_id'                             , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 179, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'SourceKey'                                 , 'source_key'                                , 'BIGINT'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 180, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'NoteGroupKey'                              , 'note_group_key'                            , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 181, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'Order'                                     , 'sort_order'                                , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 182, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'Text'                                      , 'note_text'                                 , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 183, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'Type'                                      , 'note_type'                                 , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 184, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'Role'                                      , 'role'                                      , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 185, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'MaintDate'                                 , 'maint_timestamp'                           , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 186, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'MaintBy'                                   , 'maint_by'                                  , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 187, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'Call_ID'                                   , 'call_id'                                   , 'INT'                 ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 188, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'Call_Length'                               , 'call_length'                               , 'INT'                 ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 189, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'Call_StartDate'                            , 'call_start_timestamp'                      , 'TIMESTAMP'           ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 190, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'Call_InOut'                                , 'call_direction'                            , 'STRING'              ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 191, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'Call_Operators'                            , 'call_operators'                            , 'STRING'              ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 192, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'Call_FilePath'                             , 'call_file_path'                            , 'STRING'              ,  15, 1, 0, 1, GETUTCDATE()),
-  ( 193, 'EQ_Warehouse', 'Note_Group'                                , 'note_group_base', 'Call_EncryptKey'                           , 'call_encrypt_key'                          , 'STRING'              ,  16, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Note_Group', 'NoteGroupPK', 'STRING', 'note_group_base_temp', 'note_group_id', 'STRING', 'note_group_temp', 'note_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'SourceKey', 'STRING', 'note_group_base_temp', 'source_key', 'STRING', 'note_group_temp', 'source_key', 'BIGINT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'NoteGroupKey', 'STRING', 'note_group_base_temp', 'note_group_key', 'STRING', 'note_group_temp', 'note_group_key', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'Order', 'STRING', 'note_group_base_temp', 'sort_order', 'STRING', 'note_group_temp', 'sort_order', 'INT', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'Text', 'STRING', 'note_group_base_temp', 'note_text', 'STRING', 'note_group_temp', 'note_text', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'Type', 'STRING', 'note_group_base_temp', 'note_type', 'STRING', 'note_group_temp', 'note_type', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'Role', 'STRING', 'note_group_base_temp', 'role', 'STRING', 'note_group_temp', 'role', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'MaintDate', 'STRING', 'note_group_base_temp', 'maint_timestamp', 'STRING', 'note_group_temp', 'maint_timestamp', 'TIMESTAMP', 8, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'MaintBy', 'STRING', 'note_group_base_temp', 'maint_by', 'STRING', 'note_group_temp', 'maint_by', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'Call_ID', 'STRING', 'note_group_base_temp', 'call_id', 'STRING', 'note_group_temp', 'call_id', 'INT', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'Call_Length', 'STRING', 'note_group_base_temp', 'call_length', 'STRING', 'note_group_temp', 'call_length', 'INT', 11, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'Call_StartDate', 'STRING', 'note_group_base_temp', 'call_start_timestamp', 'STRING', 'note_group_temp', 'call_start_timestamp', 'TIMESTAMP', 12, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'Call_InOut', 'STRING', 'note_group_base_temp', 'call_direction', 'STRING', 'note_group_temp', 'call_direction', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'Call_Operators', 'STRING', 'note_group_base_temp', 'call_operators', 'STRING', 'note_group_temp', 'call_operators', 'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'Call_FilePath', 'STRING', 'note_group_base_temp', 'call_file_path', 'STRING', 'note_group_temp', 'call_file_path', 'STRING', 15, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Note_Group', 'Call_EncryptKey', 'STRING', 'note_group_base_temp', 'call_encrypt_key', 'STRING', 'note_group_temp', 'call_encrypt_key', 'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
--- [17] IndexValue_Group (12 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [17] IndexValue_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 199, 'EQ_Warehouse', 'IndexValue_Group'                          , 'index_value_group_base', 'IndexValueGroupPK'                         , 'index_value_group_id'                      , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 200, 'EQ_Warehouse', 'IndexValue_Group'                          , 'index_value_group_base', 'IndexValueGroupKey'                        , 'index_value_group_key'                     , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 201, 'EQ_Warehouse', 'IndexValue_Group'                          , 'index_value_group_base', 'Ticker'                                    , 'ticker'                                    , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 202, 'EQ_Warehouse', 'IndexValue_Group'                          , 'index_value_group_base', 'IndexName'                                 , 'index_name'                                , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 203, 'EQ_Warehouse', 'IndexValue_Group'                          , 'index_value_group_base', 'EffectiveDate'                             , 'effective_timestamp'                       , 'TIMESTAMP'           ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 204, 'EQ_Warehouse', 'IndexValue_Group'                          , 'index_value_group_base', 'IndexValue'                                , 'index_value'                               , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 205, 'EQ_Warehouse', 'IndexValue_Group'                          , 'index_value_group_base', 'Change'                                    , 'change_amount'                             , 'DECIMAL(18,4)'       ,   7, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'IndexValue_Group', 'IndexValueGroupPK', 'STRING', 'index_value_group_base_temp', 'index_value_group_id', 'STRING', 'index_value_group_temp', 'index_value_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'IndexValue_Group', 'IndexValueGroupKey', 'STRING', 'index_value_group_base_temp', 'index_value_group_key', 'STRING', 'index_value_group_temp', 'index_value_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'IndexValue_Group', 'Ticker', 'STRING', 'index_value_group_base_temp', 'ticker', 'STRING', 'index_value_group_temp', 'ticker', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'IndexValue_Group', 'IndexName', 'STRING', 'index_value_group_base_temp', 'index_name', 'STRING', 'index_value_group_temp', 'index_name', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'IndexValue_Group', 'EffectiveDate', 'STRING', 'index_value_group_base_temp', 'effective_timestamp', 'STRING', 'index_value_group_temp', 'effective_timestamp', 'TIMESTAMP', 5, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'IndexValue_Group', 'IndexValue', 'STRING', 'index_value_group_base_temp', 'index_value', 'STRING', 'index_value_group_temp', 'index_value', 'DECIMAL(18,4)', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'IndexValue_Group', 'Change', 'STRING', 'index_value_group_base_temp', 'change_amount', 'STRING', 'index_value_group_temp', 'change_amount', 'DECIMAL(18,4)', 7, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [18] ExternalAccount_Group (12 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [18] ExternalAccount_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 211, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'ExternalAccountGroupPK'                    , 'external_account_group_id'                 , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 212, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'ExternalAccountGroupKey'                   , 'external_account_group_key'                , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 213, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'ExternalAccountType'                       , 'external_account_type'                     , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 214, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'Company'                                   , 'company_name'                              , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 215, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'RoutingNumber'                             , 'routing_number'                            , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 216, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'AccountNumber'                             , 'account_number'                            , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 217, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'VerificationCode'                          , 'verification_code'                         , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 218, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'VerificationResponse'                      , 'verification_response'                     , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 219, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'VerificationDate'                          , 'verification_timestamp'                    , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 220, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'Active'                                    , 'is_active'                                 , 'BOOLEAN'             ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 221, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 222, 'EQ_Warehouse', 'ExternalAccount_Group'                     , 'external_account_group_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,  12, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'ExternalAccount_Group', 'ExternalAccountGroupPK', 'STRING', 'external_account_group_base_temp', 'external_account_group_id', 'STRING', 'external_account_group_temp', 'external_account_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ExternalAccount_Group', 'ExternalAccountGroupKey', 'STRING', 'external_account_group_base_temp', 'external_account_group_key', 'STRING', 'external_account_group_temp', 'external_account_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ExternalAccount_Group', 'ExternalAccountType', 'STRING', 'external_account_group_base_temp', 'external_account_type', 'STRING', 'external_account_group_temp', 'external_account_type', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ExternalAccount_Group', 'Company', 'STRING', 'external_account_group_base_temp', 'company_name', 'STRING', 'external_account_group_temp', 'company_name', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ExternalAccount_Group', 'RoutingNumber', 'STRING', 'external_account_group_base_temp', 'routing_number', 'STRING', 'external_account_group_temp', 'routing_number', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ExternalAccount_Group', 'AccountNumber', 'STRING', 'external_account_group_base_temp', 'account_number', 'STRING', 'external_account_group_temp', 'account_number', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ExternalAccount_Group', 'VerificationCode', 'STRING', 'external_account_group_base_temp', 'verification_code', 'STRING', 'external_account_group_temp', 'verification_code', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ExternalAccount_Group', 'VerificationResponse', 'STRING', 'external_account_group_base_temp', 'verification_response', 'STRING', 'external_account_group_temp', 'verification_response', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ExternalAccount_Group', 'VerificationDate', 'STRING', 'external_account_group_base_temp', 'verification_timestamp', 'STRING', 'external_account_group_temp', 'verification_timestamp', 'TIMESTAMP', 9, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ExternalAccount_Group', 'Active', 'STRING', 'external_account_group_base_temp', 'is_active', 'STRING', 'external_account_group_temp', 'is_active', 'BOOLEAN', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ExternalAccount_Group', 'StartDate', 'STRING', 'external_account_group_base_temp', 'start_timestamp', 'STRING', 'external_account_group_temp', 'start_timestamp', 'TIMESTAMP', 11, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ExternalAccount_Group', 'EndDate', 'STRING', 'external_account_group_base_temp', 'end_timestamp', 'STRING', 'external_account_group_temp', 'end_timestamp', 'TIMESTAMP', 12, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [19] ContractValue_Group (13 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [19] ContractValue_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 225, 'EQ_Warehouse', 'ContractValue_Group'                       , 'contract_value_group_base', 'ContractValueGroupPK'                      , 'contract_value_group_id'                   , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 226, 'EQ_Warehouse', 'ContractValue_Group'                       , 'contract_value_group_base', 'ContractValueGroupKey'                     , 'contract_value_group_key'                  , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 227, 'EQ_Warehouse', 'ContractValue_Group'                       , 'contract_value_group_base', 'ValueType'                                 , 'value_type'                                , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 228, 'EQ_Warehouse', 'ContractValue_Group'                       , 'contract_value_group_base', 'ValueDate'                                 , 'value_timestamp'                           , 'TIMESTAMP'           ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 229, 'EQ_Warehouse', 'ContractValue_Group'                       , 'contract_value_group_base', 'Value'                                     , 'value'                                     , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 230, 'EQ_Warehouse', 'ContractValue_Group'                       , 'contract_value_group_base', 'ValueAsDate'                               , 'value_as_timestamp'                        , 'TIMESTAMP'           ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 231, 'EQ_Warehouse', 'ContractValue_Group'                       , 'contract_value_group_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 232, 'EQ_Warehouse', 'ContractValue_Group'                       , 'contract_value_group_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'ContractValue_Group', 'ContractValueGroupPK', 'STRING', 'contract_value_group_base_temp', 'contract_value_id', 'STRING', 'contract_value_group_temp', 'contract_value_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractValue_Group', 'ContractValueGroupKey', 'STRING', 'contract_value_group_base_temp', 'contract_value_key', 'STRING', 'contract_value_group_temp', 'contract_value_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractValue_Group', 'ValueType', 'STRING', 'contract_value_group_base_temp', 'value_type', 'STRING', 'contract_value_group_temp', 'value_type', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractValue_Group', 'ValueDate', 'STRING', 'contract_value_group_base_temp', 'value_timestamp', 'STRING', 'contract_value_group_temp', 'value_timestamp', 'TIMESTAMP', 4, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractValue_Group', 'Value', 'STRING', 'contract_value_group_base_temp', 'value', 'STRING', 'contract_value_group_temp', 'value', 'DECIMAL(18,4)', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractValue_Group', 'ValueAsDate', 'STRING', 'contract_value_group_base_temp', 'value_as_timestamp', 'STRING', 'contract_value_group_temp', 'value_as_timestamp', 'TIMESTAMP', 6, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractValue_Group', 'StartDate', 'STRING', 'contract_value_group_base_temp', 'start_timestamp', 'STRING', 'contract_value_group_temp', 'start_timestamp', 'TIMESTAMP', 7, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractValue_Group', 'EndDate', 'STRING', 'contract_value_group_base_temp', 'end_timestamp', 'STRING', 'contract_value_group_temp', 'end_timestamp', 'TIMESTAMP', 8, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [20] ContractDeposit_Group (22 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [20] ContractDeposit_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 238, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'ContractDepositGroupPK'                    , 'contract_deposit_group_id'                 , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 239, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'SourceKey'                                 , 'source_key'                                , 'BIGINT'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 240, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'ContractDepositGroupKey'                   , 'contract_deposit_group_key'                , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 241, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'DepositType'                               , 'deposit_type'                              , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 242, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'DepositSource'                             , 'deposit_source'                            , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 243, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'OriginalContract'                          , 'original_contract'                         , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 244, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'DateReceived'                              , 'date_received_timestamp'                   , 'TIMESTAMP'           ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 245, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'ProcessDate'                               , 'process_timestamp'                         , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 246, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'TaxYear'                                   , 'tax_year'                                  , 'INT'                 ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 247, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'ReplacementType'                           , 'replacement_type'                          , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 248, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'PremiumType'                               , 'premium_type'                              , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 249, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'PlannedIndicator'                          , 'planned_indicator'                         , 'STRING'              ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 250, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'Reference'                                 , 'reference'                                 , 'STRING'              ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 251, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'AnticipatedAmount'                         , 'anticipated_amount'                        , 'DECIMAL(18,4)'       ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 252, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'ActualAmount'                              , 'actual_amount'                             , 'DECIMAL(18,4)'       ,  15, 1, 0, 1, GETUTCDATE()),
-  ( 253, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'CostBasis'                                 , 'cost_basis'                                , 'DECIMAL(18,4)'       ,  16, 1, 0, 1, GETUTCDATE()),
-  ( 254, 'EQ_Warehouse', 'ContractDeposit_Group'                     , 'contract_deposit_group_base', 'RefundAmount'                              , 'refund_amount'                             , 'DECIMAL(18,4)'       ,  17, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'ContractDeposit_Group', 'ContractDepositGroupPK', 'STRING', 'contract_deposit_group_base_temp', 'contract_deposit_group_id', 'STRING', 'contract_deposit_group_temp', 'contract_deposit_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'SourceKey', 'STRING', 'contract_deposit_group_base_temp', 'source_key', 'STRING', 'contract_deposit_group_temp', 'source_key', 'BIGINT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'ContractDepositGroupKey', 'STRING', 'contract_deposit_group_base_temp', 'contract_deposit_group_key', 'STRING', 'contract_deposit_group_temp', 'contract_deposit_group_key', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'DepositType', 'STRING', 'contract_deposit_group_base_temp', 'deposit_type', 'STRING', 'contract_deposit_group_temp', 'deposit_type', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'DepositSource', 'STRING', 'contract_deposit_group_base_temp', 'deposit_source', 'STRING', 'contract_deposit_group_temp', 'deposit_source', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'OriginalContract', 'STRING', 'contract_deposit_group_base_temp', 'original_contract', 'STRING', 'contract_deposit_group_temp', 'original_contract', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'DateReceived', 'STRING', 'contract_deposit_group_base_temp', 'date_received_timestamp', 'STRING', 'contract_deposit_group_temp', 'date_received_timestamp', 'TIMESTAMP', 7, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'ProcessDate', 'STRING', 'contract_deposit_group_base_temp', 'process_timestamp', 'STRING', 'contract_deposit_group_temp', 'process_timestamp', 'TIMESTAMP', 8, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'TaxYear', 'STRING', 'contract_deposit_group_base_temp', 'tax_year', 'STRING', 'contract_deposit_group_temp', 'tax_year', 'INT', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'ReplacementType', 'STRING', 'contract_deposit_group_base_temp', 'replacement_type', 'STRING', 'contract_deposit_group_temp', 'replacement_type', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'PremiumType', 'STRING', 'contract_deposit_group_base_temp', 'premium_type', 'STRING', 'contract_deposit_group_temp', 'premium_type', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'PlannedIndicator', 'STRING', 'contract_deposit_group_base_temp', 'planned_indicator', 'STRING', 'contract_deposit_group_temp', 'planned_indicator', 'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'Reference', 'STRING', 'contract_deposit_group_base_temp', 'reference', 'STRING', 'contract_deposit_group_temp', 'reference', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'AnticipatedAmount', 'STRING', 'contract_deposit_group_base_temp', 'anticipated_amount', 'STRING', 'contract_deposit_group_temp', 'anticipated_amount', 'DECIMAL(18,4)', 14, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'ActualAmount', 'STRING', 'contract_deposit_group_base_temp', 'actual_amount', 'STRING', 'contract_deposit_group_temp', 'actual_amount', 'DECIMAL(18,4)', 15, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'CostBasis', 'STRING', 'contract_deposit_group_base_temp', 'cost_basis', 'STRING', 'contract_deposit_group_temp', 'cost_basis', 'DECIMAL(18,4)', 16, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ContractDeposit_Group', 'RefundAmount', 'STRING', 'contract_deposit_group_base_temp', 'refund_amount', 'STRING', 'contract_deposit_group_temp', 'refund_amount', 'DECIMAL(18,4)', 17, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [21] AgentSummary_Group (10 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [21] AgentSummary_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 260, 'EQ_Warehouse', 'AgentSummary_Group'                        , 'agent_summary_group_base', 'AgentSummaryGroupPK'                       , 'agent_summary_group_id'                    , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 261, 'EQ_Warehouse', 'AgentSummary_Group'                        , 'agent_summary_group_base', 'AgentSummaryGroupKey'                      , 'agent_summary_group_key'                   , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 262, 'EQ_Warehouse', 'AgentSummary_Group'                        , 'agent_summary_group_base', 'SummaryType'                               , 'summary_type'                              , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 263, 'EQ_Warehouse', 'AgentSummary_Group'                        , 'agent_summary_group_base', 'SummaryDate'                               , 'summary_timestamp'                         , 'TIMESTAMP'           ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 264, 'EQ_Warehouse', 'AgentSummary_Group'                        , 'agent_summary_group_base', 'SummaryValue'                              , 'summary_value'                             , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'AgentSummary_Group', 'AgentSummaryGroupPK', 'STRING', 'agent_summary_group_base_temp', 'agent_summary_group_id', 'STRING', 'agent_summary_group_temp', 'agent_summary_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentSummary_Group', 'AgentSummaryGroupKey', 'STRING', 'agent_summary_group_base_temp', 'agent_summary_group_key', 'STRING', 'agent_summary_group_temp', 'agent_summary_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentSummary_Group', 'SummaryType', 'STRING', 'agent_summary_group_base_temp', 'summary_type', 'STRING', 'agent_summary_group_temp', 'summary_type', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentSummary_Group', 'SummaryDate', 'STRING', 'agent_summary_group_base_temp', 'summary_timestamp', 'STRING', 'agent_summary_group_temp', 'summary_timestamp', 'TIMESTAMP', 4, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentSummary_Group', 'SummaryValue', 'STRING', 'agent_summary_group_base_temp', 'summary_value', 'STRING', 'agent_summary_group_temp', 'summary_value', 'DECIMAL(18,4)', 5, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [22] AgentPrincipal_Group (10 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [22] AgentPrincipal_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 270, 'EQ_Warehouse', 'AgentPrincipal_Group'                      , 'agent_principal_group_base', 'AgentPrincipalGroupPK'                     , 'agent_principal_group_id'                  , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 271, 'EQ_Warehouse', 'AgentPrincipal_Group'                      , 'agent_principal_group_base', 'AgentPrincipalGroupKey'                    , 'agent_principal_group_key'                 , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 272, 'EQ_Warehouse', 'AgentPrincipal_Group'                      , 'agent_principal_group_base', 'PrincipalAgentFK'                          , 'principal_agent_id'                        , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 273, 'EQ_Warehouse', 'AgentPrincipal_Group'                      , 'agent_principal_group_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 274, 'EQ_Warehouse', 'AgentPrincipal_Group'                      , 'agent_principal_group_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,   5, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'AgentPrincipal_Group', 'AgentPrincipalGroupPK', 'STRING', 'agent_principal_group_base_temp', 'agent_principal_group_id', 'STRING', 'agent_principal_group_temp', 'agent_principal_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentPrincipal_Group', 'AgentPrincipalGroupKey', 'STRING', 'agent_principal_group_base_temp', 'agent_principal_group_key', 'STRING', 'agent_principal_group_temp', 'agent_principal_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentPrincipal_Group', 'PrincipalAgentFK', 'STRING', 'agent_principal_group_base_temp', 'principal_agent_id', 'STRING', 'agent_principal_group_temp', 'principal_agent_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentPrincipal_Group', 'StartDate', 'STRING', 'agent_principal_group_base_temp', 'start_timestamp', 'STRING', 'agent_principal_group_temp', 'start_timestamp', 'TIMESTAMP', 4, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentPrincipal_Group', 'EndDate', 'STRING', 'agent_principal_group_base_temp', 'end_timestamp', 'STRING', 'agent_principal_group_temp', 'end_timestamp', 'TIMESTAMP', 5, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [23] AgentLicense_Group (16 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [23] AgentLicense_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 280, 'EQ_Warehouse', 'AgentLicense_Group'                        , 'agent_license_group_base', 'AgentLicenseGroupPK'                       , 'agent_license_group_id'                    , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 281, 'EQ_Warehouse', 'AgentLicense_Group'                        , 'agent_license_group_base', 'SourceKey'                                 , 'source_key'                                , 'BIGINT'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 282, 'EQ_Warehouse', 'AgentLicense_Group'                        , 'agent_license_group_base', 'AgentLicenseGroupKey'                      , 'agent_license_group_key'                   , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 283, 'EQ_Warehouse', 'AgentLicense_Group'                        , 'agent_license_group_base', 'LicenseType'                               , 'license_type'                              , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 284, 'EQ_Warehouse', 'AgentLicense_Group'                        , 'agent_license_group_base', 'LicenseState'                              , 'license_state'                             , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 285, 'EQ_Warehouse', 'AgentLicense_Group'                        , 'agent_license_group_base', 'Resident'                                  , 'resident'                                  , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 286, 'EQ_Warehouse', 'AgentLicense_Group'                        , 'agent_license_group_base', 'LicenseNumber'                             , 'license_number'                            , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 287, 'EQ_Warehouse', 'AgentLicense_Group'                        , 'agent_license_group_base', 'Status'                                    , 'status'                                    , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 288, 'EQ_Warehouse', 'AgentLicense_Group'                        , 'agent_license_group_base', 'EffectiveDate'                             , 'effective_timestamp'                       , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 289, 'EQ_Warehouse', 'AgentLicense_Group'                        , 'agent_license_group_base', 'ExpirationDate'                            , 'expiration_timestamp'                      , 'TIMESTAMP'           ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 290, 'EQ_Warehouse', 'AgentLicense_Group'                        , 'agent_license_group_base', 'TerminationDate'                           , 'termination_timestamp'                     , 'TIMESTAMP'           ,  11, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'AgentLicense_Group', 'AgentLicenseGroupPK', 'STRING', 'agent_license_group_base_temp', 'agent_license_group_id', 'STRING', 'agent_license_group_temp', 'agent_license_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentLicense_Group', 'SourceKey', 'STRING', 'agent_license_group_base_temp', 'source_key', 'STRING', 'agent_license_group_temp', 'source_key', 'BIGINT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentLicense_Group', 'AgentLicenseGroupKey', 'STRING', 'agent_license_group_base_temp', 'agent_license_group_key', 'STRING', 'agent_license_group_temp', 'agent_license_group_key', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentLicense_Group', 'LicenseType', 'STRING', 'agent_license_group_base_temp', 'license_type', 'STRING', 'agent_license_group_temp', 'license_type', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentLicense_Group', 'LicenseState', 'STRING', 'agent_license_group_base_temp', 'license_state', 'STRING', 'agent_license_group_temp', 'license_state', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentLicense_Group', 'Resident', 'STRING', 'agent_license_group_base_temp', 'resident', 'STRING', 'agent_license_group_temp', 'resident', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentLicense_Group', 'LicenseNumber', 'STRING', 'agent_license_group_base_temp', 'license_number', 'STRING', 'agent_license_group_temp', 'license_number', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentLicense_Group', 'Status', 'STRING', 'agent_license_group_base_temp', 'status', 'STRING', 'agent_license_group_temp', 'status', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentLicense_Group', 'EffectiveDate', 'STRING', 'agent_license_group_base_temp', 'effective_timestamp', 'STRING', 'agent_license_group_temp', 'effective_timestamp', 'TIMESTAMP', 9, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentLicense_Group', 'ExpirationDate', 'STRING', 'agent_license_group_base_temp', 'expiration_timestamp', 'STRING', 'agent_license_group_temp', 'expiration_timestamp', 'TIMESTAMP', 10, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentLicense_Group', 'TerminationDate', 'STRING', 'agent_license_group_base_temp', 'termination_timestamp', 'STRING', 'agent_license_group_temp', 'termination_timestamp', 'TIMESTAMP', 11, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [24] AdditionalInfo_Group (19 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [24] AdditionalInfo_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 296, 'EQ_Warehouse', 'AdditionalInfo_Group'                      , 'additional_info_group_base', 'AdditionalInfoGroupPK'                     , 'additional_info_group_id'                  , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 297, 'EQ_Warehouse', 'AdditionalInfo_Group'                      , 'additional_info_group_base', 'AdditionalInfoGroupKey'                    , 'additional_info_group_key'                 , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 298, 'EQ_Warehouse', 'AdditionalInfo_Group'                      , 'additional_info_group_base', 'AdditionalInfoSource'                      , 'additional_info_source'                    , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 299, 'EQ_Warehouse', 'AdditionalInfo_Group'                      , 'additional_info_group_base', 'AdditionalInfoType'                        , 'additional_info_type'                      , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 300, 'EQ_Warehouse', 'AdditionalInfo_Group'                      , 'additional_info_group_base', 'AdditionalInfoDescription'                 , 'additional_info_description'               , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 301, 'EQ_Warehouse', 'AdditionalInfo_Group'                      , 'additional_info_group_base', 'AdditionalInfoValue'                       , 'additional_info_value'                     , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 302, 'EQ_Warehouse', 'AdditionalInfo_Group'                      , 'additional_info_group_base', 'AddressLine1'                              , 'address_line_1'                            , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 303, 'EQ_Warehouse', 'AdditionalInfo_Group'                      , 'additional_info_group_base', 'AddressLine2'                              , 'address_line_2'                            , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 304, 'EQ_Warehouse', 'AdditionalInfo_Group'                      , 'additional_info_group_base', 'AddressLine3'                              , 'address_line_3'                            , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 305, 'EQ_Warehouse', 'AdditionalInfo_Group'                      , 'additional_info_group_base', 'AddressLine4'                              , 'address_line_4'                            , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 306, 'EQ_Warehouse', 'AdditionalInfo_Group'                      , 'additional_info_group_base', 'City'                                      , 'city'                                      , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 307, 'EQ_Warehouse', 'AdditionalInfo_Group'                      , 'additional_info_group_base', 'State'                                     , 'state'                                     , 'STRING'              ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 308, 'EQ_Warehouse', 'AdditionalInfo_Group'                      , 'additional_info_group_base', 'ZipCode'                                   , 'zip_code'                                  , 'STRING'              ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 309, 'EQ_Warehouse', 'AdditionalInfo_Group'                      , 'additional_info_group_base', 'EffectiveDate'                             , 'effective_timestamp'                       , 'TIMESTAMP'           ,  14, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'AdditionalInfo_Group', 'AdditionalInfoGroupPK', 'STRING', 'additional_info_group_base_temp', 'additional_info_group_id', 'STRING', 'additional_info_group_temp', 'additional_info_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalInfo_Group', 'AdditionalInfoGroupKey', 'STRING', 'additional_info_group_base_temp', 'additional_info_group_key', 'STRING', 'additional_info_group_temp', 'additional_info_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalInfo_Group', 'AdditionalInfoSource', 'STRING', 'additional_info_group_base_temp', 'additional_info_source', 'STRING', 'additional_info_group_temp', 'additional_info_source', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalInfo_Group', 'AdditionalInfoType', 'STRING', 'additional_info_group_base_temp', 'additional_info_type', 'STRING', 'additional_info_group_temp', 'additional_info_type', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalInfo_Group', 'AdditionalInfoDescription', 'STRING', 'additional_info_group_base_temp', 'additional_info_description', 'STRING', 'additional_info_group_temp', 'additional_info_description', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalInfo_Group', 'AdditionalInfoValue', 'STRING', 'additional_info_group_base_temp', 'additional_info_value', 'STRING', 'additional_info_group_temp', 'additional_info_value', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalInfo_Group', 'AddressLine1', 'STRING', 'additional_info_group_base_temp', 'address_line_1', 'STRING', 'additional_info_group_temp', 'address_line_1', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalInfo_Group', 'AddressLine2', 'STRING', 'additional_info_group_base_temp', 'address_line_2', 'STRING', 'additional_info_group_temp', 'address_line_2', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalInfo_Group', 'AddressLine3', 'STRING', 'additional_info_group_base_temp', 'address_line_3', 'STRING', 'additional_info_group_temp', 'address_line_3', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalInfo_Group', 'AddressLine4', 'STRING', 'additional_info_group_base_temp', 'address_line_4', 'STRING', 'additional_info_group_temp', 'address_line_4', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalInfo_Group', 'City', 'STRING', 'additional_info_group_base_temp', 'city', 'STRING', 'additional_info_group_temp', 'city', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalInfo_Group', 'State', 'STRING', 'additional_info_group_base_temp', 'state', 'STRING', 'additional_info_group_temp', 'state', 'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalInfo_Group', 'ZipCode', 'STRING', 'additional_info_group_base_temp', 'zip_code', 'STRING', 'additional_info_group_temp', 'zip_code', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalInfo_Group', 'EffectiveDate', 'STRING', 'additional_info_group_base_temp', 'effective_timestamp', 'STRING', 'additional_info_group_temp', 'effective_timestamp', 'TIMESTAMP', 14, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [25] AdditionalClient_Group (12 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [25] AdditionalClient_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 315, 'EQ_Warehouse', 'AdditionalClient_Group'                    , 'additional_client_group_base', 'AdditionalClientGroupPK'                   , 'additional_client_group_id'                , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 316, 'EQ_Warehouse', 'AdditionalClient_Group'                    , 'additional_client_group_base', 'AdditionalClientGroupKey'                  , 'additional_client_group_key'               , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 317, 'EQ_Warehouse', 'AdditionalClient_Group'                    , 'additional_client_group_base', 'ClientFK'                                  , 'client_id'                                 , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 318, 'EQ_Warehouse', 'AdditionalClient_Group'                    , 'additional_client_group_base', 'AdditionalType'                            , 'additional_type'                           , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 319, 'EQ_Warehouse', 'AdditionalClient_Group'                    , 'additional_client_group_base', 'Relation'                                  , 'relation'                                  , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 320, 'EQ_Warehouse', 'AdditionalClient_Group'                    , 'additional_client_group_base', 'AllocationPercent'                         , 'allocation_percent'                        , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 321, 'EQ_Warehouse', 'AdditionalClient_Group'                    , 'additional_client_group_base', 'Active'                                    , 'is_active'                                 , 'BOOLEAN'             ,   7, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'AdditionalClient_Group', 'AdditionalClientGroupPK', 'STRING', 'additional_client_group_base_temp', 'additional_client_group_id', 'STRING', 'additional_client_group_temp', 'additional_client_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalClient_Group', 'AdditionalClientGroupKey', 'STRING', 'additional_client_group_base_temp', 'additional_client_group_key', 'STRING', 'additional_client_group_temp', 'additional_client_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalClient_Group', 'ClientFK', 'STRING', 'additional_client_group_base_temp', 'client_id', 'STRING', 'additional_client_group_temp', 'client_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalClient_Group', 'AdditionalType', 'STRING', 'additional_client_group_base_temp', 'additional_type', 'STRING', 'additional_client_group_temp', 'additional_type', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalClient_Group', 'Relation', 'STRING', 'additional_client_group_base_temp', 'relation', 'STRING', 'additional_client_group_temp', 'relation', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalClient_Group', 'AllocationPercent', 'STRING', 'additional_client_group_base_temp', 'allocation_percent', 'STRING', 'additional_client_group_temp', 'allocation_percent', 'DECIMAL(18,4)', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AdditionalClient_Group', 'Active', 'STRING', 'additional_client_group_base_temp', 'is_active', 'STRING', 'additional_client_group_temp', 'is_active', 'BOOLEAN', 7, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [26] AccountingReporting_Group (10 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [26] AccountingReporting_Group
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 327, 'EQ_Warehouse', 'AccountingReporting_Group'                 , 'accounting_reporting_group_base', 'AccountingReportingGroupPK'                , 'accounting_reporting_group_id'             , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 328, 'EQ_Warehouse', 'AccountingReporting_Group'                 , 'accounting_reporting_group_base', 'AccountingReportingGroupKey'               , 'accounting_reporting_group_key'            , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 329, 'EQ_Warehouse', 'AccountingReporting_Group'                 , 'accounting_reporting_group_base', 'ReportingCode'                             , 'reporting_code'                            , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 330, 'EQ_Warehouse', 'AccountingReporting_Group'                 , 'accounting_reporting_group_base', 'ReportingClassCode'                        , 'reporting_class_code'                      , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 331, 'EQ_Warehouse', 'AccountingReporting_Group'                 , 'accounting_reporting_group_base', 'ReportingDescription'                      , 'reporting_description'                     , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'AccountingReporting_Group', 'AccountingReportingGroupPK', 'STRING', 'accounting_reporting_group_base_temp', 'accounting_reporting_group_id', 'STRING', 'accounting_reporting_group_temp', 'accounting_reporting_group_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingReporting_Group', 'AccountingReportingGroupKey', 'STRING', 'accounting_reporting_group_base_temp', 'accounting_reporting_group_key', 'STRING', 'accounting_reporting_group_temp', 'accounting_reporting_group_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingReporting_Group', 'ReportingCode', 'STRING', 'accounting_reporting_group_base_temp', 'reporting_code', 'STRING', 'accounting_reporting_group_temp', 'reporting_code', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingReporting_Group', 'ReportingClassCode', 'STRING', 'accounting_reporting_group_base_temp', 'reporting_class_code', 'STRING', 'accounting_reporting_group_temp', 'reporting_class_code', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingReporting_Group', 'ReportingDescription', 'STRING', 'accounting_reporting_group_base_temp', 'reporting_description', 'STRING', 'accounting_reporting_group_temp', 'reporting_description', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
--- [27] ProductVariationDetail (9 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [27] ProductVariationDetail
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 337, 'EQ_Warehouse', 'ProductVariationDetail'                    , 'product_variation_detail_base', 'ProductVariationDetailPK'                  , 'product_variation_detail_id'               , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 338, 'EQ_Warehouse', 'ProductVariationDetail'                    , 'product_variation_detail_base', 'DisclosureText'                            , 'disclosure_text'                           , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 339, 'EQ_Warehouse', 'ProductVariationDetail'                    , 'product_variation_detail_base', 'SortOrder'                                 , 'sort_order'                                , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 340, 'EQ_Warehouse', 'ProductVariationDetail'                    , 'product_variation_detail_base', 'Type'                                      , 'type'                                      , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'ProductVariationDetail', 'ProductVariationDetailPK', 'STRING', 'product_variation_detail_base_temp', 'product_variation_detail_id', 'STRING', 'product_variation_detail_temp', 'product_variation_detail_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductVariationDetail', 'DisclosureText', 'STRING', 'product_variation_detail_base_temp', 'disclosure_text', 'STRING', 'product_variation_detail_temp', 'disclosure_text', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductVariationDetail', 'SortOrder', 'STRING', 'product_variation_detail_base_temp', 'sort_order', 'STRING', 'product_variation_detail_temp', 'sort_order', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductVariationDetail', 'Type', 'STRING', 'product_variation_detail_base_temp', 'type', 'STRING', 'product_variation_detail_temp', 'type', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
--- [28] ProductStateVariation (9 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [28] ProductStateVariation
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 346, 'EQ_Warehouse', 'ProductStateVariation'                     , 'product_state_variation_base', 'ProductStateVariationPK'                   , 'product_state_variation_id'                , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 347, 'EQ_Warehouse', 'ProductStateVariation'                     , 'product_state_variation_base', 'ProductFK'                                 , 'product_id'                                , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 348, 'EQ_Warehouse', 'ProductStateVariation'                     , 'product_state_variation_base', 'StateCode'                                 , 'state_code'                                , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 349, 'EQ_Warehouse', 'ProductStateVariation'                     , 'product_state_variation_base', 'ProductVariationDetailFK'                  , 'product_variation_detail_id'               , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'ProductStateVariation', 'ProductStateVariationPK', 'STRING', 'product_state_variation_base_temp', 'product_state_variation_id', 'STRING', 'product_state_variation_temp', 'product_state_variation_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductStateVariation', 'ProductFK', 'STRING', 'product_state_variation_base_temp', 'product_id', 'STRING', 'product_state_variation_temp', 'product_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductStateVariation', 'StateCode', 'STRING', 'product_state_variation_base_temp', 'state_code', 'STRING', 'product_state_variation_temp', 'state_code', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductStateVariation', 'ProductVariationDetailFK', 'STRING', 'product_state_variation_base_temp', 'product_variation_detail_id', 'STRING', 'product_state_variation_temp', 'product_variation_detail_id', 'INT', 4, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [29] ProductStateApprovalDisclosure (10 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [29] ProductStateApprovalDisclosure
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 355, 'EQ_Warehouse', 'ProductStateApprovalDisclosure'            , 'product_state_approval_disclosure_base', 'PSADisclosurePK'                           , 'product_state_approval_disclosure_id'      , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 356, 'EQ_Warehouse', 'ProductStateApprovalDisclosure'            , 'product_state_approval_disclosure_base', 'ProductStateApprovalFK'                    , 'product_state_approval_id'                 , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 357, 'EQ_Warehouse', 'ProductStateApprovalDisclosure'            , 'product_state_approval_disclosure_base', 'MarketingNameOverride'                     , 'marketing_name_override'                   , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 358, 'EQ_Warehouse', 'ProductStateApprovalDisclosure'            , 'product_state_approval_disclosure_base', 'DisclosureText'                            , 'disclosure_text'                           , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 359, 'EQ_Warehouse', 'ProductStateApprovalDisclosure'            , 'product_state_approval_disclosure_base', 'SortOrder'                                 , 'sort_order'                                , 'INT'                 ,   5, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'ProductStateApprovalDisclosure', 'PSADisclosurePK', 'STRING', 'product_state_approval_disclosure_base_temp', 'product_state_approval_disclosure_id', 'STRING', 'product_state_approval_disclosure_temp', 'product_state_approval_disclosure_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductStateApprovalDisclosure', 'ProductStateApprovalFK', 'STRING', 'product_state_approval_disclosure_base_temp', 'product_state_approval_id', 'STRING', 'product_state_approval_disclosure_temp', 'product_state_approval_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductStateApprovalDisclosure', 'MarketingNameOverride', 'STRING', 'product_state_approval_disclosure_base_temp', 'marketing_name_override', 'STRING', 'product_state_approval_disclosure_temp', 'marketing_name_override', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductStateApprovalDisclosure', 'DisclosureText', 'STRING', 'product_state_approval_disclosure_base_temp', 'disclosure_text', 'STRING', 'product_state_approval_disclosure_temp', 'disclosure_text', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductStateApprovalDisclosure', 'SortOrder', 'STRING', 'product_state_approval_disclosure_base_temp', 'sort_order', 'STRING', 'product_state_approval_disclosure_temp', 'sort_order', 'INT', 5, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [30] ProductStateApproval (11 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [30] ProductStateApproval
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 365, 'EQ_Warehouse', 'ProductStateApproval'                      , 'product_state_approval_base', 'ProductStateApprovalPK'                    , 'product_state_approval_id'                 , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 366, 'EQ_Warehouse', 'ProductStateApproval'                      , 'product_state_approval_base', 'ProductFK'                                 , 'product_id'                                , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 367, 'EQ_Warehouse', 'ProductStateApproval'                      , 'product_state_approval_base', 'StateCode'                                 , 'state_code'                                , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 368, 'EQ_Warehouse', 'ProductStateApproval'                      , 'product_state_approval_base', 'ApprovedInd'                               , 'is_approved'                               , 'BOOLEAN'             ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 369, 'EQ_Warehouse', 'ProductStateApproval'                      , 'product_state_approval_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 370, 'EQ_Warehouse', 'ProductStateApproval'                      , 'product_state_approval_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,   6, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'ProductStateApproval', 'ProductStateApprovalPK', 'STRING', 'product_state_approval_base_temp', 'product_state_approval_id', 'STRING', 'product_state_approval_temp', 'product_state_approval_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductStateApproval', 'ProductFK', 'STRING', 'product_state_approval_base_temp', 'product_id', 'STRING', 'product_state_approval_temp', 'product_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductStateApproval', 'StateCode', 'STRING', 'product_state_approval_base_temp', 'state_code', 'STRING', 'product_state_approval_temp', 'state_code', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductStateApproval', 'ApprovedInd', 'STRING', 'product_state_approval_base_temp', 'is_approved', 'STRING', 'product_state_approval_temp', 'is_approved', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductStateApproval', 'StartDate', 'STRING', 'product_state_approval_base_temp', 'start_timestamp', 'STRING', 'product_state_approval_temp', 'start_timestamp', 'TIMESTAMP', 5, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ProductStateApproval', 'EndDate', 'STRING', 'product_state_approval_base_temp', 'end_timestamp', 'STRING', 'product_state_approval_temp', 'end_timestamp', 'TIMESTAMP', 6, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [31] hedge.Ratios (12 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [31] hedge.Ratios
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 376, 'EQ_Warehouse', 'hedge.Ratios'                              , 'hedge_ratios_base', 'RatiosPK'                                  , 'ratios_id'                                 , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 377, 'EQ_Warehouse', 'hedge.Ratios'                              , 'hedge_ratios_base', 'ContractFK'                                , 'contract_id'                               , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 378, 'EQ_Warehouse', 'hedge.Ratios'                              , 'hedge_ratios_base', 'ValueDate'                                 , 'value_timestamp'                           , 'TIMESTAMP'           ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 379, 'EQ_Warehouse', 'hedge.Ratios'                              , 'hedge_ratios_base', 'BaseHedgeRatio'                            , 'base_hedge_ratio'                          , 'DECIMAL(18,4)'       ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 380, 'EQ_Warehouse', 'hedge.Ratios'                              , 'hedge_ratios_base', 'BaseSurvivalRatio'                         , 'base_survival_ratio'                       , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 381, 'EQ_Warehouse', 'hedge.Ratios'                              , 'hedge_ratios_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 382, 'EQ_Warehouse', 'hedge.Ratios'                              , 'hedge_ratios_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,   7, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'hedge.Ratios', 'RatiosPK', 'STRING', 'hedge_ratios_base_temp', 'ratios_id', 'STRING', 'hedge_ratios_temp', 'ratios_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Ratios', 'ContractFK', 'STRING', 'hedge_ratios_base_temp', 'contract_id', 'STRING', 'hedge_ratios_temp', 'contract_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Ratios', 'ValueDate', 'STRING', 'hedge_ratios_base_temp', 'value_timestamp', 'STRING', 'hedge_ratios_temp', 'value_timestamp', 'TIMESTAMP', 3, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Ratios', 'BaseHedgeRatio', 'STRING', 'hedge_ratios_base_temp', 'base_hedge_ratio', 'STRING', 'hedge_ratios_temp', 'base_hedge_ratio', 'DECIMAL(18,4)', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Ratios', 'BaseSurvivalRatio', 'STRING', 'hedge_ratios_base_temp', 'base_survival_ratio', 'STRING', 'hedge_ratios_temp', 'base_survival_ratio', 'DECIMAL(18,4)', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Ratios', 'StartDate', 'STRING', 'hedge_ratios_base_temp', 'start_timestamp', 'STRING', 'hedge_ratios_temp', 'start_timestamp', 'TIMESTAMP', 6, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Ratios', 'EndDate', 'STRING', 'hedge_ratios_base_temp', 'end_timestamp', 'STRING', 'hedge_ratios_temp', 'end_timestamp', 'TIMESTAMP', 7, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [32] hedge.Options (26 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [32] hedge.Options
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 388, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'OptionsPK'                                 , 'options_id'                                , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 389, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'ContractFK'                                , 'contract_id'                               , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 390, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'InvestmentFK'                              , 'investment_id'                             , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 391, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'RenewalDate'                               , 'renewal_timestamp'                         , 'TIMESTAMP'           ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 392, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'IndexValue'                                , 'index_value'                               , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 393, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'HedgingPercentage'                         , 'hedging_percentage'                        , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 394, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'HedgeID1'                                  , 'hedge_id_1'                                , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 395, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'HedgeID2'                                  , 'hedge_id_2'                                , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 396, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'HedgeRenewalDate'                          , 'hedge_renewal_timestamp'                   , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 397, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'ValueDate'                                 , 'value_timestamp'                           , 'TIMESTAMP'           ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 398, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'SeriatimHedgeRatio'                        , 'seriatim_hedge_ratio'                      , 'DECIMAL(18,4)'       ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 399, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'PresentValue'                              , 'present_value'                             , 'DECIMAL(18,4)'       ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 400, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'Delta'                                     , 'delta'                                     , 'DECIMAL(18,4)'       ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 401, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'Gamma'                                     , 'gamma'                                     , 'DECIMAL(18,4)'       ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 402, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'Vega'                                      , 'vega'                                      , 'DECIMAL(18,4)'       ,  15, 1, 0, 1, GETUTCDATE()),
-  ( 403, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'Rho'                                       , 'rho'                                       , 'DECIMAL(18,4)'       ,  16, 1, 0, 1, GETUTCDATE()),
-  ( 404, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'Theta'                                     , 'theta'                                     , 'DECIMAL(18,4)'       ,  17, 1, 0, 1, GETUTCDATE()),
-  ( 405, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'NeedsHedged'                               , 'needs_hedged'                              , 'BOOLEAN'             ,  18, 1, 0, 1, GETUTCDATE()),
-  ( 406, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'IsHedged'                                  , 'is_hedged'                                 , 'BOOLEAN'             ,  19, 1, 0, 1, GETUTCDATE()),
-  ( 407, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,  20, 1, 0, 1, GETUTCDATE()),
-  ( 408, 'EQ_Warehouse', 'hedge.Options'                             , 'hedge_options_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,  21, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'hedge.Options', 'OptionsPK', 'STRING', 'hedge_options_base_temp', 'options_id', 'STRING', 'hedge_options_temp', 'options_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'ContractFK', 'STRING', 'hedge_options_base_temp', 'contract_id', 'STRING', 'hedge_options_temp', 'contract_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'InvestmentFK', 'STRING', 'hedge_options_base_temp', 'investment_id', 'STRING', 'hedge_options_temp', 'investment_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'RenewalDate', 'STRING', 'hedge_options_base_temp', 'renewal_timestamp', 'STRING', 'hedge_options_temp', 'renewal_timestamp', 'TIMESTAMP', 4, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'IndexValue', 'STRING', 'hedge_options_base_temp', 'index_value', 'STRING', 'hedge_options_temp', 'index_value', 'DECIMAL(18,4)', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'HedgingPercentage', 'STRING', 'hedge_options_base_temp', 'hedging_percentage', 'STRING', 'hedge_options_temp', 'hedging_percentage', 'DECIMAL(18,4)', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'HedgeID1', 'STRING', 'hedge_options_base_temp', 'hedge_id_1', 'STRING', 'hedge_options_temp', 'hedge_id_1', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'HedgeID2', 'STRING', 'hedge_options_base_temp', 'hedge_id_2', 'STRING', 'hedge_options_temp', 'hedge_id_2', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'HedgeRenewalDate', 'STRING', 'hedge_options_base_temp', 'hedge_renewal_timestamp', 'STRING', 'hedge_options_temp', 'hedge_renewal_timestamp', 'TIMESTAMP', 9, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'ValueDate', 'STRING', 'hedge_options_base_temp', 'value_timestamp', 'STRING', 'hedge_options_temp', 'value_timestamp', 'TIMESTAMP', 10, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'SeriatimHedgeRatio', 'STRING', 'hedge_options_base_temp', 'seriatim_hedge_ratio', 'STRING', 'hedge_options_temp', 'seriatim_hedge_ratio', 'DECIMAL(18,4)', 11, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'PresentValue', 'STRING', 'hedge_options_base_temp', 'present_value', 'STRING', 'hedge_options_temp', 'present_value', 'DECIMAL(18,4)', 12, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'Delta', 'STRING', 'hedge_options_base_temp', 'delta', 'STRING', 'hedge_options_temp', 'delta', 'DECIMAL(18,4)', 13, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'Gamma', 'STRING', 'hedge_options_base_temp', 'gamma', 'STRING', 'hedge_options_temp', 'gamma', 'DECIMAL(18,4)', 14, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'Vega', 'STRING', 'hedge_options_base_temp', 'vega', 'STRING', 'hedge_options_temp', 'vega', 'DECIMAL(18,4)', 15, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'Rho', 'STRING', 'hedge_options_base_temp', 'rho', 'STRING', 'hedge_options_temp', 'rho', 'DECIMAL(18,4)', 16, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'Theta', 'STRING', 'hedge_options_base_temp', 'theta', 'STRING', 'hedge_options_temp', 'theta', 'DECIMAL(18,4)', 17, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'NeedsHedged', 'STRING', 'hedge_options_base_temp', 'needs_hedged', 'STRING', 'hedge_options_temp', 'needs_hedged', 'BOOLEAN', 18, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'IsHedged', 'STRING', 'hedge_options_base_temp', 'is_hedged', 'STRING', 'hedge_options_temp', 'is_hedged', 'BOOLEAN', 19, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'StartDate', 'STRING', 'hedge_options_base_temp', 'start_timestamp', 'STRING', 'hedge_options_temp', 'start_timestamp', 'TIMESTAMP', 20, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'hedge.Options', 'EndDate', 'STRING', 'hedge_options_base_temp', 'end_timestamp', 'STRING', 'hedge_options_temp', 'end_timestamp', 'TIMESTAMP', 21, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [33] State (8 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [33] State
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 414, 'EQ_Warehouse', 'State'                                     , 'state_base', 'StateCode'                                 , 'state_code'                                , 'STRING'              ,   1, 1, 0, 1, GETUTCDATE()),
-  ( 415, 'EQ_Warehouse', 'State'                                     , 'state_base', 'StateName'                                 , 'state_name'                                , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 416, 'EQ_Warehouse', 'State'                                     , 'state_base', 'DisplayOrder'                              , 'display_order'                             , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'State', 'StateCode', 'STRING', 'state_base_temp', 'state_code', 'STRING', 'state_temp', 'state_code', 'STRING', 1, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'State', 'StateName', 'STRING', 'state_base_temp', 'state_name', 'STRING', 'state_temp', 'state_name', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'State', 'DisplayOrder', 'STRING', 'state_base_temp', 'display_order', 'STRING', 'state_temp', 'display_order', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [34] Date (37 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [34] Date
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 422, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'DatePK'                                    , 'date_id'                                   , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 423, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'Date'                                      , 'calendar_timestamp'                        , 'TIMESTAMP'           ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 424, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'DateDisplay'                               , 'date_display'                              , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 425, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'DayOfMonth'                                , 'day_of_month'                              , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 426, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'DaySuffix'                                 , 'day_suffix'                                , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 427, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'DayName'                                   , 'day_name'                                  , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 428, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'DayOfWeek'                                 , 'day_of_week'                               , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 429, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'DayOfWeekInMonth'                          , 'day_of_week_in_month'                      , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 430, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'DayOfWeekInYear'                           , 'day_of_week_in_year'                       , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 431, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'DayOfYear'                                 , 'day_of_year'                               , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 432, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'WeekOfMonth'                               , 'week_of_month'                             , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 433, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'WeekOfQuarter'                             , 'week_of_quarter'                           , 'STRING'              ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 434, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'WeekOfYear'                                , 'week_of_year'                              , 'STRING'              ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 435, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'Month'                                     , 'month'                                     , 'STRING'              ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 436, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'MonthName'                                 , 'month_name'                                , 'STRING'              ,  15, 1, 0, 1, GETUTCDATE()),
-  ( 437, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'MonthOfQuarter'                            , 'month_of_quarter'                          , 'STRING'              ,  16, 1, 0, 1, GETUTCDATE()),
-  ( 438, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'Quarter'                                   , 'quarter'                                   , 'STRING'              ,  17, 1, 0, 1, GETUTCDATE()),
-  ( 439, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'QuarterName'                               , 'quarter_name'                              , 'STRING'              ,  18, 1, 0, 1, GETUTCDATE()),
-  ( 440, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'Year'                                      , 'year'                                      , 'STRING'              ,  19, 1, 0, 1, GETUTCDATE()),
-  ( 441, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'YearName'                                  , 'year_name'                                 , 'STRING'              ,  20, 1, 0, 1, GETUTCDATE()),
-  ( 442, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'MonthYear'                                 , 'month_year'                                , 'STRING'              ,  21, 1, 0, 1, GETUTCDATE()),
-  ( 443, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'MMYYYY'                                    , 'mmyyyy'                                    , 'STRING'              ,  22, 1, 0, 1, GETUTCDATE()),
-  ( 444, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'FirstDayOfMonth'                           , 'first_day_of_month'                        , 'DATE'                ,  23, 1, 0, 1, GETUTCDATE()),
-  ( 445, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'LastDayOfMonth'                            , 'last_day_of_month'                         , 'DATE'                ,  24, 1, 0, 1, GETUTCDATE()),
-  ( 446, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'FirstDayOfQuarter'                         , 'first_day_of_quarter'                      , 'DATE'                ,  25, 1, 0, 1, GETUTCDATE()),
-  ( 447, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'LastDayOfQuarter'                          , 'last_day_of_quarter'                       , 'DATE'                ,  26, 1, 0, 1, GETUTCDATE()),
-  ( 448, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'FirstDayOfYear'                            , 'first_day_of_year'                         , 'DATE'                ,  27, 1, 0, 1, GETUTCDATE()),
-  ( 449, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'LastDayOfYear'                             , 'last_day_of_year'                          , 'DATE'                ,  28, 1, 0, 1, GETUTCDATE()),
-  ( 450, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'IsWeekday'                                 , 'is_weekday'                                , 'BOOLEAN'             ,  29, 1, 0, 1, GETUTCDATE()),
-  ( 451, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'IsHoliday'                                 , 'is_holiday'                                , 'BOOLEAN'             ,  30, 1, 0, 1, GETUTCDATE()),
-  ( 452, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'HolidayName'                               , 'holiday_name'                              , 'STRING'              ,  31, 1, 0, 1, GETUTCDATE()),
-  ( 453, 'EQ_Warehouse', 'Date'                                      , 'date_base', 'IsLastDayOfMonth'                          , 'is_last_day_of_month'                      , 'BOOLEAN'             ,  32, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Date', 'DatePK', 'STRING', 'date_base_temp', 'date_id', 'STRING', 'date_temp', 'date_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'Date', 'STRING', 'date_base_temp', 'calendar_timestamp', 'STRING', 'date_temp', 'calendar_timestamp', 'TIMESTAMP', 2, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'DateDisplay', 'STRING', 'date_base_temp', 'date_display', 'STRING', 'date_temp', 'date_display', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'DayOfMonth', 'STRING', 'date_base_temp', 'day_of_month', 'STRING', 'date_temp', 'day_of_month', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'DaySuffix', 'STRING', 'date_base_temp', 'day_suffix', 'STRING', 'date_temp', 'day_suffix', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'DayName', 'STRING', 'date_base_temp', 'day_name', 'STRING', 'date_temp', 'day_name', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'DayOfWeek', 'STRING', 'date_base_temp', 'day_of_week', 'STRING', 'date_temp', 'day_of_week', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'DayOfWeekInMonth', 'STRING', 'date_base_temp', 'day_of_week_in_month', 'STRING', 'date_temp', 'day_of_week_in_month', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'DayOfWeekInYear', 'STRING', 'date_base_temp', 'day_of_week_in_year', 'STRING', 'date_temp', 'day_of_week_in_year', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'DayOfYear', 'STRING', 'date_base_temp', 'day_of_year', 'STRING', 'date_temp', 'day_of_year', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'WeekOfMonth', 'STRING', 'date_base_temp', 'week_of_month', 'STRING', 'date_temp', 'week_of_month', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'WeekOfQuarter', 'STRING', 'date_base_temp', 'week_of_quarter', 'STRING', 'date_temp', 'week_of_quarter', 'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'WeekOfYear', 'STRING', 'date_base_temp', 'week_of_year', 'STRING', 'date_temp', 'week_of_year', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'Month', 'STRING', 'date_base_temp', 'month', 'STRING', 'date_temp', 'month', 'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'MonthName', 'STRING', 'date_base_temp', 'month_name', 'STRING', 'date_temp', 'month_name', 'STRING', 15, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'MonthOfQuarter', 'STRING', 'date_base_temp', 'month_of_quarter', 'STRING', 'date_temp', 'month_of_quarter', 'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'Quarter', 'STRING', 'date_base_temp', 'quarter', 'STRING', 'date_temp', 'quarter', 'STRING', 17, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'QuarterName', 'STRING', 'date_base_temp', 'quarter_name', 'STRING', 'date_temp', 'quarter_name', 'STRING', 18, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'Year', 'STRING', 'date_base_temp', 'year', 'STRING', 'date_temp', 'year', 'STRING', 19, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'YearName', 'STRING', 'date_base_temp', 'year_name', 'STRING', 'date_temp', 'year_name', 'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'MonthYear', 'STRING', 'date_base_temp', 'month_year', 'STRING', 'date_temp', 'month_year', 'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'MMYYYY', 'STRING', 'date_base_temp', 'mmyyyy', 'STRING', 'date_temp', 'mmyyyy', 'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'FirstDayOfMonth', 'STRING', 'date_base_temp', 'first_day_of_month', 'STRING', 'date_temp', 'first_day_of_month', 'DATE', 23, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'LastDayOfMonth', 'STRING', 'date_base_temp', 'last_day_of_month', 'STRING', 'date_temp', 'last_day_of_month', 'DATE', 24, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'FirstDayOfQuarter', 'STRING', 'date_base_temp', 'first_day_of_quarter', 'STRING', 'date_temp', 'first_day_of_quarter', 'DATE', 25, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'LastDayOfQuarter', 'STRING', 'date_base_temp', 'last_day_of_quarter', 'STRING', 'date_temp', 'last_day_of_quarter', 'DATE', 26, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'FirstDayOfYear', 'STRING', 'date_base_temp', 'first_day_of_year', 'STRING', 'date_temp', 'first_day_of_year', 'DATE', 27, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'LastDayOfYear', 'STRING', 'date_base_temp', 'last_day_of_year', 'STRING', 'date_temp', 'last_day_of_year', 'DATE', 28, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'IsWeekday', 'STRING', 'date_base_temp', 'is_weekday', 'STRING', 'date_temp', 'is_weekday', 'BOOLEAN', 29, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'IsHoliday', 'STRING', 'date_base_temp', 'is_holiday', 'STRING', 'date_temp', 'is_holiday', 'BOOLEAN', 30, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'HolidayName', 'STRING', 'date_base_temp', 'holiday_name', 'STRING', 'date_temp', 'holiday_name', 'STRING', 31, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Date', 'IsLastDayOfMonth', 'STRING', 'date_base_temp', 'is_last_day_of_month', 'STRING', 'date_temp', 'is_last_day_of_month', 'BOOLEAN', 32, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [35] TrainingCourse (11 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [35] TrainingCourse
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 459, 'EQ_Warehouse', 'TrainingCourse'                            , 'training_course_base', 'TrainingCoursePK'                          , 'training_course_id'                        , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 460, 'EQ_Warehouse', 'TrainingCourse'                            , 'training_course_base', 'CourseName'                                , 'course_name'                               , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 461, 'EQ_Warehouse', 'TrainingCourse'                            , 'training_course_base', 'Context'                                   , 'context'                                   , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 462, 'EQ_Warehouse', 'TrainingCourse'                            , 'training_course_base', 'TrainingProductGroupKey'                   , 'training_product_group_key'                , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 463, 'EQ_Warehouse', 'TrainingCourse'                            , 'training_course_base', 'TrainingStateGroupKey'                     , 'training_state_group_key'                  , 'INT'                 ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 464, 'EQ_Warehouse', 'TrainingCourse'                            , 'training_course_base', 'Description'                               , 'description'                               , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'TrainingCourse', 'TrainingCoursePK', 'STRING', 'training_course_base_temp', 'training_course_id', 'STRING', 'training_course_temp', 'training_course_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'TrainingCourse', 'CourseName', 'STRING', 'training_course_base_temp', 'course_name', 'STRING', 'training_course_temp', 'course_name', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'TrainingCourse', 'Context', 'STRING', 'training_course_base_temp', 'context', 'STRING', 'training_course_temp', 'context', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'TrainingCourse', 'TrainingProductGroupKey', 'STRING', 'training_course_base_temp', 'training_product_group_key', 'STRING', 'training_course_temp', 'training_product_group_key', 'INT', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'TrainingCourse', 'TrainingStateGroupKey', 'STRING', 'training_course_base_temp', 'training_state_group_key', 'STRING', 'training_course_temp', 'training_state_group_key', 'INT', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'TrainingCourse', 'Description', 'STRING', 'training_course_base_temp', 'description', 'STRING', 'training_course_temp', 'description', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
--- [36] AgentTraining (10 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [36] AgentTraining
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 470, 'EQ_Warehouse', 'AgentTraining'                             , 'agent_training_base', 'AgentTrainingPK'                           , 'agent_training_id'                         , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 471, 'EQ_Warehouse', 'AgentTraining'                             , 'agent_training_base', 'AgentFK'                                   , 'agent_id'                                  , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 472, 'EQ_Warehouse', 'AgentTraining'                             , 'agent_training_base', 'TrainingCourseFK'                          , 'training_course_id'                        , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 473, 'EQ_Warehouse', 'AgentTraining'                             , 'agent_training_base', 'CompletionDate'                            , 'completion_timestamp'                      , 'TIMESTAMP'           ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 474, 'EQ_Warehouse', 'AgentTraining'                             , 'agent_training_base', 'ExpirationDate'                            , 'expiration_timestamp'                      , 'TIMESTAMP'           ,   5, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'AgentTraining', 'AgentTrainingPK', 'STRING', 'agent_training_base_temp', 'agent_training_id', 'STRING', 'agent_training_temp', 'agent_training_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentTraining', 'AgentFK', 'STRING', 'agent_training_base_temp', 'agent_id', 'STRING', 'agent_training_temp', 'agent_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentTraining', 'TrainingCourseFK', 'STRING', 'agent_training_base_temp', 'training_course_id', 'STRING', 'agent_training_temp', 'training_course_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentTraining', 'CompletionDate', 'STRING', 'agent_training_base_temp', 'completion_timestamp', 'STRING', 'agent_training_temp', 'completion_timestamp', 'TIMESTAMP', 4, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AgentTraining', 'ExpirationDate', 'STRING', 'agent_training_base_temp', 'expiration_timestamp', 'STRING', 'agent_training_temp', 'expiration_timestamp', 'TIMESTAMP', 5, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [37] Company (17 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [37] Company
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 480, 'EQ_Warehouse', 'Company'                                   , 'company_base', 'CompanyPK'                                 , 'company_id'                                , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 481, 'EQ_Warehouse', 'Company'                                   , 'company_base', 'CompanyCode'                               , 'company_code'                              , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 482, 'EQ_Warehouse', 'Company'                                   , 'company_base', 'AgentFK'                                   , 'agent_id'                                  , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 483, 'EQ_Warehouse', 'Company'                                   , 'company_base', 'Name'                                      , 'name'                                      , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 484, 'EQ_Warehouse', 'Company'                                   , 'company_base', 'DisplayName'                               , 'display_name'                              , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 485, 'EQ_Warehouse', 'Company'                                   , 'company_base', 'AddressLine1'                              , 'address_line_1'                            , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 486, 'EQ_Warehouse', 'Company'                                   , 'company_base', 'AddressLine2'                              , 'address_line_2'                            , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 487, 'EQ_Warehouse', 'Company'                                   , 'company_base', 'City'                                      , 'city'                                      , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 488, 'EQ_Warehouse', 'Company'                                   , 'company_base', 'State'                                     , 'state'                                     , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 489, 'EQ_Warehouse', 'Company'                                   , 'company_base', 'ZipCode'                                   , 'zip_code'                                  , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 490, 'EQ_Warehouse', 'Company'                                   , 'company_base', 'Phone'                                     , 'phone'                                     , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 491, 'EQ_Warehouse', 'Company'                                   , 'company_base', 'Footer'                                    , 'footer'                                    , 'STRING'              ,  12, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Company', 'CompanyPK', 'STRING', 'company_base_temp', 'company_id', 'STRING', 'company_temp', 'company_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Company', 'CompanyCode', 'STRING', 'company_base_temp', 'company_code', 'STRING', 'company_temp', 'company_code', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Company', 'AgentFK', 'STRING', 'company_base_temp', 'agent_id', 'STRING', 'company_temp', 'agent_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Company', 'Name', 'STRING', 'company_base_temp', 'name', 'STRING', 'company_temp', 'name', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Company', 'DisplayName', 'STRING', 'company_base_temp', 'display_name', 'STRING', 'company_temp', 'display_name', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Company', 'AddressLine1', 'STRING', 'company_base_temp', 'address_line_1', 'STRING', 'company_temp', 'address_line_1', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Company', 'AddressLine2', 'STRING', 'company_base_temp', 'address_line_2', 'STRING', 'company_temp', 'address_line_2', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Company', 'City', 'STRING', 'company_base_temp', 'city', 'STRING', 'company_temp', 'city', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Company', 'State', 'STRING', 'company_base_temp', 'state', 'STRING', 'company_temp', 'state', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Company', 'ZipCode', 'STRING', 'company_base_temp', 'zip_code', 'STRING', 'company_temp', 'zip_code', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Company', 'Phone', 'STRING', 'company_base_temp', 'phone', 'STRING', 'company_temp', 'phone', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Company', 'Footer', 'STRING', 'company_base_temp', 'footer', 'STRING', 'company_temp', 'footer', 'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
--- [38] CAPStatusChange (12 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [38] CAPStatusChange
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 497, 'EQ_Warehouse', 'CAPStatusChange'                           , 'cap_status_change_base', 'CAPStatusChangePK'                         , 'cap_status_change_id'                      , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 498, 'EQ_Warehouse', 'CAPStatusChange'                           , 'cap_status_change_base', 'ContractFK'                                , 'contract_id'                               , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 499, 'EQ_Warehouse', 'CAPStatusChange'                           , 'cap_status_change_base', 'SourceCompanyFK'                           , 'source_company_id'                         , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 500, 'EQ_Warehouse', 'CAPStatusChange'                           , 'cap_status_change_base', 'StatusChangeDate'                          , 'status_change_date'                        , 'TIMESTAMP'           ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 501, 'EQ_Warehouse', 'CAPStatusChange'                           , 'cap_status_change_base', 'StatusChangeCode'                          , 'status_change_code'                        , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 502, 'EQ_Warehouse', 'CAPStatusChange'                           , 'cap_status_change_base', 'ProcessDate'                               , 'process_date'                              , 'TIMESTAMP'           ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 503, 'EQ_Warehouse', 'CAPStatusChange'                           , 'cap_status_change_base', 'RenewalPeriod'                             , 'renewal_period'                            , 'INT'                 ,   7, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'CAPStatusChange', 'CAPStatusChangePK', 'STRING', 'cap_status_change_base_temp', 'cap_status_change_id', 'STRING', 'cap_status_change_temp', 'cap_status_change_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPStatusChange', 'ContractFK', 'STRING', 'cap_status_change_base_temp', 'contract_id', 'STRING', 'cap_status_change_temp', 'contract_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPStatusChange', 'SourceCompanyFK', 'STRING', 'cap_status_change_base_temp', 'source_company_id', 'STRING', 'cap_status_change_temp', 'source_company_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPStatusChange', 'StatusChangeDate', 'STRING', 'cap_status_change_base_temp', 'status_change_date', 'STRING', 'cap_status_change_temp', 'status_change_date', 'TIMESTAMP', 4, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPStatusChange', 'StatusChangeCode', 'STRING', 'cap_status_change_base_temp', 'status_change_code', 'STRING', 'cap_status_change_temp', 'status_change_code', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPStatusChange', 'ProcessDate', 'STRING', 'cap_status_change_base_temp', 'process_date', 'STRING', 'cap_status_change_temp', 'process_date', 'TIMESTAMP', 6, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPStatusChange', 'RenewalPeriod', 'STRING', 'cap_status_change_base_temp', 'renewal_period', 'STRING', 'cap_status_change_temp', 'renewal_period', 'INT', 7, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [39] CAPRepayment (16 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [39] CAPRepayment
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 509, 'EQ_Warehouse', 'CAPRepayment'                              , 'cap_repayment_base', 'CAPRepaymentPK'                            , 'cap_repayment_id'                          , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 510, 'EQ_Warehouse', 'CAPRepayment'                              , 'cap_repayment_base', 'SourceKey'                                 , 'source_key'                                , 'BIGINT'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 511, 'EQ_Warehouse', 'CAPRepayment'                              , 'cap_repayment_base', 'SourceCompanyFK'                           , 'source_company_id'                         , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 512, 'EQ_Warehouse', 'CAPRepayment'                              , 'cap_repayment_base', 'PlanCode'                                  , 'plan_code'                                 , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 513, 'EQ_Warehouse', 'CAPRepayment'                              , 'cap_repayment_base', 'PlanCode2'                                 , 'plan_code_2'                               , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 514, 'EQ_Warehouse', 'CAPRepayment'                              , 'cap_repayment_base', 'OwnerResState'                             , 'owner_res_state'                           , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 515, 'EQ_Warehouse', 'CAPRepayment'                              , 'cap_repayment_base', 'OwnerCountry'                              , 'owner_country'                             , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 516, 'EQ_Warehouse', 'CAPRepayment'                              , 'cap_repayment_base', 'TerminationDate'                           , 'termination_date'                          , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 517, 'EQ_Warehouse', 'CAPRepayment'                              , 'cap_repayment_base', 'FactorTrail'                               , 'factor_trail'                              , 'DECIMAL(18,4)'       ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 518, 'EQ_Warehouse', 'CAPRepayment'                              , 'cap_repayment_base', 'RenewalPeriod'                             , 'renewal_period'                            , 'INT'                 ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 519, 'EQ_Warehouse', 'CAPRepayment'                              , 'cap_repayment_base', 'CommissionableAmount'                      , 'commissionable_amount'                     , 'DECIMAL(18,4)'       ,  11, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'CAPRepayment', 'CAPRepaymentPK', 'STRING', 'cap_repayment_base_temp', 'cap_repayment_id', 'STRING', 'cap_repayment_temp', 'cap_repayment_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPRepayment', 'SourceKey', 'STRING', 'cap_repayment_base_temp', 'source_key', 'STRING', 'cap_repayment_temp', 'source_key', 'BIGINT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPRepayment', 'SourceCompanyFK', 'STRING', 'cap_repayment_base_temp', 'source_company_id', 'STRING', 'cap_repayment_temp', 'source_company_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPRepayment', 'PlanCode', 'STRING', 'cap_repayment_base_temp', 'plan_code', 'STRING', 'cap_repayment_temp', 'plan_code', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPRepayment', 'PlanCode2', 'STRING', 'cap_repayment_base_temp', 'plan_code_2', 'STRING', 'cap_repayment_temp', 'plan_code_2', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPRepayment', 'OwnerResState', 'STRING', 'cap_repayment_base_temp', 'owner_res_state', 'STRING', 'cap_repayment_temp', 'owner_res_state', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPRepayment', 'OwnerCountry', 'STRING', 'cap_repayment_base_temp', 'owner_country', 'STRING', 'cap_repayment_temp', 'owner_country', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPRepayment', 'TerminationDate', 'STRING', 'cap_repayment_base_temp', 'termination_date', 'STRING', 'cap_repayment_temp', 'termination_date', 'TIMESTAMP', 8, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPRepayment', 'FactorTrail', 'STRING', 'cap_repayment_base_temp', 'factor_trail', 'STRING', 'cap_repayment_temp', 'factor_trail', 'DECIMAL(18,4)', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPRepayment', 'RenewalPeriod', 'STRING', 'cap_repayment_base_temp', 'renewal_period', 'STRING', 'cap_repayment_temp', 'renewal_period', 'INT', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'CAPRepayment', 'CommissionableAmount', 'STRING', 'cap_repayment_base_temp', 'commissionable_amount', 'STRING', 'cap_repayment_temp', 'commissionable_amount', 'DECIMAL(18,4)', 11, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [40] ActivityType (11 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [40] ActivityType
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 525, 'EQ_Warehouse', 'ActivityType'                              , 'activity_type_base', 'ActivityTypePK'                            , 'activity_type_id'                          , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 526, 'EQ_Warehouse', 'ActivityType'                              , 'activity_type_base', 'ActivityTypeName'                          , 'activity_type_name'                        , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 527, 'EQ_Warehouse', 'ActivityType'                              , 'activity_type_base', 'ActivityTypeQualifier'                     , 'activity_type_qualifier'                   , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 528, 'EQ_Warehouse', 'ActivityType'                              , 'activity_type_base', 'Source'                                    , 'source'                                    , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 529, 'EQ_Warehouse', 'ActivityType'                              , 'activity_type_base', 'ValueType'                                 , 'value_type'                                , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 530, 'EQ_Warehouse', 'ActivityType'                              , 'activity_type_base', 'SortOrder'                                 , 'sort_order'                                , 'INT'                 ,   6, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'ActivityType', 'ActivityTypePK', 'STRING', 'activity_type_base_temp', 'activity_type_id', 'STRING', 'activity_type_temp', 'activity_type_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityType', 'ActivityTypeName', 'STRING', 'activity_type_base_temp', 'activity_type_name', 'STRING', 'activity_type_temp', 'activity_type_name', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityType', 'ActivityTypeQualifier', 'STRING', 'activity_type_base_temp', 'activity_type_qualifier', 'STRING', 'activity_type_temp', 'activity_type_qualifier', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityType', 'Source', 'STRING', 'activity_type_base_temp', 'source', 'STRING', 'activity_type_temp', 'source', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityType', 'ValueType', 'STRING', 'activity_type_base_temp', 'value_type', 'STRING', 'activity_type_temp', 'value_type', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityType', 'SortOrder', 'STRING', 'activity_type_base_temp', 'sort_order', 'STRING', 'activity_type_temp', 'sort_order', 'INT', 6, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [41] ActivityFinancial (18 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [41] ActivityFinancial
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 536, 'EQ_Warehouse', 'ActivityFinancial'                         , 'activity_financial_base', 'ActivityPK'                                , 'activity_id'                               , 'BIGINT'              ,   1, 1, 0, 1, GETUTCDATE()),
-  ( 537, 'EQ_Warehouse', 'ActivityFinancial'                         , 'activity_financial_base', 'FreeAmount'                                , 'free_amount'                               , 'DECIMAL(18,4)'       ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 538, 'EQ_Warehouse', 'ActivityFinancial'                         , 'activity_financial_base', 'SurrenderCharge'                           , 'surrender_charge'                          , 'DECIMAL(18,4)'       ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 539, 'EQ_Warehouse', 'ActivityFinancial'                         , 'activity_financial_base', 'MVA'                                       , 'mva'                                       , 'DECIMAL(18,4)'       ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 540, 'EQ_Warehouse', 'ActivityFinancial'                         , 'activity_financial_base', 'PolicyFee'                                 , 'policy_fee'                                , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 541, 'EQ_Warehouse', 'ActivityFinancial'                         , 'activity_financial_base', 'COIRefund'                                 , 'coi_refund'                                , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 542, 'EQ_Warehouse', 'ActivityFinancial'                         , 'activity_financial_base', 'ABRDiscountCharge'                         , 'abr_discount_charge'                       , 'DECIMAL(18,4)'       ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 543, 'EQ_Warehouse', 'ActivityFinancial'                         , 'activity_financial_base', 'AdminCharge'                               , 'admin_charge'                              , 'DECIMAL(18,4)'       ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 544, 'EQ_Warehouse', 'ActivityFinancial'                         , 'activity_financial_base', 'FederalTax'                                , 'federal_tax'                               , 'DECIMAL(18,4)'       ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 545, 'EQ_Warehouse', 'ActivityFinancial'                         , 'activity_financial_base', 'StateTax'                                  , 'state_tax'                                 , 'DECIMAL(18,4)'       ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 546, 'EQ_Warehouse', 'ActivityFinancial'                         , 'activity_financial_base', 'Rate'                                      , 'rate'                                      , 'DECIMAL(18,4)'       ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 547, 'EQ_Warehouse', 'ActivityFinancial'                         , 'activity_financial_base', 'BaseAmount'                                , 'base_amount'                               , 'DECIMAL(18,4)'       ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 548, 'EQ_Warehouse', 'ActivityFinancial'                         , 'activity_financial_base', 'TaxableBenefit'                            , 'taxable_benefit'                           , 'DECIMAL(18,4)'       ,  13, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'ActivityFinancial', 'ActivityPK', 'STRING', 'activity_financial_base_temp', 'activity_id', 'STRING', 'activity_financial_temp', 'activity_id', 'BIGINT', 1, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityFinancial', 'FreeAmount', 'STRING', 'activity_financial_base_temp', 'free_amount', 'STRING', 'activity_financial_temp', 'free_amount', 'DECIMAL(18,4)', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityFinancial', 'SurrenderCharge', 'STRING', 'activity_financial_base_temp', 'surrender_charge', 'STRING', 'activity_financial_temp', 'surrender_charge', 'DECIMAL(18,4)', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityFinancial', 'MVA', 'STRING', 'activity_financial_base_temp', 'mva', 'STRING', 'activity_financial_temp', 'mva', 'DECIMAL(18,4)', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityFinancial', 'PolicyFee', 'STRING', 'activity_financial_base_temp', 'policy_fee', 'STRING', 'activity_financial_temp', 'policy_fee', 'DECIMAL(18,4)', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityFinancial', 'COIRefund', 'STRING', 'activity_financial_base_temp', 'coi_refund', 'STRING', 'activity_financial_temp', 'coi_refund', 'DECIMAL(18,4)', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityFinancial', 'ABRDiscountCharge', 'STRING', 'activity_financial_base_temp', 'abr_discount_charge', 'STRING', 'activity_financial_temp', 'abr_discount_charge', 'DECIMAL(18,4)', 7, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityFinancial', 'AdminCharge', 'STRING', 'activity_financial_base_temp', 'admin_charge', 'STRING', 'activity_financial_temp', 'admin_charge', 'DECIMAL(18,4)', 8, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityFinancial', 'FederalTax', 'STRING', 'activity_financial_base_temp', 'federal_tax', 'STRING', 'activity_financial_temp', 'federal_tax', 'DECIMAL(18,4)', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityFinancial', 'StateTax', 'STRING', 'activity_financial_base_temp', 'state_tax', 'STRING', 'activity_financial_temp', 'state_tax', 'DECIMAL(18,4)', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityFinancial', 'Rate', 'STRING', 'activity_financial_base_temp', 'rate', 'STRING', 'activity_financial_temp', 'rate', 'DECIMAL(18,4)', 11, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityFinancial', 'BaseAmount', 'STRING', 'activity_financial_base_temp', 'base_amount', 'STRING', 'activity_financial_temp', 'base_amount', 'DECIMAL(18,4)', 12, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'ActivityFinancial', 'TaxableBenefit', 'STRING', 'activity_financial_base_temp', 'taxable_benefit', 'STRING', 'activity_financial_temp', 'taxable_benefit', 'DECIMAL(18,4)', 13, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [42] AccountingDetail (23 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [42] AccountingDetail
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 554, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'AccountingPK'                              , 'accounting_id'                             , 'BIGINT'              ,   1, 1, 0, 1, GETUTCDATE()),
-  ( 555, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'SourceCode'                                , 'source_code'                               , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 556, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'ReferenceData'                             , 'reference_data'                            , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 557, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'Approval'                                  , 'approval'                                  , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 558, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'Description'                               , 'description'                               , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 559, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'CompanyCode'                               , 'company_code'                              , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 560, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'DCIndicator'                               , 'dc_indicator'                              , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 561, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'EntryOperator'                             , 'entry_operator'                            , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 562, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'ApprovalOperator'                          , 'approval_operator'                         , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 563, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'APEXTIndicator'                            , 'apext_indicator'                           , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 564, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'SuspenseEXTIndicator'                      , 'suspense_ext_indicator'                    , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 565, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'EntryGenIndicator'                         , 'entry_gen_indicator'                       , 'STRING'              ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 566, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'Treaty'                                    , 'treaty'                                    , 'STRING'              ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 567, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'QualType'                                  , 'qual_type'                                 , 'STRING'              ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 568, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'SEG_EDITTrxPK'                             , 'seg_edit_trx_id'                           , 'BIGINT'              ,  15, 1, 0, 1, GETUTCDATE()),
-  ( 569, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'SEG_PlacedAgentPK'                         , 'seg_placed_agent_id'                       , 'BIGINT'              ,  16, 1, 0, 1, GETUTCDATE()),
-  ( 570, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'CostCenter'                                , 'cost_center'                               , 'STRING'              ,  17, 1, 0, 1, GETUTCDATE()),
-  ( 571, 'EQ_Warehouse', 'AccountingDetail'                          , 'accounting_detail_base', 'SuspenseCode'                              , 'suspense_code'                             , 'STRING'              ,  18, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'AccountingDetail', 'AccountingPK', 'STRING', 'accounting_detail_base_temp', 'accounting_id', 'STRING', 'accounting_detail_temp', 'accounting_id', 'BIGINT', 1, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'SourceCode', 'STRING', 'accounting_detail_base_temp', 'source_code', 'STRING', 'accounting_detail_temp', 'source_code', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'ReferenceData', 'STRING', 'accounting_detail_base_temp', 'reference_data', 'STRING', 'accounting_detail_temp', 'reference_data', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'Approval', 'STRING', 'accounting_detail_base_temp', 'approval', 'STRING', 'accounting_detail_temp', 'approval', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'Description', 'STRING', 'accounting_detail_base_temp', 'description', 'STRING', 'accounting_detail_temp', 'description', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'CompanyCode', 'STRING', 'accounting_detail_base_temp', 'company_code', 'STRING', 'accounting_detail_temp', 'company_code', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'DCIndicator', 'STRING', 'accounting_detail_base_temp', 'dc_indicator', 'STRING', 'accounting_detail_temp', 'dc_indicator', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'EntryOperator', 'STRING', 'accounting_detail_base_temp', 'entry_operator', 'STRING', 'accounting_detail_temp', 'entry_operator', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'ApprovalOperator', 'STRING', 'accounting_detail_base_temp', 'approval_operator', 'STRING', 'accounting_detail_temp', 'approval_operator', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'APEXTIndicator', 'STRING', 'accounting_detail_base_temp', 'apext_indicator', 'STRING', 'accounting_detail_temp', 'apext_indicator', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'SuspenseEXTIndicator', 'STRING', 'accounting_detail_base_temp', 'suspense_ext_indicator', 'STRING', 'accounting_detail_temp', 'suspense_ext_indicator', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'EntryGenIndicator', 'STRING', 'accounting_detail_base_temp', 'entry_gen_indicator', 'STRING', 'accounting_detail_temp', 'entry_gen_indicator', 'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'Treaty', 'STRING', 'accounting_detail_base_temp', 'treaty', 'STRING', 'accounting_detail_temp', 'treaty', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'QualType', 'STRING', 'accounting_detail_base_temp', 'qual_type', 'STRING', 'accounting_detail_temp', 'qual_type', 'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'SEG_EDITTrxPK', 'STRING', 'accounting_detail_base_temp', 'seg_edit_trx_id', 'STRING', 'accounting_detail_temp', 'seg_edit_trx_id', 'BIGINT', 15, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'SEG_PlacedAgentPK', 'STRING', 'accounting_detail_base_temp', 'seg_placed_agent_id', 'STRING', 'accounting_detail_temp', 'seg_placed_agent_id', 'BIGINT', 16, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'CostCenter', 'STRING', 'accounting_detail_base_temp', 'cost_center', 'STRING', 'accounting_detail_temp', 'cost_center', 'STRING', 17, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingDetail', 'SuspenseCode', 'STRING', 'accounting_detail_base_temp', 'suspense_code', 'STRING', 'accounting_detail_temp', 'suspense_code', 'STRING', 18, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
--- [43] AccountingAccount (16 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [43] AccountingAccount
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 577, 'EQ_Warehouse', 'AccountingAccount'                         , 'accounting_account_base', 'AccountingAccountPK'                       , 'accounting_account_id'                     , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 578, 'EQ_Warehouse', 'AccountingAccount'                         , 'accounting_account_base', 'AccountNumber'                             , 'account_number'                            , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 579, 'EQ_Warehouse', 'AccountingAccount'                         , 'accounting_account_base', 'AccountSource'                             , 'account_source'                            , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 580, 'EQ_Warehouse', 'AccountingAccount'                         , 'accounting_account_base', 'ClassCode'                                 , 'class_code'                                , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 581, 'EQ_Warehouse', 'AccountingAccount'                         , 'accounting_account_base', 'CubeDescription'                           , 'cube_description'                          , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 582, 'EQ_Warehouse', 'AccountingAccount'                         , 'accounting_account_base', 'GroupIndicator'                            , 'group_indicator'                           , 'BOOLEAN'             ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 583, 'EQ_Warehouse', 'AccountingAccount'                         , 'accounting_account_base', 'CededIndicator'                            , 'ceded_indicator'                           , 'BOOLEAN'             ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 584, 'EQ_Warehouse', 'AccountingAccount'                         , 'accounting_account_base', 'Context'                                   , 'context'                                   , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 585, 'EQ_Warehouse', 'AccountingAccount'                         , 'accounting_account_base', 'ActuarialGrouping'                         , 'actuarial_grouping'                        , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 586, 'EQ_Warehouse', 'AccountingAccount'                         , 'accounting_account_base', 'AccountDescription'                        , 'account_description'                       , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 587, 'EQ_Warehouse', 'AccountingAccount'                         , 'accounting_account_base', 'AccountingReportingGroupKey'               , 'accounting_reporting_group_key'            , 'INT'                 ,  11, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'AccountingAccount', 'AccountingAccountPK', 'STRING', 'accounting_account_base_temp', 'accounting_account_id', 'STRING', 'accounting_account_temp', 'accounting_account_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingAccount', 'AccountNumber', 'STRING', 'accounting_account_base_temp', 'account_number', 'STRING', 'accounting_account_temp', 'account_number', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingAccount', 'AccountSource', 'STRING', 'accounting_account_base_temp', 'account_source', 'STRING', 'accounting_account_temp', 'account_source', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingAccount', 'ClassCode', 'STRING', 'accounting_account_base_temp', 'class_code', 'STRING', 'accounting_account_temp', 'class_code', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingAccount', 'CubeDescription', 'STRING', 'accounting_account_base_temp', 'cube_description', 'STRING', 'accounting_account_temp', 'cube_description', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingAccount', 'GroupIndicator', 'STRING', 'accounting_account_base_temp', 'group_indicator', 'STRING', 'accounting_account_temp', 'group_indicator', 'BOOLEAN', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingAccount', 'CededIndicator', 'STRING', 'accounting_account_base_temp', 'ceded_indicator', 'STRING', 'accounting_account_temp', 'ceded_indicator', 'BOOLEAN', 7, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingAccount', 'Context', 'STRING', 'accounting_account_base_temp', 'context', 'STRING', 'accounting_account_temp', 'context', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingAccount', 'ActuarialGrouping', 'STRING', 'accounting_account_base_temp', 'actuarial_grouping', 'STRING', 'accounting_account_temp', 'actuarial_grouping', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingAccount', 'AccountDescription', 'STRING', 'accounting_account_base_temp', 'account_description', 'STRING', 'accounting_account_temp', 'account_description', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountingAccount', 'AccountingReportingGroupKey', 'STRING', 'accounting_account_base_temp', 'accounting_reporting_group_key', 'STRING', 'accounting_account_temp', 'accounting_reporting_group_key', 'INT', 11, 1, 0, 0, '0', 1, GETUTCDATE());
 
--- [44] Accounting (24 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [44] Accounting
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 593, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'AccountingPK'                              , 'accounting_id'                             , 'BIGINT'              ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 594, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'SourceSystem'                              , 'source_system_code'                        , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 595, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'TranID'                                    , 'transaction_id'                            , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 596, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'TranDetailID'                              , 'transaction_detail_id'                     , 'BIGINT'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 597, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'StatusCode'                                , 'status_code'                               , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 598, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'StatusIndicator'                           , 'status_indicator'                          , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 599, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'BasisCode'                                 , 'basis_code'                                , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 600, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'State'                                     , 'state_code'                                , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 601, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'EffectiveDateFK'                           , 'effective_date_id'                         , 'INT'                 ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 602, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'PeriodDateFK'                              , 'period_date_id'                            , 'INT'                 ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 603, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'AccountingAccountFK'                       , 'accounting_account_id'                     , 'INT'                 ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 604, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'EntryDate'                                 , 'entry_date'                                , 'DATE'                ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 605, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'EntryUpdateDate'                           , 'entry_update_date'                         , 'DATE'                ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 606, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'ContractFK'                                , 'contract_id'                               , 'INT'                 ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 607, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'InvestmentFK'                              , 'investment_id'                             , 'INT'                 ,  15, 1, 0, 1, GETUTCDATE()),
-  ( 608, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'ProductFK'                                 , 'product_id'                                , 'INT'                 ,  16, 1, 0, 1, GETUTCDATE()),
-  ( 609, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'AgentFK'                                   , 'agent_id'                                  , 'INT'                 ,  17, 1, 0, 1, GETUTCDATE()),
-  ( 610, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'Amount'                                    , 'amount'                                    , 'DECIMAL(18,4)'       ,  18, 1, 0, 1, GETUTCDATE()),
-  ( 611, 'EQ_Warehouse', 'Accounting'                                , 'accounting_base', 'Block'                                     , 'block_code'                                , 'STRING'              ,  19, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Accounting', 'AccountingPK', 'STRING', 'accounting_base_temp', 'accounting_id', 'STRING', 'accounting_temp', 'accounting_id', 'BIGINT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'SourceSystem', 'STRING', 'accounting_base_temp', 'source_system_code', 'STRING', 'accounting_temp', 'source_system_code', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'TranID', 'STRING', 'accounting_base_temp', 'transaction_id', 'STRING', 'accounting_temp', 'transaction_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'TranDetailID', 'STRING', 'accounting_base_temp', 'transaction_detail_id', 'STRING', 'accounting_temp', 'transaction_detail_id', 'BIGINT', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'StatusCode', 'STRING', 'accounting_base_temp', 'status_code', 'STRING', 'accounting_temp', 'status_code', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'StatusIndicator', 'STRING', 'accounting_base_temp', 'status_indicator', 'STRING', 'accounting_temp', 'status_indicator', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'BasisCode', 'STRING', 'accounting_base_temp', 'basis_code', 'STRING', 'accounting_temp', 'basis_code', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'State', 'STRING', 'accounting_base_temp', 'state_code', 'STRING', 'accounting_temp', 'state_code', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'EffectiveDateFK', 'STRING', 'accounting_base_temp', 'effective_date_id', 'STRING', 'accounting_temp', 'effective_date_id', 'INT', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'PeriodDateFK', 'STRING', 'accounting_base_temp', 'period_date_id', 'STRING', 'accounting_temp', 'period_date_id', 'INT', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'AccountingAccountFK', 'STRING', 'accounting_base_temp', 'accounting_account_id', 'STRING', 'accounting_temp', 'accounting_account_id', 'INT', 11, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'EntryDate', 'STRING', 'accounting_base_temp', 'entry_date', 'STRING', 'accounting_temp', 'entry_date', 'DATE', 12, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'EntryUpdateDate', 'STRING', 'accounting_base_temp', 'entry_update_date', 'STRING', 'accounting_temp', 'entry_update_date', 'DATE', 13, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'ContractFK', 'STRING', 'accounting_base_temp', 'contract_id', 'STRING', 'accounting_temp', 'contract_id', 'INT', 14, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'InvestmentFK', 'STRING', 'accounting_base_temp', 'investment_id', 'STRING', 'accounting_temp', 'investment_id', 'INT', 15, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'ProductFK', 'STRING', 'accounting_base_temp', 'product_id', 'STRING', 'accounting_temp', 'product_id', 'INT', 16, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'AgentFK', 'STRING', 'accounting_base_temp', 'agent_id', 'STRING', 'accounting_temp', 'agent_id', 'INT', 17, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'Amount', 'STRING', 'accounting_base_temp', 'amount', 'STRING', 'accounting_temp', 'amount', 'DECIMAL(18,4)', 18, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Accounting', 'Block', 'STRING', 'accounting_base_temp', 'block_code', 'STRING', 'accounting_temp', 'block_code', 'STRING', 19, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
--- [45] Surrender (18 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [45] Surrender
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 617, 'EQ_Warehouse', 'Surrender'                                 , 'surrender_base', 'SurrenderPK'                               , 'surrender_id'                              , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 618, 'EQ_Warehouse', 'Surrender'                                 , 'surrender_base', 'ProductFK'                                 , 'product_id'                                , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 619, 'EQ_Warehouse', 'Surrender'                                 , 'surrender_base', 'FundNumber'                                , 'fund_number'                               , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 620, 'EQ_Warehouse', 'Surrender'                                 , 'surrender_base', 'State'                                     , 'state_code'                                , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 621, 'EQ_Warehouse', 'Surrender'                                 , 'surrender_base', 'Gender'                                    , 'gender'                                    , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 622, 'EQ_Warehouse', 'Surrender'                                 , 'surrender_base', 'Class'                                     , 'risk_class'                                , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 623, 'EQ_Warehouse', 'Surrender'                                 , 'surrender_base', 'Age'                                       , 'customer_age'                              , 'INT'                 ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 624, 'EQ_Warehouse', 'Surrender'                                 , 'surrender_base', 'ContractYear'                              , 'policy_year'                               , 'INT'                 ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 625, 'EQ_Warehouse', 'Surrender'                                 , 'surrender_base', 'SurrenderLength'                           , 'penalty_duration_years'                    , 'INT'                 ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 626, 'EQ_Warehouse', 'Surrender'                                 , 'surrender_base', 'Rate'                                      , 'penalty_percentage'                        , 'DECIMAL(18,4)'       ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 627, 'EQ_Warehouse', 'Surrender'                                 , 'surrender_base', 'RateAppliedTo'                             , 'rate_calculation_basis'                    , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 628, 'EQ_Warehouse', 'Surrender'                                 , 'surrender_base', 'EffectiveDate'                             , 'rule_start_date'                           , 'TIMESTAMP'           ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 629, 'EQ_Warehouse', 'Surrender'                                 , 'surrender_base', 'EndDate'                                   , 'rule_end_date'                             , 'TIMESTAMP'           ,  13, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Surrender', 'SurrenderPK', 'STRING', 'surrender_base_temp', 'surrender_id', 'STRING', 'surrender_temp', 'surrender_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Surrender', 'ProductFK', 'STRING', 'surrender_base_temp', 'product_id', 'STRING', 'surrender_temp', 'product_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Surrender', 'FundNumber', 'STRING', 'surrender_base_temp', 'fund_number', 'STRING', 'surrender_temp', 'fund_number', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Surrender', 'State', 'STRING', 'surrender_base_temp', 'state_code', 'STRING', 'surrender_temp', 'state_code', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Surrender', 'Gender', 'STRING', 'surrender_base_temp', 'gender', 'STRING', 'surrender_temp', 'gender', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Surrender', 'Class', 'STRING', 'surrender_base_temp', 'risk_class', 'STRING', 'surrender_temp', 'risk_class', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Surrender', 'Age', 'STRING', 'surrender_base_temp', 'customer_age', 'STRING', 'surrender_temp', 'customer_age', 'INT', 7, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Surrender', 'ContractYear', 'STRING', 'surrender_base_temp', 'policy_year', 'STRING', 'surrender_temp', 'policy_year', 'INT', 8, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Surrender', 'SurrenderLength', 'STRING', 'surrender_base_temp', 'penalty_duration_years', 'STRING', 'surrender_temp', 'penalty_duration_years', 'INT', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Surrender', 'Rate', 'STRING', 'surrender_base_temp', 'penalty_percentage', 'STRING', 'surrender_temp', 'penalty_percentage', 'DECIMAL(18,4)', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Surrender', 'RateAppliedTo', 'STRING', 'surrender_base_temp', 'rate_calculation_basis', 'STRING', 'surrender_temp', 'rate_calculation_basis', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Surrender', 'EffectiveDate', 'STRING', 'surrender_base_temp', 'rule_start_date', 'STRING', 'surrender_temp', 'rule_start_date', 'TIMESTAMP', 12, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Surrender', 'EndDate', 'STRING', 'surrender_base_temp', 'rule_end_date', 'STRING', 'surrender_temp', 'rule_end_date', 'TIMESTAMP', 13, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [46] InvestmentDetail (14 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [46] InvestmentDetail
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 635, 'EQ_Warehouse', 'InvestmentDetail'                          , 'investment_detail_base', 'InvestmentDetailPK'                        , 'investment_detail_id'                      , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 636, 'EQ_Warehouse', 'InvestmentDetail'                          , 'investment_detail_base', 'Name'                                      , 'investment_detail_name'                    , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 637, 'EQ_Warehouse', 'InvestmentDetail'                          , 'investment_detail_base', 'FundType'                                  , 'fund_type'                                 , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 638, 'EQ_Warehouse', 'InvestmentDetail'                          , 'investment_detail_base', 'GroupingName'                              , 'grouping_name'                             , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 639, 'EQ_Warehouse', 'InvestmentDetail'                          , 'investment_detail_base', 'MarketingName'                             , 'marketing_name'                            , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 640, 'EQ_Warehouse', 'InvestmentDetail'                          , 'investment_detail_base', 'AltMarketingName'                          , 'alt_marketing_name'                        , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 641, 'EQ_Warehouse', 'InvestmentDetail'                          , 'investment_detail_base', 'SortOrder'                                 , 'sort_order'                                , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 642, 'EQ_Warehouse', 'InvestmentDetail'                          , 'investment_detail_base', 'IsCap'                                     , 'is_cap_indicator'                          , 'BOOLEAN'             ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 643, 'EQ_Warehouse', 'InvestmentDetail'                          , 'investment_detail_base', 'FundStartDate'                             , 'fund_start_date'                           , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'InvestmentDetail', 'InvestmentDetailPK', 'STRING', 'investment_detail_base_temp', 'investment_detail_id', 'STRING', 'investment_detail_temp', 'investment_detail_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'InvestmentDetail', 'Name', 'STRING', 'investment_detail_base_temp', 'investment_detail_name', 'STRING', 'investment_detail_temp', 'investment_detail_name', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'InvestmentDetail', 'FundType', 'STRING', 'investment_detail_base_temp', 'fund_type', 'STRING', 'investment_detail_temp', 'fund_type', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'InvestmentDetail', 'GroupingName', 'STRING', 'investment_detail_base_temp', 'grouping_name', 'STRING', 'investment_detail_temp', 'grouping_name', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'InvestmentDetail', 'MarketingName', 'STRING', 'investment_detail_base_temp', 'marketing_name', 'STRING', 'investment_detail_temp', 'marketing_name', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'InvestmentDetail', 'AltMarketingName', 'STRING', 'investment_detail_base_temp', 'alt_marketing_name', 'STRING', 'investment_detail_temp', 'alt_marketing_name', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'InvestmentDetail', 'SortOrder', 'STRING', 'investment_detail_base_temp', 'sort_order', 'STRING', 'investment_detail_temp', 'sort_order', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'InvestmentDetail', 'IsCap', 'STRING', 'investment_detail_base_temp', 'is_cap_indicator', 'STRING', 'investment_detail_temp', 'is_cap_indicator', 'BOOLEAN', 8, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'InvestmentDetail', 'FundStartDate', 'STRING', 'investment_detail_base_temp', 'fund_start_date', 'STRING', 'investment_detail_temp', 'fund_start_date', 'TIMESTAMP', 9, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [47] Investment (13 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [47] Investment
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 649, 'EQ_Warehouse', 'Investment'                                , 'investment_base', 'InvestmentPK'                              , 'investment_id'                             , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 650, 'EQ_Warehouse', 'Investment'                                , 'investment_base', 'InvestmentKey'                             , 'investment_key'                            , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 651, 'EQ_Warehouse', 'Investment'                                , 'investment_base', 'InvestmentName'                            , 'investment_name'                           , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 652, 'EQ_Warehouse', 'Investment'                                , 'investment_base', 'InvestmentDescription'                     , 'investment_description'                    , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 653, 'EQ_Warehouse', 'Investment'                                , 'investment_base', 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 654, 'EQ_Warehouse', 'Investment'                                , 'investment_base', 'Active'                                    , 'active_indicator'                          , 'BOOLEAN'             ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 655, 'EQ_Warehouse', 'Investment'                                , 'investment_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 656, 'EQ_Warehouse', 'Investment'                                , 'investment_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Investment', 'InvestmentPK', 'STRING', 'investment_base_temp', 'investment_id', 'STRING', 'investment_temp', 'investment_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Investment', 'InvestmentKey', 'STRING', 'investment_base_temp', 'investment_key', 'STRING', 'investment_temp', 'investment_key', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Investment', 'InvestmentName', 'STRING', 'investment_base_temp', 'investment_name', 'STRING', 'investment_temp', 'investment_name', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Investment', 'InvestmentDescription', 'STRING', 'investment_base_temp', 'investment_description', 'STRING', 'investment_temp', 'investment_description', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Investment', 'EffectiveDate', 'STRING', 'investment_base_temp', 'effective_date', 'STRING', 'investment_temp', 'effective_date', 'TIMESTAMP', 5, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Investment', 'Active', 'STRING', 'investment_base_temp', 'active_indicator', 'STRING', 'investment_temp', 'active_indicator', 'BOOLEAN', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Investment', 'StartDate', 'STRING', 'investment_base_temp', 'start_timestamp', 'STRING', 'investment_temp', 'start_timestamp', 'TIMESTAMP', 7, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Investment', 'EndDate', 'STRING', 'investment_base_temp', 'end_timestamp', 'STRING', 'investment_temp', 'end_timestamp', 'TIMESTAMP', 8, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [48] Activity (27 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [48] Activity
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 662, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'ActivityPK'                                , 'activity_id'                               , 'BIGINT'              ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 663, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'ActivityTypeFK'                            , 'activity_type_id'                          , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 664, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'CompanyFK'                                 , 'company_id'                                , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 665, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'ContractFK'                                , 'contract_id'                               , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 666, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'ProductFK'                                 , 'product_id'                                , 'INT'                 ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 667, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'InvestmentFK'                              , 'investment_id'                             , 'INT'                 ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 668, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'AccountingFK'                              , 'accounting_id'                             , 'INT'                 ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 669, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'AccountingAccountFK'                       , 'accounting_account_id'                     , 'INT'                 ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 670, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'CAPRepaymentFK'                            , 'cap_repayment_id'                          , 'INT'                 ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 671, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'HierarchySetKey'                           , 'hierarchy_set_id'                          , 'INT'                 ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 672, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'AgentFK'                                   , 'agent_id'                                  , 'INT'                 ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 673, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'ActivityClientFK'                          , 'activity_client_id'                        , 'INT'                 ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 674, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'ActivityPayeeFK'                           , 'activity_payee_id'                         , 'INT'                 ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 675, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'EffectiveDateFK'                           , 'effective_date_id'                         , 'INT'                 ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 676, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'ProcessDateFK'                             , 'process_date_id'                           , 'INT'                 ,  15, 1, 0, 1, GETUTCDATE()),
-  ( 677, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'ReleaseDate'                               , 'release_date'                              , 'TIMESTAMP'           ,  16, 1, 0, 1, GETUTCDATE()),
-  ( 678, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'PeriodDate'                                , 'period_date'                               , 'TIMESTAMP'           ,  17, 1, 0, 1, GETUTCDATE()),
-  ( 679, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'GrossAmount'                               , 'gross_amount'                              , 'DECIMAL(18,4)'       ,  18, 1, 0, 1, GETUTCDATE()),
-  ( 680, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'NetAmount'                                 , 'net_amount'                                , 'DECIMAL(18,4)'       ,  19, 1, 0, 1, GETUTCDATE()),
-  ( 681, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'CheckAmount'                               , 'check_amount'                              , 'DECIMAL(18,4)'       ,  20, 1, 0, 1, GETUTCDATE()),
-  ( 682, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'DistributionType'                          , 'distribution_type'                         , 'STRING'              ,  21, 1, 0, 1, GETUTCDATE()),
-  ( 683, 'EQ_Warehouse', 'Activity'                                  , 'activity_base', 'TextValue'                                 , 'activity_notes'                            , 'STRING'              ,  22, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Activity', 'ActivityPK', 'STRING', 'activity_base_temp', 'activity_id', 'STRING', 'activity_temp', 'activity_id', 'BIGINT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'ActivityTypeFK', 'STRING', 'activity_base_temp', 'activity_type_id', 'STRING', 'activity_temp', 'activity_type_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'CompanyFK', 'STRING', 'activity_base_temp', 'company_id', 'STRING', 'activity_temp', 'company_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'ContractFK', 'STRING', 'activity_base_temp', 'contract_id', 'STRING', 'activity_temp', 'contract_id', 'INT', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'ProductFK', 'STRING', 'activity_base_temp', 'product_id', 'STRING', 'activity_temp', 'product_id', 'INT', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'InvestmentFK', 'STRING', 'activity_base_temp', 'investment_id', 'STRING', 'activity_temp', 'investment_id', 'INT', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'AccountingFK', 'STRING', 'activity_base_temp', 'accounting_id', 'STRING', 'activity_temp', 'accounting_id', 'INT', 7, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'AccountingAccountFK', 'STRING', 'activity_base_temp', 'accounting_account_id', 'STRING', 'activity_temp', 'accounting_account_id', 'INT', 8, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'CAPRepaymentFK', 'STRING', 'activity_base_temp', 'cap_repayment_id', 'STRING', 'activity_temp', 'cap_repayment_id', 'INT', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'HierarchySetKey', 'STRING', 'activity_base_temp', 'hierarchy_set_id', 'STRING', 'activity_temp', 'hierarchy_set_id', 'INT', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'AgentFK', 'STRING', 'activity_base_temp', 'agent_id', 'STRING', 'activity_temp', 'agent_id', 'INT', 11, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'ActivityClientFK', 'STRING', 'activity_base_temp', 'activity_client_id', 'STRING', 'activity_temp', 'activity_client_id', 'INT', 12, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'ActivityPayeeFK', 'STRING', 'activity_base_temp', 'activity_payee_id', 'STRING', 'activity_temp', 'activity_payee_id', 'INT', 13, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'EffectiveDateFK', 'STRING', 'activity_base_temp', 'effective_date_id', 'STRING', 'activity_temp', 'effective_date_id', 'INT', 14, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'ProcessDateFK', 'STRING', 'activity_base_temp', 'process_date_id', 'STRING', 'activity_temp', 'process_date_id', 'INT', 15, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'ReleaseDate', 'STRING', 'activity_base_temp', 'release_date', 'STRING', 'activity_temp', 'release_date', 'TIMESTAMP', 16, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'PeriodDate', 'STRING', 'activity_base_temp', 'period_date', 'STRING', 'activity_temp', 'period_date', 'TIMESTAMP', 17, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'GrossAmount', 'STRING', 'activity_base_temp', 'gross_amount', 'STRING', 'activity_temp', 'gross_amount', 'DECIMAL(18,4)', 18, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'NetAmount', 'STRING', 'activity_base_temp', 'net_amount', 'STRING', 'activity_temp', 'net_amount', 'DECIMAL(18,4)', 19, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'CheckAmount', 'STRING', 'activity_base_temp', 'check_amount', 'STRING', 'activity_temp', 'check_amount', 'DECIMAL(18,4)', 20, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'DistributionType', 'STRING', 'activity_base_temp', 'distribution_type', 'STRING', 'activity_temp', 'distribution_type', 'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Activity', 'TextValue', 'STRING', 'activity_base_temp', 'activity_notes', 'STRING', 'activity_temp', 'activity_notes', 'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
--- [49] AccountValue (16 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [49] AccountValue
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 689, 'EQ_Warehouse', 'AccountValue'                              , 'account_value_base', 'AccountValuePK'                            , 'account_value_id'                          , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 690, 'EQ_Warehouse', 'AccountValue'                              , 'account_value_base', 'ContractFK'                                , 'contract_id'                               , 'INT'                 ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 691, 'EQ_Warehouse', 'AccountValue'                              , 'account_value_base', 'InvestmentFK'                              , 'investment_id'                             , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 692, 'EQ_Warehouse', 'AccountValue'                              , 'account_value_base', 'Value'                                     , 'account_value_amount'                      , 'DECIMAL(18,4)'       ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 693, 'EQ_Warehouse', 'AccountValue'                              , 'account_value_base', 'CurrentInterestRate'                       , 'current_interest_rate'                     , 'DECIMAL(18,4)'       ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 694, 'EQ_Warehouse', 'AccountValue'                              , 'account_value_base', 'AllocationPercent'                         , 'allocation_percentage'                     , 'DECIMAL(18,4)'       ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 695, 'EQ_Warehouse', 'AccountValue'                              , 'account_value_base', 'DepositDate'                               , 'deposit_date'                              , 'TIMESTAMP'           ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 696, 'EQ_Warehouse', 'AccountValue'                              , 'account_value_base', 'RenewalDate'                               , 'renewal_date'                              , 'TIMESTAMP'           ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 697, 'EQ_Warehouse', 'AccountValue'                              , 'account_value_base', 'ValuationDate'                             , 'valuation_date'                            , 'TIMESTAMP'           ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 698, 'EQ_Warehouse', 'AccountValue'                              , 'account_value_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 699, 'EQ_Warehouse', 'AccountValue'                              , 'account_value_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,  11, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'AccountValue', 'AccountValuePK', 'STRING', 'account_value_base_temp', 'account_value_id', 'STRING', 'account_value_temp', 'account_value_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountValue', 'ContractFK', 'STRING', 'account_value_base_temp', 'contract_id', 'STRING', 'account_value_temp', 'contract_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountValue', 'InvestmentFK', 'STRING', 'account_value_base_temp', 'investment_id', 'STRING', 'account_value_temp', 'investment_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountValue', 'Value', 'STRING', 'account_value_base_temp', 'account_value_amount', 'STRING', 'account_value_temp', 'account_value_amount', 'DECIMAL(18,4)', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountValue', 'CurrentInterestRate', 'STRING', 'account_value_base_temp', 'current_interest_rate', 'STRING', 'account_value_temp', 'current_interest_rate', 'DECIMAL(18,4)', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountValue', 'AllocationPercent', 'STRING', 'account_value_base_temp', 'allocation_percentage', 'STRING', 'account_value_temp', 'allocation_percentage', 'DECIMAL(18,4)', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountValue', 'DepositDate', 'STRING', 'account_value_base_temp', 'deposit_date', 'STRING', 'account_value_temp', 'deposit_date', 'TIMESTAMP', 7, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountValue', 'RenewalDate', 'STRING', 'account_value_base_temp', 'renewal_date', 'STRING', 'account_value_temp', 'renewal_date', 'TIMESTAMP', 8, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountValue', 'ValuationDate', 'STRING', 'account_value_base_temp', 'valuation_date', 'STRING', 'account_value_temp', 'valuation_date', 'TIMESTAMP', 9, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountValue', 'StartDate', 'STRING', 'account_value_base_temp', 'start_timestamp', 'STRING', 'account_value_temp', 'start_timestamp', 'TIMESTAMP', 10, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'AccountValue', 'EndDate', 'STRING', 'account_value_base_temp', 'end_timestamp', 'STRING', 'account_value_temp', 'end_timestamp', 'TIMESTAMP', 11, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [50] Product (14 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [50] Product
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 705, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'ProductPK'                                 , 'product_id'                                , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 706, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'ProductName'                               , 'product_name'                              , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 707, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'MarketingName'                             , 'marketing_name'                            , 'STRING'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 708, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'AltMarketingName'                          , 'alt_marketing_name'                        , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 709, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'GroupName'                                 , 'group_name'                                , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 710, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'AgentCommStatementAbbr'                    , 'agent_comm_statement_abbr'                 , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 711, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'GLAbbr'                                    , 'gl_abbr'                                   , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 712, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'GLLOB'                                     , 'gl_line_of_business'                       , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 713, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'Context'                                   , 'product_context'                           , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 714, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'ProductType'                               , 'product_type'                              , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 715, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'CUSIPNumber'                               , 'cusip_number'                              , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 716, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'SortOrder'                                 , 'sort_order'                                , 'INT'                 ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 717, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 718, 'EQ_Warehouse', 'Product'                                   , 'product_base', 'Status'                                    , 'status'                                    , 'STRING'              ,  14, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Product', 'ProductPK', 'STRING', 'product_base_temp', 'product_id', 'STRING', 'product_temp', 'product_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Product', 'ProductName', 'STRING', 'product_base_temp', 'product_name', 'STRING', 'product_temp', 'product_name', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Product', 'MarketingName', 'STRING', 'product_base_temp', 'marketing_name', 'STRING', 'product_temp', 'marketing_name', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Product', 'AltMarketingName', 'STRING', 'product_base_temp', 'alt_marketing_name', 'STRING', 'product_temp', 'alt_marketing_name', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Product', 'GroupName', 'STRING', 'product_base_temp', 'group_name', 'STRING', 'product_temp', 'group_name', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Product', 'AgentCommStatementAbbr', 'STRING', 'product_base_temp', 'agent_comm_statement_abbr', 'STRING', 'product_temp', 'agent_comm_statement_abbr', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Product', 'GLAbbr', 'STRING', 'product_base_temp', 'gl_abbr', 'STRING', 'product_temp', 'gl_abbr', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Product', 'GLLOB', 'STRING', 'product_base_temp', 'gl_line_of_business', 'STRING', 'product_temp', 'gl_line_of_business', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Product', 'Context', 'STRING', 'product_base_temp', 'product_context', 'STRING', 'product_temp', 'product_context', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Product', 'ProductType', 'STRING', 'product_base_temp', 'product_type', 'STRING', 'product_temp', 'product_type', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Product', 'CUSIPNumber', 'STRING', 'product_base_temp', 'cusip_number', 'STRING', 'product_temp', 'cusip_number', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Product', 'SortOrder', 'STRING', 'product_base_temp', 'sort_order', 'STRING', 'product_temp', 'sort_order', 'INT', 12, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Product', 'EffectiveDate', 'STRING', 'product_base_temp', 'effective_date', 'STRING', 'product_temp', 'effective_date', 'TIMESTAMP', 13, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Product', 'Status', 'STRING', 'product_base_temp', 'status', 'STRING', 'product_temp', 'status', 'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
--- [51] Agent (18 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [51] Agent
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 719, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AgentPK'                                   , 'agent_id'                                  , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 720, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'SourceKey'                                 , 'source_key'                                , 'BIGINT'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 721, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'ClientFK'                                  , 'client_id'                                 , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 722, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'DisplayName'                               , 'display_name'                              , 'STRING'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 723, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AgentNumber'                               , 'agent_number'                              , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 724, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'NoteGroupKey'                              , 'note_group_key'                            , 'INT'                 ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 725, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'RequirementGroupKey'                       , 'requirement_group_key'                     , 'INT'                 ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 726, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AgentLicenseGroupKey'                      , 'agent_license_group_key'                   , 'INT'                 ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 727, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AgentPrincipalGroupKey'                    , 'agent_principal_group_key'                 , 'INT'                 ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 728, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AgentSummaryGroupKey'                      , 'agent_summary_group_key'                   , 'INT'                 ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 729, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'NPN'                                       , 'national_producer_number'                  , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 730, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'NASD'                                      , 'nasd_finra_number'                         , 'STRING'              ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 731, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'AgentType'                                 , 'agent_type'                                , 'STRING'              ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 732, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'HireDate'                                  , 'hire_date'                                 , 'TIMESTAMP'           ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 733, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'TerminationDate'                           , 'termination_date'                          , 'TIMESTAMP'           ,  15, 1, 0, 1, GETUTCDATE()),
-  ( 734, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'Status'                                    , 'status'                                    , 'STRING'              ,  16, 1, 0, 1, GETUTCDATE()),
-  ( 735, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,  17, 1, 0, 1, GETUTCDATE()),
-  ( 736, 'EQ_Warehouse', 'Agent'                                     , 'agent_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,  18, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Agent', 'AgentPK', 'STRING', 'agent_base_temp', 'agent_id', 'STRING', 'agent_temp', 'agent_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'SourceKey', 'STRING', 'agent_base_temp', 'source_key', 'STRING', 'agent_temp', 'source_key', 'BIGINT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'ClientFK', 'STRING', 'agent_base_temp', 'client_id', 'STRING', 'agent_temp', 'client_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'DisplayName', 'STRING', 'agent_base_temp', 'display_name', 'STRING', 'agent_temp', 'display_name', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'AgentNumber', 'STRING', 'agent_base_temp', 'agent_number', 'STRING', 'agent_temp', 'agent_number', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'NoteGroupKey', 'STRING', 'agent_base_temp', 'note_group_key', 'STRING', 'agent_temp', 'note_group_key', 'INT', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'RequirementGroupKey', 'STRING', 'agent_base_temp', 'requirement_group_key', 'STRING', 'agent_temp', 'requirement_group_key', 'INT', 7, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'AgentLicenseGroupKey', 'STRING', 'agent_base_temp', 'agent_license_group_key', 'STRING', 'agent_temp', 'agent_license_group_key', 'INT', 8, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'AgentPrincipalGroupKey', 'STRING', 'agent_base_temp', 'agent_principal_group_key', 'STRING', 'agent_temp', 'agent_principal_group_key', 'INT', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'AgentSummaryGroupKey', 'STRING', 'agent_base_temp', 'agent_summary_group_key', 'STRING', 'agent_temp', 'agent_summary_group_key', 'INT', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'NPN', 'STRING', 'agent_base_temp', 'national_producer_number', 'STRING', 'agent_temp', 'national_producer_number', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'NASD', 'STRING', 'agent_base_temp', 'nasd_finra_number', 'STRING', 'agent_temp', 'nasd_finra_number', 'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'AgentType', 'STRING', 'agent_base_temp', 'agent_type', 'STRING', 'agent_temp', 'agent_type', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'HireDate', 'STRING', 'agent_base_temp', 'hire_date', 'STRING', 'agent_temp', 'hire_date', 'TIMESTAMP', 14, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'TerminationDate', 'STRING', 'agent_base_temp', 'termination_date', 'STRING', 'agent_temp', 'termination_date', 'TIMESTAMP', 15, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'Status', 'STRING', 'agent_base_temp', 'status', 'STRING', 'agent_temp', 'status', 'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'StartDate', 'STRING', 'agent_base_temp', 'start_timestamp', 'STRING', 'agent_temp', 'start_timestamp', 'TIMESTAMP', 17, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Agent', 'EndDate', 'STRING', 'agent_base_temp', 'end_timestamp', 'STRING', 'agent_temp', 'end_timestamp', 'TIMESTAMP', 18, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [52] Client (38 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [52] Client
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 739, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'ClientPK'                                  , 'client_id'                                 , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 740, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'SourceKey'                                 , 'source_key'                                , 'BIGINT'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 741, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'TaxIDHash'                                 , 'tax_id_hash'                               , 'BINARY'              ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 742, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Last4Hash'                                 , 'last_4_hash'                               , 'BINARY'              ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 743, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Last4Token'                                , 'last_4_token'                              , 'STRING'              ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 744, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'DisplayName'                               , 'display_name'                              , 'STRING'              ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 745, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'FirstName'                                 , 'first_name'                                , 'STRING'              ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 746, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'MiddleName'                                , 'middle_name'                               , 'STRING'              ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 747, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'LastName'                                  , 'last_name'                                 , 'STRING'              ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 748, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Prefix'                                    , 'prefix'                                    , 'STRING'              ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 749, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Suffix'                                    , 'suffix'                                    , 'STRING'              ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 750, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'CorporateName'                             , 'corporate_name'                            , 'STRING'              ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 751, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Gender'                                    , 'gender'                                    , 'STRING'              ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 752, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Phone'                                     , 'phone_number'                              , 'STRING'              ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 753, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Email'                                     , 'email_address'                             , 'STRING'              ,  15, 1, 0, 1, GETUTCDATE()),
-  ( 754, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Fax'                                       , 'fax_number'                                , 'STRING'              ,  16, 1, 0, 1, GETUTCDATE()),
-  ( 755, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'BirthDate'                                 , 'birth_date'                                , 'TIMESTAMP'           ,  17, 1, 0, 1, GETUTCDATE()),
-  ( 756, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'DateOfDeath'                               , 'date_of_death'                             , 'TIMESTAMP'           ,  18, 1, 0, 1, GETUTCDATE()),
-  ( 757, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Status'                                    , 'status'                                    , 'STRING'              ,  19, 1, 0, 1, GETUTCDATE()),
-  ( 758, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'PayPreference'                             , 'pay_preference'                            , 'STRING'              ,  20, 1, 0, 1, GETUTCDATE()),
-  ( 759, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'ExternalAccountGroupKey'                   , 'external_account_group_key'                , 'INT'                 ,  21, 1, 0, 1, GETUTCDATE()),
-  ( 760, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'AddressLine1'                              , 'address_line_1'                            , 'STRING'              ,  22, 1, 0, 1, GETUTCDATE()),
-  ( 761, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'AddressLine2'                              , 'address_line_2'                            , 'STRING'              ,  23, 1, 0, 1, GETUTCDATE()),
-  ( 762, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'AddressLine3'                              , 'address_line_3'                            , 'STRING'              ,  24, 1, 0, 1, GETUTCDATE()),
-  ( 763, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'AddressLine4'                              , 'address_line_4'                            , 'STRING'              ,  25, 1, 0, 1, GETUTCDATE()),
-  ( 764, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'City'                                      , 'city'                                      , 'STRING'              ,  26, 1, 0, 1, GETUTCDATE()),
-  ( 765, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'State'                                     , 'state_code'                                , 'STRING'              ,  27, 1, 0, 1, GETUTCDATE()),
-  ( 766, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'ZipCode'                                   , 'zip_code'                                  , 'STRING'              ,  28, 1, 0, 1, GETUTCDATE()),
-  ( 767, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'County'                                    , 'county'                                    , 'STRING'              ,  29, 1, 0, 1, GETUTCDATE()),
-  ( 768, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Country'                                   , 'country_code'                              , 'STRING'              ,  30, 1, 0, 1, GETUTCDATE()),
-  ( 769, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'AdditionalInfoGroupKey'                    , 'additional_info_group_key'                 , 'INT'                 ,  31, 1, 0, 1, GETUTCDATE()),
-  ( 770, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'Verification'                              , 'verification_details'                      , 'STRING'              ,  32, 1, 0, 1, GETUTCDATE()),
-  ( 771, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'NoNewBusinessInd'                          , 'is_no_new_business'                        , 'BOOLEAN'             ,  33, 1, 0, 1, GETUTCDATE()),
-  ( 772, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'EffectiveDate'                             , 'effective_date'                            , 'TIMESTAMP'           ,  34, 1, 0, 1, GETUTCDATE()),
-  ( 773, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,  35, 1, 0, 1, GETUTCDATE()),
-  ( 774, 'EQ_Warehouse', 'Client'                                    , 'client_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,  36, 1, 0, 1, GETUTCDATE());
+('EQ_Warehouse', 'Client', 'ClientPK', 'STRING', 'client_base_temp', 'client_id', 'STRING', 'client_temp', 'client_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'SourceKey', 'STRING', 'client_base_temp', 'source_key', 'STRING', 'client_temp', 'source_key', 'BIGINT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'TaxIDHash', 'STRING', 'client_base_temp', 'tax_id_hash', 'STRING', 'client_temp', 'tax_id_hash', 'BINARY', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'Last4Hash', 'STRING', 'client_base_temp', 'last_4_hash', 'STRING', 'client_temp', 'last_4_hash', 'BINARY', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'Last4Token', 'STRING', 'client_base_temp', 'last_4_token', 'STRING', 'client_temp', 'last_4_token', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'DisplayName', 'STRING', 'client_base_temp', 'display_name', 'STRING', 'client_temp', 'display_name', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'FirstName', 'STRING', 'client_base_temp', 'first_name', 'STRING', 'client_temp', 'first_name', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'MiddleName', 'STRING', 'client_base_temp', 'middle_name', 'STRING', 'client_temp', 'middle_name', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'LastName', 'STRING', 'client_base_temp', 'last_name', 'STRING', 'client_temp', 'last_name', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'Prefix', 'STRING', 'client_base_temp', 'prefix', 'STRING', 'client_temp', 'prefix', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'Suffix', 'STRING', 'client_base_temp', 'suffix', 'STRING', 'client_temp', 'suffix', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'CorporateName', 'STRING', 'client_base_temp', 'corporate_name', 'STRING', 'client_temp', 'corporate_name', 'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'Gender', 'STRING', 'client_base_temp', 'gender', 'STRING', 'client_temp', 'gender', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'Phone', 'STRING', 'client_base_temp', 'phone_number', 'STRING', 'client_temp', 'phone_number', 'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'Email', 'STRING', 'client_base_temp', 'email_address', 'STRING', 'client_temp', 'email_address', 'STRING', 15, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'Fax', 'STRING', 'client_base_temp', 'fax_number', 'STRING', 'client_temp', 'fax_number', 'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'BirthDate', 'STRING', 'client_base_temp', 'birth_date', 'STRING', 'client_temp', 'birth_date', 'TIMESTAMP', 17, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'DateOfDeath', 'STRING', 'client_base_temp', 'date_of_death', 'STRING', 'client_temp', 'date_of_death', 'TIMESTAMP', 18, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'Status', 'STRING', 'client_base_temp', 'status', 'STRING', 'client_temp', 'status', 'STRING', 19, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'PayPreference', 'STRING', 'client_base_temp', 'pay_preference', 'STRING', 'client_temp', 'pay_preference', 'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'ExternalAccountGroupKey', 'STRING', 'client_base_temp', 'external_account_group_key', 'STRING', 'client_temp', 'external_account_group_key', 'INT', 21, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'AddressLine1', 'STRING', 'client_base_temp', 'address_line_1', 'STRING', 'client_temp', 'address_line_1', 'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'AddressLine2', 'STRING', 'client_base_temp', 'address_line_2', 'STRING', 'client_temp', 'address_line_2', 'STRING', 23, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'AddressLine3', 'STRING', 'client_base_temp', 'address_line_3', 'STRING', 'client_temp', 'address_line_3', 'STRING', 24, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'AddressLine4', 'STRING', 'client_base_temp', 'address_line_4', 'STRING', 'client_temp', 'address_line_4', 'STRING', 25, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'City', 'STRING', 'client_base_temp', 'city', 'STRING', 'client_temp', 'city', 'STRING', 26, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'State', 'STRING', 'client_base_temp', 'state_code', 'STRING', 'client_temp', 'state_code', 'STRING', 27, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'ZipCode', 'STRING', 'client_base_temp', 'zip_code', 'STRING', 'client_temp', 'zip_code', 'STRING', 28, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'County', 'STRING', 'client_base_temp', 'county', 'STRING', 'client_temp', 'county', 'STRING', 29, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'Country', 'STRING', 'client_base_temp', 'country_code', 'STRING', 'client_temp', 'country_code', 'STRING', 30, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'AdditionalInfoGroupKey', 'STRING', 'client_base_temp', 'additional_info_group_key', 'STRING', 'client_temp', 'additional_info_group_key', 'INT', 31, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'Verification', 'STRING', 'client_base_temp', 'verification_details', 'STRING', 'client_temp', 'verification_details', 'STRING', 32, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'NoNewBusinessInd', 'STRING', 'client_base_temp', 'is_no_new_business', 'STRING', 'client_temp', 'is_no_new_business', 'BOOLEAN', 33, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'EffectiveDate', 'STRING', 'client_base_temp', 'effective_date', 'STRING', 'client_temp', 'effective_date', 'TIMESTAMP', 34, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'StartDate', 'STRING', 'client_base_temp', 'start_timestamp', 'STRING', 'client_temp', 'start_timestamp', 'TIMESTAMP', 35, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Client', 'EndDate', 'STRING', 'client_base_temp', 'end_timestamp', 'STRING', 'client_temp', 'end_timestamp', 'TIMESTAMP', 36, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
--- [53] Contract (51 columns)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+-- [53] Contract (Full 51 Columns)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 778, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ContractPK'                                , 'contract_id'                               , 'INT'                 ,   1, 1, 1, 1, GETUTCDATE()),
-  ( 779, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ContractNumber'                            , 'contract_number'                           , 'STRING'              ,   2, 1, 0, 1, GETUTCDATE()),
-  ( 780, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'HierarchyGroupKey'                         , 'hierarchy_group_key'                       , 'INT'                 ,   3, 1, 0, 1, GETUTCDATE()),
-  ( 781, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ContractValueGroupKey'                     , 'contract_value_group_key'                  , 'INT'                 ,   4, 1, 0, 1, GETUTCDATE()),
-  ( 782, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'SurrenderFK'                               , 'surrender_id'                              , 'INT'                 ,   5, 1, 0, 1, GETUTCDATE()),
-  ( 783, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ProductFK'                                 , 'product_id'                                , 'INT'                 ,   6, 1, 0, 1, GETUTCDATE()),
-  ( 784, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'OwnerFK'                                   , 'owner_client_id'                           , 'INT'                 ,   7, 1, 0, 1, GETUTCDATE()),
-  ( 785, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'Owner2FK'                                  , 'owner_2_client_id'                         , 'INT'                 ,   8, 1, 0, 1, GETUTCDATE()),
-  ( 786, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'AnnuitantInsuredFK'                        , 'annuitant_insured_client_id'               , 'INT'                 ,   9, 1, 0, 1, GETUTCDATE()),
-  ( 787, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'AnnuitantInsured2FK'                       , 'annuitant_insured_2_client_id'             , 'INT'                 ,  10, 1, 0, 1, GETUTCDATE()),
-  ( 788, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'AdditionalClientGroupKey'                  , 'additional_client_group_key'               , 'INT'                 ,  11, 1, 0, 1, GETUTCDATE()),
-  ( 789, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ContractDepositGroupKey'                   , 'contract_deposit_group_key'                , 'INT'                 ,  12, 1, 0, 1, GETUTCDATE()),
-  ( 790, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'RiderGroupKey'                             , 'rider_group_key'                           , 'INT'                 ,  13, 1, 0, 1, GETUTCDATE()),
-  ( 791, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'NoteGroupKey'                              , 'note_group_key'                            , 'INT'                 ,  14, 1, 0, 1, GETUTCDATE()),
-  ( 792, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'RequirementGroupKey'                       , 'requirement_group_key'                     , 'INT'                 ,  15, 1, 0, 1, GETUTCDATE()),
-  (2001, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ReinsuranceGroupKey'                       , 'reinsurance_group_key'                     , 'INT'                 ,  16, 1, 0, 1, GETUTCDATE()),
-  (2002, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'RecurringPaymentGroupKey'                  , 'recurring_payment_group_key'               , 'INT'                 ,  17, 1, 0, 1, GETUTCDATE()),
-  (2003, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ApplicationReceivedDate'                   , 'application_received_timestamp'            , 'TIMESTAMP'           ,  18, 1, 0, 1, GETUTCDATE()),
-  (2004, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ApplicationSignedDate'                     , 'application_signed_timestamp'              , 'TIMESTAMP'           ,  19, 1, 0, 1, GETUTCDATE()),
-  (2005, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'EffectiveDate'                             , 'effective_timestamp'                       , 'TIMESTAMP'           ,  20, 1, 0, 1, GETUTCDATE()),
-  (2006, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'IssueDate'                                 , 'issue_timestamp'                           , 'TIMESTAMP'           ,  21, 1, 0, 1, GETUTCDATE()),
-  (2007, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'IssueState'                                , 'issue_state_code'                          , 'STRING'              ,  22, 1, 0, 1, GETUTCDATE()),
-  (2008, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'IssueAge'                                  , 'issue_age'                                 , 'INT'                 ,  23, 1, 0, 1, GETUTCDATE()),
-  (2009, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'AttainedAge'                               , 'attained_age'                              , 'INT'                 ,  24, 1, 0, 1, GETUTCDATE()),
-  (2010, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ContractStatus'                            , 'contract_status_code'                      , 'STRING'              ,  25, 1, 0, 1, GETUTCDATE()),
-  (2011, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'CostBasis'                                 , 'cost_basis'                                , 'DECIMAL(18,4)'       ,  26, 1, 0, 1, GETUTCDATE()),
-  (2012, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'RecoveredCostBasis'                        , 'recovered_cost_basis'                      , 'DECIMAL(18,4)'       ,  27, 1, 0, 1, GETUTCDATE()),
-  (2013, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'QualInd'                                   , 'qual_ind'                                  , 'STRING'              ,  28, 1, 0, 1, GETUTCDATE()),
-  (2014, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'QualType'                                  , 'qual_type'                                 , 'STRING'              ,  29, 1, 0, 1, GETUTCDATE()),
-  (2015, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'Option'                                    , 'contract_option'                           , 'STRING'              ,  30, 1, 0, 1, GETUTCDATE()),
-  (2016, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'CertainPeriod'                             , 'certain_period'                            , 'INT'                 ,  31, 1, 0, 1, GETUTCDATE()),
-  (2017, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'MECStatus'                                 , 'mec_status_code'                           , 'STRING'              ,  32, 1, 0, 1, GETUTCDATE()),
-  (2018, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'RelatedContractNumber'                     , 'related_contract_number'                   , 'STRING'              ,  33, 1, 0, 1, GETUTCDATE()),
-  (2019, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'SpousalContinuationInd'                    , 'is_spousal_continuation'                   , 'BOOLEAN'             ,  34, 1, 0, 1, GETUTCDATE()),
-  (2020, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'SupplementalContractInd'                   , 'is_supplemental_contract'                  , 'BOOLEAN'             ,  35, 1, 0, 1, GETUTCDATE()),
-  (2021, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'QDROInd'                                   , 'is_qdro'                                   , 'BOOLEAN'             ,  36, 1, 0, 1, GETUTCDATE()),
-  (2022, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'RiderClaimInd'                             , 'is_rider_claim'                            , 'BOOLEAN'             ,  37, 1, 0, 1, GETUTCDATE()),
-  (2023, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ROTHConversionInd'                         , 'is_roth_conversion'                        , 'BOOLEAN'             ,  38, 1, 0, 1, GETUTCDATE()),
-  (2024, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'InternalReplacementInd'                    , 'is_internal_replacement'                   , 'BOOLEAN'             ,  39, 1, 0, 1, GETUTCDATE()),
-  (2025, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'PartialTaxConversionInd'                   , 'is_partial_tax_conversion'                 , 'BOOLEAN'             ,  40, 1, 0, 1, GETUTCDATE()),
-  (2026, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'WaiverInEffectInd'                         , 'is_waiver_in_effect'                       , 'BOOLEAN'             ,  41, 1, 0, 1, GETUTCDATE()),
-  (2027, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'EDeliveryInd'                              , 'is_e_delivery'                             , 'BOOLEAN'             ,  42, 1, 0, 1, GETUTCDATE()),
-  (2028, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ClassCode'                                 , 'class_code'                                , 'STRING'              ,  43, 1, 0, 1, GETUTCDATE()),
-  (2029, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'UnderwritingClass'                         , 'underwriting_class'                        , 'STRING'              ,  44, 1, 0, 1, GETUTCDATE()),
-  (2030, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'UnderwritingDate'                          , 'underwriting_timestamp'                    , 'TIMESTAMP'           ,  45, 1, 0, 1, GETUTCDATE()),
-  (2031, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'CoverageRatio'                             , 'coverage_ratio'                            , 'DECIMAL(18,4)'       ,  46, 1, 0, 1, GETUTCDATE()),
-  (2032, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'ContractEndDate'                           , 'contract_end_timestamp'                    , 'TIMESTAMP'           ,  47, 1, 0, 1, GETUTCDATE()),
-  (2033, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'FundingCompanyFK'                          , 'funding_company_id'                        , 'INT'                 ,  48, 1, 0, 1, GETUTCDATE()),
-  (2034, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'SourceKey'                                 , 'source_key'                                , 'BIGINT'              ,  49, 1, 0, 1, GETUTCDATE()),
-  (2035, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'StartDate'                                 , 'start_timestamp'                           , 'TIMESTAMP'           ,  50, 1, 0, 1, GETUTCDATE()),
-  (2036, 'EQ_Warehouse', 'Contract'                                  , 'contract_base', 'EndDate'                                   , 'end_timestamp'                             , 'TIMESTAMP'           ,  51, 1, 0, 1, GETUTCDATE());
-
--- Total: column mappings across EQ_Warehouse source tables (IDs 1-792) + HubSpot (IDs 911-1085)
--- EQ_ODS base table mappings start at ID 3001 (see section below)
-
+('EQ_Warehouse', 'Contract', 'ContractPK', 'STRING', 'contract_base_temp', 'contract_id', 'STRING', 'contract_temp', 'contract_id', 'INT', 1, 1, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'ContractNumber', 'STRING', 'contract_base_temp', 'contract_number', 'STRING', 'contract_temp', 'contract_number', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'HierarchyGroupKey', 'STRING', 'contract_base_temp', 'hierarchy_group_key', 'STRING', 'contract_temp', 'hierarchy_group_key', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'ContractValueGroupKey', 'STRING', 'contract_base_temp', 'contract_value_group_key', 'STRING', 'contract_temp', 'contract_value_group_key', 'INT', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'SurrenderFK', 'STRING', 'contract_base_temp', 'surrender_id', 'STRING', 'contract_temp', 'surrender_id', 'INT', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'ProductFK', 'STRING', 'contract_base_temp', 'product_id', 'STRING', 'contract_temp', 'product_id', 'INT', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'OwnerFK', 'STRING', 'contract_base_temp', 'owner_client_id', 'STRING', 'contract_temp', 'owner_client_id', 'INT', 7, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'Owner2FK', 'STRING', 'contract_base_temp', 'owner_2_client_id', 'STRING', 'contract_temp', 'owner_2_client_id', 'INT', 8, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'AnnuitantInsuredFK', 'STRING', 'contract_base_temp', 'annuitant_insured_client_id', 'STRING', 'contract_temp', 'annuitant_insured_client_id', 'INT', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'AnnuitantInsured2FK', 'STRING', 'contract_base_temp', 'annuitant_insured_2_client_id', 'STRING', 'contract_temp', 'annuitant_insured_2_client_id', 'INT', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'AdditionalClientGroupKey', 'STRING', 'contract_base_temp', 'additional_client_group_key', 'STRING', 'contract_temp', 'additional_client_group_key', 'INT', 11, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'ContractDepositGroupKey', 'STRING', 'contract_base_temp', 'contract_deposit_group_key', 'STRING', 'contract_temp', 'contract_deposit_group_key', 'INT', 12, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'RiderGroupKey', 'STRING', 'contract_base_temp', 'rider_group_key', 'STRING', 'contract_temp', 'rider_group_key', 'INT', 13, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'NoteGroupKey', 'STRING', 'contract_base_temp', 'note_group_key', 'STRING', 'contract_temp', 'note_group_key', 'INT', 14, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'RequirementGroupKey', 'STRING', 'contract_base_temp', 'requirement_group_key', 'STRING', 'contract_temp', 'requirement_group_key', 'INT', 15, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'ReinsuranceGroupKey', 'STRING', 'contract_base_temp', 'reinsurance_group_key', 'STRING', 'contract_temp', 'reinsurance_group_key', 'INT', 16, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'RecurringPaymentGroupKey', 'STRING', 'contract_base_temp', 'recurring_payment_group_key', 'STRING', 'contract_temp', 'recurring_payment_group_key', 'INT', 17, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'ApplicationReceivedDate', 'STRING', 'contract_base_temp', 'application_received_timestamp', 'STRING', 'contract_temp', 'application_received_timestamp', 'TIMESTAMP', 18, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'ApplicationSignedDate', 'STRING', 'contract_base_temp', 'application_signed_timestamp', 'STRING', 'contract_temp', 'application_signed_timestamp', 'TIMESTAMP', 19, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'EffectiveDate', 'STRING', 'contract_base_temp', 'effective_timestamp', 'STRING', 'contract_temp', 'effective_timestamp', 'TIMESTAMP', 20, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'IssueDate', 'STRING', 'contract_base_temp', 'issue_timestamp', 'STRING', 'contract_temp', 'issue_timestamp', 'TIMESTAMP', 21, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'IssueState', 'STRING', 'contract_base_temp', 'issue_state_code', 'STRING', 'contract_temp', 'issue_state_code', 'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'IssueAge', 'STRING', 'contract_base_temp', 'issue_age', 'STRING', 'contract_temp', 'issue_age', 'INT', 23, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'AttainedAge', 'STRING', 'contract_base_temp', 'attained_age', 'STRING', 'contract_temp', 'attained_age', 'INT', 24, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'ContractStatus', 'STRING', 'contract_base_temp', 'contract_status_code', 'STRING', 'contract_temp', 'contract_status_code', 'STRING', 25, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'CostBasis', 'STRING', 'contract_base_temp', 'cost_basis', 'STRING', 'contract_temp', 'cost_basis', 'DECIMAL(18,4)', 26, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'RecoveredCostBasis', 'STRING', 'contract_base_temp', 'recovered_cost_basis', 'STRING', 'contract_temp', 'recovered_cost_basis', 'DECIMAL(18,4)', 27, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'QualInd', 'STRING', 'contract_base_temp', 'qual_ind', 'STRING', 'contract_temp', 'qual_ind', 'STRING', 28, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'QualType', 'STRING', 'contract_base_temp', 'qual_type', 'STRING', 'contract_temp', 'qual_type', 'STRING', 29, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'Option', 'STRING', 'contract_base_temp', 'contract_option', 'STRING', 'contract_temp', 'contract_option', 'STRING', 30, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'CertainPeriod', 'STRING', 'contract_base_temp', 'certain_period', 'STRING', 'contract_temp', 'certain_period', 'INT', 31, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'MECStatus', 'STRING', 'contract_base_temp', 'mec_status_code', 'STRING', 'contract_temp', 'mec_status_code', 'STRING', 32, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'RelatedContractNumber', 'STRING', 'contract_base_temp', 'related_contract_number', 'STRING', 'contract_temp', 'related_contract_number', 'STRING', 33, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'SpousalContinuationInd', 'STRING', 'contract_base_temp', 'is_spousal_continuation', 'STRING', 'contract_temp', 'is_spousal_continuation', 'BOOLEAN', 34, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'SupplementalContractInd', 'STRING', 'contract_base_temp', 'is_supplemental_contract', 'STRING', 'contract_temp', 'is_supplemental_contract', 'BOOLEAN', 35, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'QDROInd', 'STRING', 'contract_base_temp', 'is_qdro', 'STRING', 'contract_temp', 'is_qdro', 'BOOLEAN', 36, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'RiderClaimInd', 'STRING', 'contract_base_temp', 'is_rider_claim', 'STRING', 'contract_temp', 'is_rider_claim', 'BOOLEAN', 37, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'ROTHConversionInd', 'STRING', 'contract_base_temp', 'is_roth_conversion', 'STRING', 'contract_temp', 'is_roth_conversion', 'BOOLEAN', 38, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'InternalReplacementInd', 'STRING', 'contract_base_temp', 'is_internal_replacement', 'STRING', 'contract_temp', 'is_internal_replacement', 'BOOLEAN', 39, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'PartialTaxConversionInd', 'STRING', 'contract_base_temp', 'is_partial_tax_conversion', 'STRING', 'contract_temp', 'is_partial_tax_conversion', 'BOOLEAN', 40, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'WaiverInEffectInd', 'STRING', 'contract_base_temp', 'is_waiver_in_effect', 'STRING', 'contract_temp', 'is_waiver_in_effect', 'BOOLEAN', 41, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'EDeliveryInd', 'STRING', 'contract_base_temp', 'is_e_delivery', 'STRING', 'contract_temp', 'is_e_delivery', 'BOOLEAN', 42, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'ClassCode', 'STRING', 'contract_base_temp', 'class_code', 'STRING', 'contract_temp', 'class_code', 'STRING', 43, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'UnderwritingClass', 'STRING', 'contract_base_temp', 'underwriting_class', 'STRING', 'contract_temp', 'underwriting_class', 'STRING', 44, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'UnderwritingDate', 'STRING', 'contract_base_temp', 'underwriting_timestamp', 'STRING', 'contract_temp', 'underwriting_timestamp', 'TIMESTAMP', 45, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'CoverageRatio', 'STRING', 'contract_base_temp', 'coverage_ratio', 'STRING', 'contract_temp', 'coverage_ratio', 'DECIMAL(18,4)', 46, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'ContractEndDate', 'STRING', 'contract_base_temp', 'contract_end_timestamp', 'STRING', 'contract_temp', 'contract_end_timestamp', 'TIMESTAMP', 47, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'FundingCompanyFK', 'STRING', 'contract_base_temp', 'funding_company_id', 'STRING', 'contract_temp', 'funding_company_id', 'INT', 48, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'SourceKey', 'STRING', 'contract_base_temp', 'source_key', 'STRING', 'contract_temp', 'source_key', 'BIGINT', 49, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'StartDate', 'STRING', 'contract_base_temp', 'start_timestamp', 'STRING', 'contract_temp', 'start_timestamp', 'TIMESTAMP', 50, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_Warehouse', 'Contract', 'EndDate', 'STRING', 'contract_base_temp', 'end_timestamp', 'STRING', 'contract_temp', 'end_timestamp', 'TIMESTAMP', 51, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
 -- ============================================================
 -- HubSpot source — schema_config seed data
@@ -949,738 +836,693 @@ VALUES
 -- [H01] marketing_events (22 fields)
 -- source_column_name = actual landing column (already snake_case); no JSON expansion per spec
 INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+    (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 911, 'HubSpot', 'marketing_events', 'marketing_events_base', 'object_id',          'object_id',          'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  ( 912, 'HubSpot', 'marketing_events', 'marketing_events_base', 'external_event_id',  'external_event_id',  'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  ( 913, 'HubSpot', 'marketing_events', 'marketing_events_base', 'event_name',         'event_name',         'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  ( 914, 'HubSpot', 'marketing_events', 'marketing_events_base', 'event_type',         'event_type',         'STRING',   4, 1, 0, 1, GETUTCDATE()),
-  ( 915, 'HubSpot', 'marketing_events', 'marketing_events_base', 'event_status',       'event_status',       'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  ( 916, 'HubSpot', 'marketing_events', 'marketing_events_base', 'event_status_v2',    'event_status_v2',    'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  ( 917, 'HubSpot', 'marketing_events', 'marketing_events_base', 'start_date_time',    'start_date_time',    'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  ( 918, 'HubSpot', 'marketing_events', 'marketing_events_base', 'end_date_time',      'end_date_time',      'STRING',   8, 1, 0, 1, GETUTCDATE()),
-  ( 919, 'HubSpot', 'marketing_events', 'marketing_events_base', 'event_organizer',    'event_organizer',    'STRING',   9, 1, 0, 1, GETUTCDATE()),
-  ( 920, 'HubSpot', 'marketing_events', 'marketing_events_base', 'event_description',  'event_description',  'STRING',  10, 1, 0, 1, GETUTCDATE()),
-  ( 921, 'HubSpot', 'marketing_events', 'marketing_events_base', 'event_url',          'event_url',          'STRING',  11, 1, 0, 1, GETUTCDATE()),
-  ( 922, 'HubSpot', 'marketing_events', 'marketing_events_base', 'event_cancelled',    'event_cancelled',    'BOOLEAN', 12, 1, 0, 1, GETUTCDATE()),
-  ( 923, 'HubSpot', 'marketing_events', 'marketing_events_base', 'event_completed',    'event_completed',    'BOOLEAN', 13, 1, 0, 1, GETUTCDATE()),
-  ( 924, 'HubSpot', 'marketing_events', 'marketing_events_base', 'registrants',        'registrants',        'INT',     14, 1, 0, 1, GETUTCDATE()),
-  ( 925, 'HubSpot', 'marketing_events', 'marketing_events_base', 'attendees',          'attendees',          'INT',     15, 1, 0, 1, GETUTCDATE()),
-  ( 926, 'HubSpot', 'marketing_events', 'marketing_events_base', 'cancellations',      'cancellations',      'INT',     16, 1, 0, 1, GETUTCDATE()),
-  ( 927, 'HubSpot', 'marketing_events', 'marketing_events_base', 'no_shows',           'no_shows',           'INT',     17, 1, 0, 1, GETUTCDATE()),
-  ( 928, 'HubSpot', 'marketing_events', 'marketing_events_base', 'app_info_id',        'app_info_id',        'STRING',  18, 1, 0, 1, GETUTCDATE()),
-  ( 929, 'HubSpot', 'marketing_events', 'marketing_events_base', 'app_info_name',      'app_info_name',      'STRING',  19, 1, 0, 1, GETUTCDATE()),
-  ( 930, 'HubSpot', 'marketing_events', 'marketing_events_base', 'created_at',         'created_at',         'STRING',  20, 1, 0, 1, GETUTCDATE()),
-  ( 931, 'HubSpot', 'marketing_events', 'marketing_events_base', 'updated_at',         'updated_at',         'STRING',  21, 1, 0, 1, GETUTCDATE()),
-  ( 932, 'HubSpot', 'marketing_events', 'marketing_events_base', 'N/A',                'period',             'STRING',  22, 0, 0, 1, GETUTCDATE());
+  ('HubSpot', 'marketing_events', 'object_id',          'STRING', 'marketing_events_base_temp', 'marketing_event_id',    'STRING', 'marketing_events_temp', 'marketing_event_id',    'STRING', 1,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'external_event_id',  'STRING', 'marketing_events_base_temp', 'external_event_id',     'STRING', 'marketing_events_temp', 'external_event_id',     'STRING', 2,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'event_name',         'STRING', 'marketing_events_base_temp', 'event_name',            'STRING', 'marketing_events_temp', 'event_name',            'STRING', 3,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'event_type',         'STRING', 'marketing_events_base_temp', 'event_type',            'STRING', 'marketing_events_temp', 'event_type',            'STRING', 4,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'event_status',       'STRING', 'marketing_events_base_temp', 'event_status',          'STRING', 'marketing_events_temp', 'event_status',          'STRING', 5,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'event_status_v2',    'STRING', 'marketing_events_base_temp', 'event_status_v2',       'STRING', 'marketing_events_temp', 'event_status_v2',       'STRING', 6,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'start_date_time',    'STRING', 'marketing_events_base_temp', 'start_timestamp',       'STRING', 'marketing_events_temp', 'start_timestamp',       'STRING', 7,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'end_date_time',      'STRING', 'marketing_events_base_temp', 'end_timestamp',         'STRING', 'marketing_events_temp', 'end_timestamp',         'STRING', 8,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'event_organizer',    'STRING', 'marketing_events_base_temp', 'event_organizer_email', 'STRING', 'marketing_events_temp', 'event_organizer_email', 'STRING', 9,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'event_description',  'STRING', 'marketing_events_base_temp', 'event_description',     'STRING', 'marketing_events_temp', 'event_description',     'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'event_url',          'STRING', 'marketing_events_base_temp', 'event_url',             'STRING', 'marketing_events_temp', 'event_url',             'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'event_cancelled',    'STRING', 'marketing_events_base_temp', 'is_cancelled',          'STRING', 'marketing_events_temp', 'is_cancelled',          'INT',    12, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'event_completed',    'STRING', 'marketing_events_base_temp', 'is_completed',          'STRING', 'marketing_events_temp', 'is_completed',          'INT',    13, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'registrants',        'STRING', 'marketing_events_base_temp', 'registrants_count',     'STRING', 'marketing_events_temp', 'registrants_count',     'INT',    14, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'attendees',          'STRING', 'marketing_events_base_temp', 'attendees_count',       'STRING', 'marketing_events_temp', 'attendees_count',       'INT',    15, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'cancellations',      'STRING', 'marketing_events_base_temp', 'cancellations_count',   'STRING', 'marketing_events_temp', 'cancellations_count',   'INT',    16, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'no_shows',           'STRING', 'marketing_events_base_temp', 'no_shows_count',        'STRING', 'marketing_events_temp', 'no_shows_count',        'INT',    17, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'app_info_id',        'STRING', 'marketing_events_base_temp', 'app_info_id',           'STRING', 'marketing_events_temp', 'app_info_id',           'STRING', 18, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'app_info_name',      'STRING', 'marketing_events_base_temp', 'app_info_name',         'STRING', 'marketing_events_temp', 'app_info_name',         'STRING', 19, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'created_at',         'STRING', 'marketing_events_base_temp', 'created_timestamp',     'STRING', 'marketing_events_temp', 'created_timestamp',     'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'updated_at',         'STRING', 'marketing_events_base_temp', 'updated_timestamp',     'STRING', 'marketing_events_temp', 'updated_timestamp',     'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'N/A',                'STRING', 'marketing_events_base_temp', 'ingestion_date',        'STRING', 'marketing_events_temp', 'ingestion_date',        'DATE',   22, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'N/A',                'STRING', 'marketing_events_base_temp', 'data_timestamp',        'STRING', 'marketing_events_temp', 'data_timestamp',        'BIGINT', 23, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'N/A',                'STRING', 'marketing_events_base_temp', 'source_system',         'STRING', 'marketing_events_temp', 'source_system',         'STRING', 24, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'N/A',                'STRING', 'marketing_events_base_temp', 'ingestion_run_id',      'STRING', 'marketing_events_temp', 'ingestion_run_id',      'STRING', 25, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'N/A',                'STRING', 'marketing_events_base_temp', 'ingestion_timestamp',   'STRING', 'marketing_events_temp', 'ingestion_timestamp',   'BIGINT', 26, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_events', 'N/A',                'STRING', 'marketing_events_base_temp', 'src_busn_asst',         'STRING', 'marketing_events_temp', 'src_busn_asst',         'STRING', 27, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [H02] marketing_emails (53 base fields + 5 to_json expansions)
 -- source_column_name = actual landing column (already snake_case)
 -- from.*, subscriptionDetails.*, webversion.* are already flattened in lh_landing — plain mappings, no dot-notation
 -- JSON blob columns: kept as STRING blobs (include_in_md5hash=0), except to_json which is expanded below
 INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+    (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 933, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'id',                                'id',                                'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  ( 934, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'name',                              'name',                              'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  ( 935, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'subject',                           'subject',                           'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  ( 936, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'state',                             'state',                             'STRING',   4, 1, 0, 1, GETUTCDATE()),
-  ( 937, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'type',                              'type',                              'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  ( 938, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'subcategory',                       'subcategory',                       'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  ( 939, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'language',                          'language',                          'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  ( 940, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'archived',                          'archived',                          'BOOLEAN',  8, 1, 0, 1, GETUTCDATE()),
-  ( 941, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'is_ab',                             'is_ab',                             'BOOLEAN',  9, 1, 0, 1, GETUTCDATE()),
-  ( 942, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'is_published',                      'is_published',                      'BOOLEAN', 10, 1, 0, 1, GETUTCDATE()),
-  ( 943, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'is_transactional',                  'is_transactional',                  'BOOLEAN', 11, 1, 0, 1, GETUTCDATE()),
-  ( 944, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'send_on_publish',                   'send_on_publish',                   'BOOLEAN', 12, 1, 0, 1, GETUTCDATE()),
-  ( 945, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'jitter_send_time',                  'jitter_send_time',                  'BOOLEAN', 13, 1, 0, 1, GETUTCDATE()),
-  ( 946, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'active_domain',                     'active_domain',                     'STRING',  14, 1, 0, 1, GETUTCDATE()),
-  ( 947, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'campaign',                          'campaign',                          'STRING',  15, 1, 0, 1, GETUTCDATE()),
-  ( 948, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'campaign_name',                     'campaign_name',                     'STRING',  16, 1, 0, 1, GETUTCDATE()),
-  ( 949, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'campaign_utm',                      'campaign_utm',                      'STRING',  17, 1, 0, 1, GETUTCDATE()),
-  ( 950, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'email_campaign_group_id',           'email_campaign_group_id',           'STRING',  18, 1, 0, 1, GETUTCDATE()),
-  ( 951, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'primary_email_campaign_id',         'primary_email_campaign_id',         'STRING',  19, 1, 0, 1, GETUTCDATE()),
-  ( 952, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'email_template_mode',               'email_template_mode',               'STRING',  20, 1, 0, 1, GETUTCDATE()),
-  ( 953, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'feedback_survey_id',                'feedback_survey_id',                'STRING',  21, 1, 0, 1, GETUTCDATE()),
-  ( 954, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'folder_id',                         'folder_id',                         'STRING',  22, 1, 0, 1, GETUTCDATE()),
-  ( 955, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'business_unit_id',                  'business_unit_id',                  'STRING',  23, 1, 0, 1, GETUTCDATE()),
-  ( 956, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'cloned_from',                       'cloned_from',                       'STRING',  24, 1, 0, 1, GETUTCDATE()),
-  ( 957, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'preview_key',                       'preview_key',                       'STRING',  25, 1, 0, 1, GETUTCDATE()),
-  ( 958, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'publish_date',                      'publish_date',                      'STRING',  26, 1, 0, 1, GETUTCDATE()),
-  ( 959, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'published_at',                      'published_at',                      'STRING',  27, 1, 0, 1, GETUTCDATE()),
-  ( 960, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'unpublished_at',                    'unpublished_at',                    'STRING',  28, 1, 0, 1, GETUTCDATE()),
-  ( 961, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'published_by_email',                'published_by_email',                'STRING',  29, 1, 0, 1, GETUTCDATE()),
-  ( 962, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'published_by_id',                   'published_by_id',                   'STRING',  30, 1, 0, 1, GETUTCDATE()),
-  ( 963, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'published_by_name',                 'published_by_name',                 'STRING',  31, 1, 0, 1, GETUTCDATE()),
-  ( 964, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'created_at',                        'created_at',                        'STRING',  32, 1, 0, 1, GETUTCDATE()),
-  ( 965, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'created_by_id',                     'created_by_id',                     'STRING',  33, 1, 0, 1, GETUTCDATE()),
-  ( 966, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'deleted_at',                        'deleted_at',                        'STRING',  34, 1, 0, 1, GETUTCDATE()),
-  ( 967, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'updated_at',                        'updated_at',                        'STRING',  35, 1, 0, 1, GETUTCDATE()),
-  ( 968, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'updated_by_id',                     'updated_by_id',                     'STRING',  36, 1, 0, 1, GETUTCDATE()),
-  ( 969, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'from_name',                         'from_name',                         'STRING',  37, 1, 0, 1, GETUTCDATE()),
-  ( 970, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'from_reply_to',                     'from_reply_to',                     'STRING',  38, 1, 0, 1, GETUTCDATE()),
-  ( 971, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'from_custom_reply_to',              'from_custom_reply_to',              'STRING',  39, 1, 0, 1, GETUTCDATE()),
-  ( 972, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'subscription_id',                   'subscription_id',                   'STRING',  40, 1, 0, 1, GETUTCDATE()),
-  ( 973, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'subscription_name',                 'subscription_name',                 'STRING',  41, 1, 0, 1, GETUTCDATE()),
-  ( 974, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'subscription_office_location_id',   'subscription_office_location_id',   'STRING',  42, 1, 0, 1, GETUTCDATE()),
-  ( 975, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'subscription_preferences_group_id', 'subscription_preferences_group_id', 'STRING',  43, 1, 0, 1, GETUTCDATE()),
-  ( 976, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'webversion_url',                    'webversion_url',                    'STRING',  44, 1, 0, 1, GETUTCDATE()),
-  ( 977, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'webversion_enabled',                'webversion_enabled',                'BOOLEAN', 45, 1, 0, 1, GETUTCDATE()),
-  ( 978, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'content_json',                      'content_json',                      'STRING',  46, 0, 0, 1, GETUTCDATE()),
-  ( 979, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'stats_json',                        'stats_json',                        'STRING',  47, 0, 0, 1, GETUTCDATE()),
-  ( 980, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'testing_json',                      'testing_json',                      'STRING',  48, 0, 0, 1, GETUTCDATE()),
-  ( 981, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'rss_data_json',                     'rss_data_json',                     'STRING',  49, 0, 0, 1, GETUTCDATE()),
-  ( 982, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'to_json',                           'to_json',                           'STRING',  50, 0, 0, 1, GETUTCDATE()),
-  ( 983, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'all_email_campaign_ids_json',        'all_email_campaign_ids_json',       'STRING',  51, 0, 0, 1, GETUTCDATE()),
-  ( 984, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'teams_with_access_json',            'teams_with_access_json',            'STRING',  52, 0, 0, 1, GETUTCDATE()),
-  ( 985, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'workflow_names_json',               'workflow_names_json',               'STRING',  53, 0, 0, 1, GETUTCDATE());
--- to_json expansion — dot-notation triggers get_json_object() in nb_bronze_ingestion_v2
--- include_in_md5hash=1: recipient/targeting fields used for change detection
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  (1108, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'to_json.contactIds',         'to_contact_ids',          'STRING',  54, 1, 0, 1, GETUTCDATE()),
-  (1109, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'to_json.contactIlsLists',    'to_contact_ils_lists',    'STRING',  55, 1, 0, 1, GETUTCDATE()),
-  (1110, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'to_json.contactLists',       'to_contact_lists',        'STRING',  56, 1, 0, 1, GETUTCDATE()),
-  (1111, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'to_json.limitSendFrequency', 'to_limit_send_frequency', 'BOOLEAN', 57, 1, 0, 1, GETUTCDATE()),
-  (1112, 'HubSpot', 'marketing_emails', 'marketing_emails_base', 'to_json.suppressGraymail',   'to_suppress_graymail',    'BOOLEAN', 58, 1, 0, 1, GETUTCDATE());
+  ('HubSpot', 'marketing_emails', 'id',                                       'STRING', 'marketing_emails_base_temp', 'marketing_email_id',                'STRING', 'marketing_emails_temp', 'marketing_email_id',                'STRING', 1,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'name',                                     'STRING', 'marketing_emails_base_temp', 'marketing_email_name',              'STRING', 'marketing_emails_temp', 'marketing_email_name',              'STRING', 2,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'subject',                                  'STRING', 'marketing_emails_base_temp', 'email_subject',                     'STRING', 'marketing_emails_temp', 'email_subject',                     'STRING', 3,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'state',                                    'STRING', 'marketing_emails_base_temp', 'email_state',                       'STRING', 'marketing_emails_temp', 'email_state',                       'STRING', 4,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'type',                                     'STRING', 'marketing_emails_base_temp', 'email_type',                        'STRING', 'marketing_emails_temp', 'email_type',                        'STRING', 5,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'subcategory',                              'STRING', 'marketing_emails_base_temp', 'email_subcategory',                 'STRING', 'marketing_emails_temp', 'email_subcategory',                 'STRING', 6,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'language',                                 'STRING', 'marketing_emails_base_temp', 'email_language',                    'STRING', 'marketing_emails_temp', 'email_language',                    'STRING', 7,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'archived',                                 'STRING', 'marketing_emails_base_temp', 'is_archived',                       'STRING', 'marketing_emails_temp', 'is_archived',                       'INT',    8,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'is_ab',                                    'STRING', 'marketing_emails_base_temp', 'is_ab_test',                        'STRING', 'marketing_emails_temp', 'is_ab_test',                        'INT',    9,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'is_published',                             'STRING', 'marketing_emails_base_temp', 'is_published',                      'STRING', 'marketing_emails_temp', 'is_published',                      'INT',    10, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'is_transactional',                         'STRING', 'marketing_emails_base_temp', 'is_transactional',                  'STRING', 'marketing_emails_temp', 'is_transactional',                  'INT',    11, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'send_on_publish',                          'STRING', 'marketing_emails_base_temp', 'is_send_on_publish',                'STRING', 'marketing_emails_temp', 'is_send_on_publish',                'INT',    12, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'jitter_send_time',                         'STRING', 'marketing_emails_base_temp', 'is_jitter_send_time',               'STRING', 'marketing_emails_temp', 'is_jitter_send_time',               'INT',    13, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'active_domain',                            'STRING', 'marketing_emails_base_temp', 'active_domain',                     'STRING', 'marketing_emails_temp', 'active_domain',                     'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'campaign',                                 'STRING', 'marketing_emails_base_temp', 'campaign_id',                       'STRING', 'marketing_emails_temp', 'campaign_id',                       'STRING', 15, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'campaign_name',                            'STRING', 'marketing_emails_base_temp', 'campaign_name',                     'STRING', 'marketing_emails_temp', 'campaign_name',                     'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'campaign_utm',                             'STRING', 'marketing_emails_base_temp', 'campaign_utm',                      'STRING', 'marketing_emails_temp', 'campaign_utm',                      'STRING', 17, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'email_campaign_group_id',                  'STRING', 'marketing_emails_base_temp', 'email_campaign_group_id',           'STRING', 'marketing_emails_temp', 'email_campaign_group_id',           'STRING', 18, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'primary_email_campaign_id',                'STRING', 'marketing_emails_base_temp', 'primary_email_campaign_id',         'STRING', 'marketing_emails_temp', 'primary_email_campaign_id',         'STRING', 19, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'email_template_mode',                      'STRING', 'marketing_emails_base_temp', 'email_template_mode',               'STRING', 'marketing_emails_temp', 'email_template_mode',               'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'feedback_survey_id',                       'STRING', 'marketing_emails_base_temp', 'feedback_survey_id',                'STRING', 'marketing_emails_temp', 'feedback_survey_id',                'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'folder_id',                                'STRING', 'marketing_emails_base_temp', 'folder_id',                         'STRING', 'marketing_emails_temp', 'folder_id',                         'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'business_unit_id',                         'STRING', 'marketing_emails_base_temp', 'business_unit_id',                  'STRING', 'marketing_emails_temp', 'business_unit_id',                  'STRING', 23, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'cloned_from',                              'STRING', 'marketing_emails_base_temp', 'cloned_from_email_id',              'STRING', 'marketing_emails_temp', 'cloned_from_email_id',              'STRING', 24, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'preview_key',                              'STRING', 'marketing_emails_base_temp', 'preview_key',                       'STRING', 'marketing_emails_temp', 'preview_key',                       'STRING', 25, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'publish_date',                             'STRING', 'marketing_emails_base_temp', 'publish_timestamp',                 'STRING', 'marketing_emails_temp', 'publish_timestamp',                 'STRING', 26, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'published_at',                             'STRING', 'marketing_emails_base_temp', 'published_timestamp',               'STRING', 'marketing_emails_temp', 'published_timestamp',               'STRING', 27, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'unpublished_at',                           'STRING', 'marketing_emails_base_temp', 'unpublished_timestamp',             'STRING', 'marketing_emails_temp', 'unpublished_timestamp',             'STRING', 28, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'published_by_email',                       'STRING', 'marketing_emails_base_temp', 'published_by_email',                'STRING', 'marketing_emails_temp', 'published_by_email',                'STRING', 29, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'published_by_id',                          'STRING', 'marketing_emails_base_temp', 'published_by_user_id',              'STRING', 'marketing_emails_temp', 'published_by_user_id',              'STRING', 30, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'published_by_name',                        'STRING', 'marketing_emails_base_temp', 'published_by_name',                 'STRING', 'marketing_emails_temp', 'published_by_name',                 'STRING', 31, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'created_at',                               'STRING', 'marketing_emails_base_temp', 'created_timestamp',                 'STRING', 'marketing_emails_temp', 'created_timestamp',                 'STRING', 32, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'created_by_id',                            'STRING', 'marketing_emails_base_temp', 'created_by_user_id',                'STRING', 'marketing_emails_temp', 'created_by_user_id',                'STRING', 33, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'deleted_at',                               'STRING', 'marketing_emails_base_temp', 'deleted_timestamp',                 'STRING', 'marketing_emails_temp', 'deleted_timestamp',                 'STRING', 34, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'updated_at',                               'STRING', 'marketing_emails_base_temp', 'updated_timestamp',                 'STRING', 'marketing_emails_temp', 'updated_timestamp',                 'STRING', 35, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'updated_by_id',                            'STRING', 'marketing_emails_base_temp', 'updated_by_user_id',                'STRING', 'marketing_emails_temp', 'updated_by_user_id',                'STRING', 36, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'from_name',                                'STRING', 'marketing_emails_base_temp', 'from_name',                         'STRING', 'marketing_emails_temp', 'from_name',                         'STRING', 37, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'from_reply_to',                            'STRING', 'marketing_emails_base_temp', 'from_reply_to_email',               'STRING', 'marketing_emails_temp', 'from_reply_to_email',               'STRING', 38, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'from_custom_reply_to',                     'STRING', 'marketing_emails_base_temp', 'from_custom_reply_to_email',        'STRING', 'marketing_emails_temp', 'from_custom_reply_to_email',        'STRING', 39, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'subscription_id',                          'STRING', 'marketing_emails_base_temp', 'subscription_id',                   'STRING', 'marketing_emails_temp', 'subscription_id',                   'STRING', 40, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'subscription_name',                        'STRING', 'marketing_emails_base_temp', 'subscription_name',                 'STRING', 'marketing_emails_temp', 'subscription_name',                 'STRING', 41, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'subscription_office_location_id',          'STRING', 'marketing_emails_base_temp', 'subscription_office_location_id',   'STRING', 'marketing_emails_temp', 'subscription_office_location_id',   'STRING', 42, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'subscription_preferences_group_id',        'STRING', 'marketing_emails_base_temp', 'subscription_preferences_group_id', 'STRING', 'marketing_emails_temp', 'subscription_preferences_group_id', 'STRING', 43, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'webversion_url',                           'STRING', 'marketing_emails_base_temp', 'webversion_url',                    'STRING', 'marketing_emails_temp', 'webversion_url',                    'STRING', 44, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'webversion_enabled',                       'STRING', 'marketing_emails_base_temp', 'is_webversion_enabled',             'STRING', 'marketing_emails_temp', 'is_webversion_enabled',             'INT',    45, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'content_json',                             'STRING', 'marketing_emails_base_temp', 'content_json',                      'STRING', 'marketing_emails_temp', 'content_json',                      'STRING', 46, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'stats_json',                               'STRING', 'marketing_emails_base_temp', 'stats_json',                        'STRING', 'marketing_emails_temp', 'stats_json',                        'STRING', 47, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'testing_json',                             'STRING', 'marketing_emails_base_temp', 'testing_json',                      'STRING', 'marketing_emails_temp', 'testing_json',                      'STRING', 48, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'rss_data_json',                            'STRING', 'marketing_emails_base_temp', 'rss_data_json',                     'STRING', 'marketing_emails_temp', 'rss_data_json',                     'STRING', 49, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'to_json',                                  'STRING', 'marketing_emails_base_temp', 'to_json',                           'STRING', 'marketing_emails_temp', 'to_json',                           'STRING', 50, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'all_email_campaign_ids_json',              'STRING', 'marketing_emails_base_temp', 'all_email_campaign_ids_json',       'STRING', 'marketing_emails_temp', 'all_email_campaign_ids_json',       'STRING', 51, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'teams_with_access_json',                   'STRING', 'marketing_emails_base_temp', 'teams_with_access_json',            'STRING', 'marketing_emails_temp', 'teams_with_access_json',            'STRING', 52, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'workflow_names_json',                      'STRING', 'marketing_emails_base_temp', 'workflow_names_json',               'STRING', 'marketing_emails_temp', 'workflow_names_json',               'STRING', 53, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'content_json_templatePath',                'STRING', 'marketing_emails_base_temp', 'content_template_path',             'STRING', 'marketing_emails_temp', 'content_template_path',             'STRING', 54, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'content_json_widgets',                     'STRING', 'marketing_emails_base_temp', 'content_widgets_json',              'STRING', 'marketing_emails_temp', 'content_widgets_json',              'STRING', 55, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'content_json_flexAreas',                   'STRING', 'marketing_emails_base_temp', 'content_flex_areas_json',           'STRING', 'marketing_emails_temp', 'content_flex_areas_json',           'STRING', 56, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'content_json_styleSettings',               'STRING', 'marketing_emails_base_temp', 'content_style_settings_json',       'STRING', 'marketing_emails_temp', 'content_style_settings_json',       'STRING', 57, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'testing_json_abSampleSizeDefault',         'STRING', 'marketing_emails_base_temp', 'ab_sample_size_default',            'STRING', 'marketing_emails_temp', 'ab_sample_size_default',            'STRING', 58, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'testing_json_abSamplingDefault',           'STRING', 'marketing_emails_base_temp', 'ab_sampling_default',               'STRING', 'marketing_emails_temp', 'ab_sampling_default',               'STRING', 59, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'testing_json_abStatus',                    'STRING', 'marketing_emails_base_temp', 'ab_status',                         'STRING', 'marketing_emails_temp', 'ab_status',                         'STRING', 60, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'testing_json_abSuccessMetric',             'STRING', 'marketing_emails_base_temp', 'ab_success_metric',                 'STRING', 'marketing_emails_temp', 'ab_success_metric',                 'STRING', 61, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'testing_json_abTestPercentage',            'STRING', 'marketing_emails_base_temp', 'ab_test_percentage',                'STRING', 'marketing_emails_temp', 'ab_test_percentage',                'INT',    62, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'testing_json_hoursToWait',                 'STRING', 'marketing_emails_base_temp', 'ab_hours_to_wait',                  'STRING', 'marketing_emails_temp', 'ab_hours_to_wait',                  'INT',    63, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'testing_json_isAbVariation',               'STRING', 'marketing_emails_base_temp', 'is_ab_variation',                   'STRING', 'marketing_emails_temp', 'is_ab_variation',                   'INT',    64, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'testing_json_testId',                      'STRING', 'marketing_emails_base_temp', 'ab_test_id',                        'STRING', 'marketing_emails_temp', 'ab_test_id',                        'STRING', 65, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'to_json_suppressGraymail',                 'STRING', 'marketing_emails_base_temp', 'is_suppress_graymail',              'STRING', 'marketing_emails_temp', 'is_suppress_graymail',              'INT',    66, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'to_json_contactIds',                       'STRING', 'marketing_emails_base_temp', 'to_contact_ids_json',               'STRING', 'marketing_emails_temp', 'to_contact_ids_json',               'STRING', 67, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'to_json_contactIlsLists',                  'STRING', 'marketing_emails_base_temp', 'to_contact_ils_lists_json',         'STRING', 'marketing_emails_temp', 'to_contact_ils_lists_json',         'STRING', 68, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'to_json_contactLists',                     'STRING', 'marketing_emails_base_temp', 'to_contact_lists_json',             'STRING', 'marketing_emails_temp', 'to_contact_lists_json',             'STRING', 69, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'to_json_limitSendFrequency',               'STRING', 'marketing_emails_base_temp', 'is_limit_send_frequency',           'STRING', 'marketing_emails_temp', 'is_limit_send_frequency',           'INT',    70, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'N/A',                                      'STRING', 'marketing_emails_base_temp', 'ingestion_date',                    'STRING', 'marketing_emails_temp', 'ingestion_date',                    'DATE',   71, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'N/A',                                      'STRING', 'marketing_emails_base_temp', 'data_timestamp',                    'STRING', 'marketing_emails_temp', 'data_timestamp',                    'BIGINT', 72, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'N/A',                                      'STRING', 'marketing_emails_base_temp', 'source_system',                     'STRING', 'marketing_emails_temp', 'source_system',                     'STRING', 73, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'N/A',                                      'STRING', 'marketing_emails_base_temp', 'ingestion_run_id',                  'STRING', 'marketing_emails_temp', 'ingestion_run_id',                  'STRING', 74, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'N/A',                                      'STRING', 'marketing_emails_base_temp', 'ingestion_timestamp',               'STRING', 'marketing_emails_temp', 'ingestion_timestamp',               'BIGINT', 75, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_emails', 'N/A',                                      'STRING', 'marketing_emails_base_temp', 'src_busn_asst',                     'STRING', 'marketing_emails_temp', 'src_busn_asst',                     'STRING', 76, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
--- [H03] events_event_types (1 field)
+-- [H04] event_types — 7 rows [1 of 1]
 INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+    (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 986, 'HubSpot', 'events_event_types', 'events_event_types_base', '__item__', 'event_type', 'STRING', 1, 1, 1, 1, GETUTCDATE());
-
--- [H04–H14] CRM Objects — shared field set (9 fields × 11 object types)
--- source_column_name = landing column (already flattened); properties are stored as JSON blob
+  ('HubSpot', 'event_types', 'event_type', 'STRING', 'event_types_base_temp', 'event_type_code',      'STRING', 'event_types_temp', 'event_type_code',      'STRING', 1, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'event_types', 'N/A',        'STRING', 'event_types_base_temp', 'ingestion_date',       'STRING', 'event_types_temp', 'ingestion_date',       'DATE',   2, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'event_types', 'N/A',        'STRING', 'event_types_base_temp', 'data_timestamp',       'STRING', 'event_types_temp', 'data_timestamp',       'BIGINT', 3, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'event_types', 'N/A',        'STRING', 'event_types_base_temp', 'source_system',        'STRING', 'event_types_temp', 'source_system',        'STRING', 4, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'event_types', 'N/A',        'STRING', 'event_types_base_temp', 'ingestion_run_id',     'STRING', 'event_types_temp', 'ingestion_run_id',     'STRING', 5, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'event_types', 'N/A',        'STRING', 'event_types_base_temp', 'ingestion_timestamp',  'STRING', 'event_types_temp', 'ingestion_timestamp',  'BIGINT', 6, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'event_types', 'N/A',        'STRING', 'event_types_base_temp', 'src_busn_asst',        'STRING', 'event_types_temp', 'src_busn_asst',        'STRING', 7, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
+-- ============================================================
+-- HubSpot source — schema_config seed data
+-- IDs 911–1085  (175 rows across 14 landing tables)
+-- source_name = 'HubSpot'
+-- source_column_name = API JSON field path (camelCase / dot-notation)
+-- target_column_name = landing Delta column (snake_case)
+-- include_in_md5hash: 0 for JSON blobs and URL-context columns, 1 for all others
+-- ============================================================
 
 -- [H04] crm_contacts — 24 cols fully flattened (5 top-level + 19 properties.*)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 987, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'id',                              'id',                              'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  ( 988, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'createdAt',                       'created_at',                      'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  ( 989, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'updatedAt',                       'updated_at',                      'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  ( 990, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'archived',                        'archived',                        'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  ( 991, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'url',                             'url',                             'STRING',   5, 0, 0, 1, GETUTCDATE()),
-  ( 992, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.agent_id__c',          'agent_id_c',                      'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  ( 993, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.agent_number',         'agent_number',                    'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  ( 994, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.associatedcompanyid',  'associatedcompanyid',             'STRING',   8, 1, 0, 1, GETUTCDATE()),
-  ( 995, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.associatedcompanylastupdated', 'associatedcompanylastupdated', 'STRING', 9, 1, 0, 1, GETUTCDATE());
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  (1086, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.company',                      'company',                      'STRING', 10, 1, 0, 1, GETUTCDATE()),
-  (1087, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.createdate',                   'createdate',                   'STRING', 11, 1, 0, 1, GETUTCDATE()),
-  (1088, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.email',                        'email',                        'STRING', 12, 1, 0, 1, GETUTCDATE()),
-  (1089, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.hs_email_click',               'hs_email_click',               'STRING', 13, 1, 0, 1, GETUTCDATE()),
-  (1090, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.hs_email_first_click_date',    'hs_email_first_click_date',    'STRING', 14, 1, 0, 1, GETUTCDATE()),
-  (1091, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.hs_email_first_open_date',     'hs_email_first_open_date',     'STRING', 15, 1, 0, 1, GETUTCDATE()),
-  (1235, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.hs_email_first_reply_date',    'hs_email_first_reply_date',    'STRING', 16, 1, 0, 1, GETUTCDATE()),
-  (1236, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.hs_email_first_send_date',     'hs_email_first_send_date',     'STRING', 17, 1, 0, 1, GETUTCDATE()),
-  (1237, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.hs_email_last_click_date',     'hs_email_last_click_date',     'STRING', 18, 1, 0, 1, GETUTCDATE()),
-  (1238, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.hs_email_last_email_name',     'hs_email_last_email_name',     'STRING', 19, 1, 0, 1, GETUTCDATE()),
-  (1239, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.hs_email_last_open_date',      'hs_email_last_open_date',      'STRING', 20, 1, 0, 1, GETUTCDATE()),
-  (1240, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.hs_email_last_reply_date',     'hs_email_last_reply_date',     'STRING', 21, 1, 0, 1, GETUTCDATE()),
-  (1241, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.hs_email_last_send_date',      'hs_email_last_send_date',      'STRING', 22, 1, 0, 1, GETUTCDATE()),
-  (1242, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.hs_object_id',                 'hs_object_id',                 'STRING', 23, 1, 0, 1, GETUTCDATE()),
-  (1243, 'HubSpot', 'crm_contacts', 'crm_contacts_base', 'properties.lastmodifieddate',             'lastmodifieddate',             'STRING', 24, 1, 0, 1, GETUTCDATE());
+('HubSpot', 'crm_contacts', 'id', 'STRING', 'crm_contacts_base_temp', 'id', 'STRING', 'crm_contacts_temp', 'id', 'STRING', 1, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'createdAt', 'STRING', 'crm_contacts_base_temp', 'created_at', 'STRING', 'crm_contacts_temp', 'created_at', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'updatedAt', 'STRING', 'crm_contacts_base_temp', 'updated_at', 'STRING', 'crm_contacts_temp', 'updated_at', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'archived', 'STRING', 'crm_contacts_base_temp', 'archived', 'STRING', 'crm_contacts_temp', 'archived', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'url', 'STRING', 'crm_contacts_base_temp', 'url', 'STRING', 'crm_contacts_temp', 'url', 'STRING', 5, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.agent_id__c', 'STRING', 'crm_contacts_base_temp', 'properties.agent_id__c', 'STRING', 'crm_contacts_temp', 'agent_id_c', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.agent_number', 'STRING', 'crm_contacts_base_temp', 'properties.agent_number', 'STRING', 'crm_contacts_temp', 'agent_number', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.associatedcompanyid', 'STRING', 'crm_contacts_base_temp', 'properties.associatedcompanyid', 'STRING', 'crm_contacts_temp', 'associatedcompanyid', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.associatedcompanylastupdated', 'STRING', 'crm_contacts_base_temp', 'properties.associatedcompanylastupdated', 'STRING', 'crm_contacts_temp', 'associatedcompanylastupdated', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.company', 'STRING', 'crm_contacts_base_temp', 'properties.company', 'STRING', 'crm_contacts_temp', 'company', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.createdate', 'STRING', 'crm_contacts_base_temp', 'properties.createdate', 'STRING', 'crm_contacts_temp', 'createdate', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.email', 'STRING', 'crm_contacts_base_temp', 'properties.email', 'STRING', 'crm_contacts_temp', 'email', 'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.hs_email_click', 'STRING', 'crm_contacts_base_temp', 'properties.hs_email_click', 'STRING', 'crm_contacts_temp', 'hs_email_click', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.hs_email_first_click_date', 'STRING', 'crm_contacts_base_temp', 'properties.hs_email_first_click_date', 'STRING', 'crm_contacts_temp', 'hs_email_first_click_date', 'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.hs_email_first_open_date', 'STRING', 'crm_contacts_base_temp', 'properties.hs_email_first_open_date', 'STRING', 'crm_contacts_temp', 'hs_email_first_open_date', 'STRING', 15, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.hs_email_first_reply_date', 'STRING', 'crm_contacts_base_temp', 'properties.hs_email_first_reply_date', 'STRING', 'crm_contacts_temp', 'hs_email_first_reply_date', 'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.hs_email_first_send_date', 'STRING', 'crm_contacts_base_temp', 'properties.hs_email_first_send_date', 'STRING', 'crm_contacts_temp', 'hs_email_first_send_date', 'STRING', 17, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.hs_email_last_click_date', 'STRING', 'crm_contacts_base_temp', 'properties.hs_email_last_click_date', 'STRING', 'crm_contacts_temp', 'hs_email_last_click_date', 'STRING', 18, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.hs_email_last_email_name', 'STRING', 'crm_contacts_base_temp', 'properties.hs_email_last_email_name', 'STRING', 'crm_contacts_temp', 'hs_email_last_email_name', 'STRING', 19, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.hs_email_last_open_date', 'STRING', 'crm_contacts_base_temp', 'properties.hs_email_last_open_date', 'STRING', 'crm_contacts_temp', 'hs_email_last_open_date', 'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.hs_email_last_reply_date', 'STRING', 'crm_contacts_base_temp', 'properties.hs_email_last_reply_date', 'STRING', 'crm_contacts_temp', 'hs_email_last_reply_date', 'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.hs_email_last_send_date', 'STRING', 'crm_contacts_base_temp', 'properties.hs_email_last_send_date', 'STRING', 'crm_contacts_temp', 'hs_email_last_send_date', 'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.hs_object_id', 'STRING', 'crm_contacts_base_temp', 'properties.hs_object_id', 'STRING', 'crm_contacts_temp', 'hs_object_id', 'STRING', 23, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_contacts', 'properties.lastmodifieddate', 'STRING', 'crm_contacts_base_temp', 'properties.lastmodifieddate', 'STRING', 'crm_contacts_temp', 'lastmodifieddate', 'STRING', 24, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [H05] crm_companies — 21 cols fully flattened (5 top-level + 16 properties.*)
 INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+    (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ( 996, 'HubSpot', 'crm_companies', 'crm_companies_base', 'id',                          'id',                          'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  ( 997, 'HubSpot', 'crm_companies', 'crm_companies_base', 'createdAt',                   'created_at',                  'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  ( 998, 'HubSpot', 'crm_companies', 'crm_companies_base', 'updatedAt',                   'updated_at',                  'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  ( 999, 'HubSpot', 'crm_companies', 'crm_companies_base', 'archived',                    'archived',                    'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1000, 'HubSpot', 'crm_companies', 'crm_companies_base', 'url',                         'url',                         'STRING',   5, 0, 0, 1, GETUTCDATE()),
-  (1001, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.agent_id__c',      'agent_id_c',                  'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1002, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.agent_number',     'agent_number',                'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  (1003, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.agent_type__c',    'agent_type_c',                'STRING',   8, 1, 0, 1, GETUTCDATE()),
-  (1004, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.aggregation__c',   'aggregation_c',               'STRING',   9, 1, 0, 1, GETUTCDATE());
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  (1092, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.createdate',                       'createdate',                       'STRING', 10, 1, 0, 1, GETUTCDATE()),
-  (1093, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.hs_lastmodifieddate',              'hs_lastmodifieddate',              'STRING', 11, 1, 0, 1, GETUTCDATE()),
-  (1094, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.hs_object_id',                     'hs_object_id',                     'STRING', 12, 1, 0, 1, GETUTCDATE()),
-  (1095, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.name',                             'name',                             'STRING', 13, 1, 0, 1, GETUTCDATE()),
-  (1096, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.parent_imo_agent',                 'parent_imo_agent',                 'STRING', 14, 1, 0, 1, GETUTCDATE()),
-  (1228, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.parent_imo_agent_id_annuity__c',   'parent_imo_agent_id_annuity_c',    'STRING', 15, 1, 0, 1, GETUTCDATE()),
-  (1229, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.parent_imo_agent_id_life__c',      'parent_imo_agent_id_life_c',       'STRING', 16, 1, 0, 1, GETUTCDATE()),
-  (1230, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.primary_contact_email__c',         'primary_contact_email_c',          'STRING', 17, 1, 0, 1, GETUTCDATE()),
-  (1231, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.salesforce_id',                    'salesforce_id',                    'STRING', 18, 1, 0, 1, GETUTCDATE()),
-  (1232, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.salesforceaccountid',              'salesforceaccountid',              'STRING', 19, 1, 0, 1, GETUTCDATE()),
-  (1233, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.salesforcedeleted',                'salesforcedeleted',                'STRING', 20, 1, 0, 1, GETUTCDATE()),
-  (1234, 'HubSpot', 'crm_companies', 'crm_companies_base', 'properties.salesforcelastsynctime',           'salesforcelastsynctime',           'STRING', 21, 1, 0, 1, GETUTCDATE());
+  ('HubSpot', 'crm_companies', 'id',                                  'STRING', 'crm_companies_base_temp', 'company_id',          'STRING', 'crm_companies_temp', 'company_id',          'STRING', 1,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'created_at',                          'STRING', 'crm_companies_base_temp', 'created_timestamp',   'STRING', 'crm_companies_temp', 'created_timestamp',   'STRING', 2,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'updated_at',                          'STRING', 'crm_companies_base_temp', 'updated_timestamp',   'STRING', 'crm_companies_temp', 'updated_timestamp',   'STRING', 3,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'archived',                            'STRING', 'crm_companies_base_temp', 'is_archived',         'STRING', 'crm_companies_temp', 'is_archived',         'INT',    4,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'archived_at',                         'STRING', 'crm_companies_base_temp', 'archived_timestamp',  'STRING', 'crm_companies_temp', 'archived_timestamp',  'STRING', 5,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'object_write_trace_id',               'STRING', 'crm_companies_base_temp', 'write_trace_id',      'STRING', 'crm_companies_temp', 'write_trace_id',      'STRING', 6,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'url',                                 'STRING', 'crm_companies_base_temp', 'record_url',          'STRING', 'crm_companies_temp', 'record_url',          'STRING', 7,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'properties_json',                     'STRING', 'crm_companies_base_temp', 'properties_json',     'STRING', 'crm_companies_temp', 'properties_json',     'STRING', 8,  0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'properties_json_createdate',          'STRING', 'crm_companies_base_temp', 'created_timestamp',   'STRING', 'crm_companies_temp', 'created_timestamp',   'STRING', 9,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'properties_json_domain',              'STRING', 'crm_companies_base_temp', 'company_domain',      'STRING', 'crm_companies_temp', 'company_domain',      'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'properties_json_hs_lastmodifieddate', 'STRING', 'crm_companies_base_temp', 'updated_timestamp',   'STRING', 'crm_companies_temp', 'updated_timestamp',   'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'properties_json_hs_object_id',        'STRING', 'crm_companies_base_temp', 'company_id',          'STRING', 'crm_companies_temp', 'company_id',          'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'properties_json_name',                'STRING', 'crm_companies_base_temp', 'company_name',        'STRING', 'crm_companies_temp', 'company_name',        'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'object_type',                         'STRING', 'crm_companies_base_temp', 'object_type',         'STRING', 'crm_companies_temp', 'object_type',         'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'N/A',                                 'STRING', 'crm_companies_base_temp', 'ingestion_date',      'STRING', 'crm_companies_temp', 'ingestion_date',      'DATE',   15, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'N/A',                                 'STRING', 'crm_companies_base_temp', 'data_timestamp',      'STRING', 'crm_companies_temp', 'data_timestamp',      'BIGINT', 16, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'N/A',                                 'STRING', 'crm_companies_base_temp', 'source_system',       'STRING', 'crm_companies_temp', 'source_system',       'STRING', 17, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'N/A',                                 'STRING', 'crm_companies_base_temp', 'ingestion_run_id',    'STRING', 'crm_companies_temp', 'ingestion_run_id',    'STRING', 18, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'N/A',                                 'STRING', 'crm_companies_base_temp', 'ingestion_timestamp', 'STRING', 'crm_companies_temp', 'ingestion_timestamp', 'BIGINT', 19, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'crm_companies', 'N/A',                                 'STRING', 'crm_companies_base_temp', 'src_busn_asst',       'STRING', 'crm_companies_temp', 'src_busn_asst',       'STRING', 20, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 
 -- [H15] crm_owners — 11 cols, no properties_json; teams_json kept as blob
 -- Landing columns are flat (no nested properties object for owners)
 -- teams_json is a JSON array — kept as STRING blob; not expanded (structure varies)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (1097, 'HubSpot', 'crm_owners', 'crm_owners_base', 'id',                         'id',                         'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1098, 'HubSpot', 'crm_owners', 'crm_owners_base', 'email',                      'email',                      'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1099, 'HubSpot', 'crm_owners', 'crm_owners_base', 'first_name',                 'first_name',                 'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1100, 'HubSpot', 'crm_owners', 'crm_owners_base', 'last_name',                  'last_name',                  'STRING',   4, 1, 0, 1, GETUTCDATE()),
-  (1101, 'HubSpot', 'crm_owners', 'crm_owners_base', 'type',                       'type',                       'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1102, 'HubSpot', 'crm_owners', 'crm_owners_base', 'user_id',                    'user_id',                    'INT',      6, 1, 0, 1, GETUTCDATE()),
-  (1103, 'HubSpot', 'crm_owners', 'crm_owners_base', 'user_id_including_inactive', 'user_id_including_inactive', 'INT',      7, 1, 0, 1, GETUTCDATE()),
-  (1104, 'HubSpot', 'crm_owners', 'crm_owners_base', 'created_at',                 'created_at',                 'STRING',   8, 1, 0, 1, GETUTCDATE()),
-  (1105, 'HubSpot', 'crm_owners', 'crm_owners_base', 'updated_at',                 'updated_at',                 'STRING',   9, 1, 0, 1, GETUTCDATE()),
-  (1106, 'HubSpot', 'crm_owners', 'crm_owners_base', 'archived',                   'archived',                   'BOOLEAN', 10, 1, 0, 1, GETUTCDATE()),
-  (1107, 'HubSpot', 'crm_owners', 'crm_owners_base', 'teams_json',                 'teams_json',                 'STRING',  11, 0, 0, 1, GETUTCDATE());
+('HubSpot', 'crm_owners', 'id', 'STRING', 'crm_owners_base_temp', 'id', 'STRING', 'crm_owners_temp', 'id', 'STRING', 1, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_owners', 'email', 'STRING', 'crm_owners_base_temp', 'email', 'STRING', 'crm_owners_temp', 'email', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_owners', 'first_name', 'STRING', 'crm_owners_base_temp', 'first_name', 'STRING', 'crm_owners_temp', 'first_name', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_owners', 'last_name', 'STRING', 'crm_owners_base_temp', 'last_name', 'STRING', 'crm_owners_temp', 'last_name', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_owners', 'type', 'STRING', 'crm_owners_base_temp', 'type', 'STRING', 'crm_owners_temp', 'type', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_owners', 'user_id', 'STRING', 'crm_owners_base_temp', 'user_id', 'STRING', 'crm_owners_temp', 'user_id', 'INT', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'crm_owners', 'user_id_including_inactive', 'STRING', 'crm_owners_base_temp', 'user_id_including_inactive', 'STRING', 'crm_owners_temp', 'user_id_including_inactive', 'INT', 7, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'crm_owners', 'created_at', 'STRING', 'crm_owners_base_temp', 'created_at', 'STRING', 'crm_owners_temp', 'created_at', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_owners', 'updated_at', 'STRING', 'crm_owners_base_temp', 'updated_at', 'STRING', 'crm_owners_temp', 'updated_at', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_owners', 'archived', 'STRING', 'crm_owners_base_temp', 'archived', 'STRING', 'crm_owners_temp', 'archived', 'BOOLEAN', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'crm_owners', 'teams_json', 'STRING', 'crm_owners_base_temp', 'teams_json', 'STRING', 'crm_owners_temp', 'teams_json', 'STRING', 11, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [H16] marketing_email_statistics — 64 cols
---   email_id (PK, from context) + 16 agg counters + 13 agg ratios + 2 agg blobs
---   + campaign_id + 16 campaign counters + 13 campaign ratios + 2 campaign blobs
+--  email_id (PK, from context) + 16 agg counters + 13 agg ratios + 2 agg blobs
+--  + campaign_id + 16 campaign counters + 13 campaign ratios + 2 campaign blobs
 -- Source:  lh_landing.hubspot.marketing_email_statistics
 -- Target:  lh_bronze.bronze_hubspot.marketing_email_statistics_base
 -- campaign_* cols use $first/$first_key in schema JSON to navigate the dynamic UUID key.
 -- Counters + ratios: include_in_md5hash=1.  JSON blobs: include_in_md5hash=0.
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (1113, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'email_id',                       'email_id',                       'STRING',        1, 1, 1, 1, GETUTCDATE()),
-  -- aggregate counters
-  (1114, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_sent',                       'cnt_sent',                       'INT',           2, 1, 0, 1, GETUTCDATE()),
-  (1115, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_open',                       'cnt_open',                       'INT',           3, 1, 0, 1, GETUTCDATE()),
-  (1116, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_delivered',                  'cnt_delivered',                  'INT',           4, 1, 0, 1, GETUTCDATE()),
-  (1117, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_bounce',                     'cnt_bounce',                     'INT',           5, 1, 0, 1, GETUTCDATE()),
-  (1118, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_unsubscribed',               'cnt_unsubscribed',               'INT',           6, 1, 0, 1, GETUTCDATE()),
-  (1119, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_click',                      'cnt_click',                      'INT',           7, 1, 0, 1, GETUTCDATE()),
-  (1120, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_reply',                      'cnt_reply',                      'INT',           8, 1, 0, 1, GETUTCDATE()),
-  (1121, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_dropped',                    'cnt_dropped',                    'INT',           9, 1, 0, 1, GETUTCDATE()),
-  (1122, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_selected',                   'cnt_selected',                   'INT',          10, 1, 0, 1, GETUTCDATE()),
-  (1123, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_spamreport',                 'cnt_spamreport',                 'INT',          11, 1, 0, 1, GETUTCDATE()),
-  (1124, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_suppressed',                 'cnt_suppressed',                 'INT',          12, 1, 0, 1, GETUTCDATE()),
-  (1125, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_hardbounced',                'cnt_hardbounced',                'INT',          13, 1, 0, 1, GETUTCDATE()),
-  (1126, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_softbounced',                'cnt_softbounced',                'INT',          14, 1, 0, 1, GETUTCDATE()),
-  (1127, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_pending',                    'cnt_pending',                    'INT',          15, 1, 0, 1, GETUTCDATE()),
-  (1128, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_contactslost',               'cnt_contactslost',               'INT',          16, 1, 0, 1, GETUTCDATE()),
-  (1129, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'cnt_notsent',                    'cnt_notsent',                    'INT',          17, 1, 0, 1, GETUTCDATE()),
-  -- aggregate ratios
-  (1130, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_click',                    'ratio_click',                    'FLOAT', 18, 1, 0, 1, GETUTCDATE()),
-  (1131, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_clickthrough',             'ratio_clickthrough',             'FLOAT', 19, 1, 0, 1, GETUTCDATE()),
-  (1132, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_delivered',                'ratio_delivered',                'FLOAT', 20, 1, 0, 1, GETUTCDATE()),
-  (1133, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_open',                     'ratio_open',                     'FLOAT', 21, 1, 0, 1, GETUTCDATE()),
-  (1134, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_reply',                    'ratio_reply',                    'FLOAT', 22, 1, 0, 1, GETUTCDATE()),
-  (1135, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_unsubscribed',             'ratio_unsubscribed',             'FLOAT', 23, 1, 0, 1, GETUTCDATE()),
-  (1136, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_spamreport',               'ratio_spamreport',               'FLOAT', 24, 1, 0, 1, GETUTCDATE()),
-  (1137, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_bounce',                   'ratio_bounce',                   'FLOAT', 25, 1, 0, 1, GETUTCDATE()),
-  (1138, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_hardbounce',               'ratio_hardbounce',               'FLOAT', 26, 1, 0, 1, GETUTCDATE()),
-  (1139, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_softbounce',               'ratio_softbounce',               'FLOAT', 27, 1, 0, 1, GETUTCDATE()),
-  (1140, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_contactslost',             'ratio_contactslost',             'FLOAT', 28, 1, 0, 1, GETUTCDATE()),
-  (1141, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_pending',                  'ratio_pending',                  'FLOAT', 29, 1, 0, 1, GETUTCDATE()),
-  (1142, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'ratio_notsent',                  'ratio_notsent',                  'FLOAT', 30, 1, 0, 1, GETUTCDATE()),
-  -- aggregate blobs
-  (1143, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'device_breakdown_json',          'device_breakdown_json',          'STRING',        31, 0, 0, 1, GETUTCDATE()),
-  (1144, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'qualifier_stats_json',           'qualifier_stats_json',           'STRING',        32, 0, 0, 1, GETUTCDATE()),
-  -- campaign (first entry of campaignAggregations — dynamic UUID key)
-  (1145, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_id',                    'campaign_id',                    'STRING',        33, 1, 0, 1, GETUTCDATE()),
-  -- campaign counters
-  (1146, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_sent',              'campaign_cnt_sent',              'INT',           34, 1, 0, 1, GETUTCDATE()),
-  (1147, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_open',              'campaign_cnt_open',              'INT',           35, 1, 0, 1, GETUTCDATE()),
-  (1148, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_delivered',         'campaign_cnt_delivered',         'INT',           36, 1, 0, 1, GETUTCDATE()),
-  (1149, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_bounce',            'campaign_cnt_bounce',            'INT',           37, 1, 0, 1, GETUTCDATE()),
-  (1150, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_unsubscribed',      'campaign_cnt_unsubscribed',      'INT',           38, 1, 0, 1, GETUTCDATE()),
-  (1151, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_click',             'campaign_cnt_click',             'INT',           39, 1, 0, 1, GETUTCDATE()),
-  (1152, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_reply',             'campaign_cnt_reply',             'INT',           40, 1, 0, 1, GETUTCDATE()),
-  (1153, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_dropped',           'campaign_cnt_dropped',           'INT',           41, 1, 0, 1, GETUTCDATE()),
-  (1154, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_selected',          'campaign_cnt_selected',          'INT',           42, 1, 0, 1, GETUTCDATE()),
-  (1155, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_spamreport',        'campaign_cnt_spamreport',        'INT',           43, 1, 0, 1, GETUTCDATE()),
-  (1156, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_suppressed',        'campaign_cnt_suppressed',        'INT',           44, 1, 0, 1, GETUTCDATE()),
-  (1157, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_hardbounced',       'campaign_cnt_hardbounced',       'INT',           45, 1, 0, 1, GETUTCDATE()),
-  (1158, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_softbounced',       'campaign_cnt_softbounced',       'INT',           46, 1, 0, 1, GETUTCDATE()),
-  (1159, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_pending',           'campaign_cnt_pending',           'INT',           47, 1, 0, 1, GETUTCDATE()),
-  (1160, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_contactslost',      'campaign_cnt_contactslost',      'INT',           48, 1, 0, 1, GETUTCDATE()),
-  (1161, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_cnt_notsent',           'campaign_cnt_notsent',           'INT',           49, 1, 0, 1, GETUTCDATE()),
-  -- campaign ratios
-  (1162, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_click',           'campaign_ratio_click',           'FLOAT', 50, 1, 0, 1, GETUTCDATE()),
-  (1163, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_clickthrough',    'campaign_ratio_clickthrough',    'FLOAT', 51, 1, 0, 1, GETUTCDATE()),
-  (1164, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_delivered',       'campaign_ratio_delivered',       'FLOAT', 52, 1, 0, 1, GETUTCDATE()),
-  (1165, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_open',            'campaign_ratio_open',            'FLOAT', 53, 1, 0, 1, GETUTCDATE()),
-  (1166, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_reply',           'campaign_ratio_reply',           'FLOAT', 54, 1, 0, 1, GETUTCDATE()),
-  (1167, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_unsubscribed',    'campaign_ratio_unsubscribed',    'FLOAT', 55, 1, 0, 1, GETUTCDATE()),
-  (1168, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_spamreport',      'campaign_ratio_spamreport',      'FLOAT', 56, 1, 0, 1, GETUTCDATE()),
-  (1169, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_bounce',          'campaign_ratio_bounce',          'FLOAT', 57, 1, 0, 1, GETUTCDATE()),
-  (1170, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_hardbounce',      'campaign_ratio_hardbounce',      'FLOAT', 58, 1, 0, 1, GETUTCDATE()),
-  (1171, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_softbounce',      'campaign_ratio_softbounce',      'FLOAT', 59, 1, 0, 1, GETUTCDATE()),
-  (1172, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_contactslost',    'campaign_ratio_contactslost',    'FLOAT', 60, 1, 0, 1, GETUTCDATE()),
-  (1173, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_pending',         'campaign_ratio_pending',         'FLOAT', 61, 1, 0, 1, GETUTCDATE()),
-  (1174, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_ratio_notsent',         'campaign_ratio_notsent',         'FLOAT', 62, 1, 0, 1, GETUTCDATE()),
-  -- campaign blobs
-  (1175, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_device_breakdown_json', 'campaign_device_breakdown_json', 'STRING',        63, 0, 0, 1, GETUTCDATE()),
-  (1176, 'HubSpot', 'marketing_email_statistics', 'marketing_email_statistics_base', 'campaign_qualifier_stats_json',  'campaign_qualifier_stats_json',  'STRING',        64, 0, 0, 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'email_id', 'STRING', 'marketing_email_statistics_base_temp', 'email_id', 'STRING', 'marketing_email_statistics_temp', 'email_id', 'STRING', 1, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_sent', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_sent', 'STRING', 'marketing_email_statistics_temp', 'cnt_sent', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_open', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_open', 'STRING', 'marketing_email_statistics_temp', 'cnt_open', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_delivered', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_delivered', 'STRING', 'marketing_email_statistics_temp', 'cnt_delivered', 'INT', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_bounce', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_bounce', 'STRING', 'marketing_email_statistics_temp', 'cnt_bounce', 'INT', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_unsubscribed', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_unsubscribed', 'STRING', 'marketing_email_statistics_temp', 'cnt_unsubscribed', 'INT', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_click', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_click', 'STRING', 'marketing_email_statistics_temp', 'cnt_click', 'INT', 7, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_reply', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_reply', 'STRING', 'marketing_email_statistics_temp', 'cnt_reply', 'INT', 8, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_dropped', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_dropped', 'STRING', 'marketing_email_statistics_temp', 'cnt_dropped', 'INT', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_selected', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_selected', 'STRING', 'marketing_email_statistics_temp', 'cnt_selected', 'INT', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_spamreport', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_spamreport', 'STRING', 'marketing_email_statistics_temp', 'cnt_spamreport', 'INT', 11, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_suppressed', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_suppressed', 'STRING', 'marketing_email_statistics_temp', 'cnt_suppressed', 'INT', 12, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_hardbounced', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_hardbounced', 'STRING', 'marketing_email_statistics_temp', 'cnt_hardbounced', 'INT', 13, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_softbounced', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_softbounced', 'STRING', 'marketing_email_statistics_temp', 'cnt_softbounced', 'INT', 14, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_pending', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_pending', 'STRING', 'marketing_email_statistics_temp', 'cnt_pending', 'INT', 15, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_contactslost', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_contactslost', 'STRING', 'marketing_email_statistics_temp', 'cnt_contactslost', 'INT', 16, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'cnt_notsent', 'STRING', 'marketing_email_statistics_base_temp', 'cnt_notsent', 'STRING', 'marketing_email_statistics_temp', 'cnt_notsent', 'INT', 17, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'ratio_click', 'STRING', 'marketing_email_statistics_base_temp', 'ratio_click', 'STRING', 'marketing_email_statistics_temp', 'ratio_click', 'FLOAT', 18, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'ratio_clickthrough', 'STRING', 'marketing_email_statistics_base_temp', 'ratio_clickthrough', 'STRING', 'marketing_email_statistics_temp', 'ratio_clickthrough', 'FLOAT', 19, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'ratio_delivered', 'STRING', 'marketing_email_statistics_base_temp', 'ratio_delivered', 'STRING', 'marketing_email_statistics_temp', 'ratio_delivered', 'FLOAT', 20, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'ratio_open', 'STRING', 'marketing_email_statistics_base_temp', 'ratio_open', 'STRING', 'marketing_email_statistics_temp', 'ratio_open', 'FLOAT', 21, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'ratio_reply', 'STRING', 'marketing_email_statistics_base_temp', 'ratio_reply', 'STRING', 'marketing_email_statistics_temp', 'ratio_reply', 'FLOAT', 22, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'ratio_unsubscribed', 'STRING', 'marketing_email_statistics_base_temp', 'ratio_unsubscribed', 'STRING', 'marketing_email_statistics_temp', 'ratio_unsubscribed', 'FLOAT', 23, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'ratio_spamreport', 'STRING', 'marketing_email_statistics_base_temp', 'ratio_spamreport', 'STRING', 'marketing_email_statistics_temp', 'ratio_spamreport', 'FLOAT', 24, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'ratio_bounce', 'STRING', 'marketing_email_statistics_base_temp', 'ratio_bounce', 'STRING', 'marketing_email_statistics_temp', 'ratio_bounce', 'FLOAT', 25, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'ratio_hardbounce', 'STRING', 'marketing_email_statistics_base_temp', 'ratio_hardbounce', 'STRING', 'marketing_email_statistics_temp', 'ratio_hardbounce', 'FLOAT', 26, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'ratio_softbounce', 'STRING', 'marketing_email_statistics_base_temp', 'ratio_softbounce', 'STRING', 'marketing_email_statistics_temp', 'ratio_softbounce', 'FLOAT', 27, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'ratio_contactslost', 'STRING', 'marketing_email_statistics_base_temp', 'ratio_contactslost', 'STRING', 'marketing_email_statistics_temp', 'ratio_contactslost', 'FLOAT', 28, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'ratio_pending', 'STRING', 'marketing_email_statistics_base_temp', 'ratio_pending', 'STRING', 'marketing_email_statistics_temp', 'ratio_pending', 'FLOAT', 29, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'ratio_notsent', 'STRING', 'marketing_email_statistics_base_temp', 'ratio_notsent', 'STRING', 'marketing_email_statistics_temp', 'ratio_notsent', 'FLOAT', 30, 1, 0, 0, '0', 1, GETUTCDATE()),
+-- aggregate blobs
+('HubSpot', 'marketing_email_statistics', 'device_breakdown_json', 'STRING', 'marketing_email_statistics_base_temp', 'device_breakdown_json', 'STRING', 'marketing_email_statistics_temp', 'device_breakdown_json', 'STRING', 31, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'qualifier_stats_json', 'STRING', 'marketing_email_statistics_base_temp', 'qualifier_stats_json', 'STRING', 'marketing_email_statistics_temp', 'qualifier_stats_json', 'STRING', 32, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+-- campaign (first entry of campaignAggregations — dynamic UUID key)
+('HubSpot', 'marketing_email_statistics', 'campaign_id', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_id', 'STRING', 'marketing_email_statistics_temp', 'campaign_id', 'STRING', 33, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+-- campaign counters
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_sent', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_sent', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_sent', 'INT', 34, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_open', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_open', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_open', 'INT', 35, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_delivered', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_delivered', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_delivered', 'INT', 36, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_bounce', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_bounce', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_bounce', 'INT', 37, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_unsubscribed', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_unsubscribed', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_unsubscribed', 'INT', 38, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_click', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_click', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_click', 'INT', 39, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_reply', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_reply', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_reply', 'INT', 40, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_dropped', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_dropped', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_dropped', 'INT', 41, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_selected', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_selected', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_selected', 'INT', 42, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_spamreport', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_spamreport', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_spamreport', 'INT', 43, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_suppressed', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_suppressed', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_suppressed', 'INT', 44, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_hardbounced', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_hardbounced', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_hardbounced', 'INT', 45, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_softbounced', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_softbounced', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_softbounced', 'INT', 46, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_pending', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_pending', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_pending', 'INT', 47, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_contactslost', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_contactslost', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_contactslost', 'INT', 48, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_cnt_notsent', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_cnt_notsent', 'STRING', 'marketing_email_statistics_temp', 'campaign_cnt_notsent', 'INT', 49, 1, 0, 0, '0', 1, GETUTCDATE()),
+-- campaign ratios
+('HubSpot', 'marketing_email_statistics', 'campaign_ratio_click', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_ratio_click', 'STRING', 'marketing_email_statistics_temp', 'campaign_ratio_click', 'FLOAT', 50, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_ratio_clickthrough', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_ratio_clickthrough', 'STRING', 'marketing_email_statistics_temp', 'campaign_ratio_clickthrough', 'FLOAT', 51, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_ratio_delivered', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_ratio_delivered', 'STRING', 'marketing_email_statistics_temp', 'campaign_ratio_delivered', 'FLOAT', 52, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_ratio_open', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_ratio_open', 'STRING', 'marketing_email_statistics_temp', 'campaign_ratio_open', 'FLOAT', 53, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_ratio_reply', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_ratio_reply', 'STRING', 'marketing_email_statistics_temp', 'campaign_ratio_reply', 'FLOAT', 54, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_ratio_unsubscribed', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_ratio_unsubscribed', 'STRING', 'marketing_email_statistics_temp', 'campaign_ratio_unsubscribed', 'FLOAT', 55, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_ratio_spamreport', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_ratio_spamreport', 'STRING', 'marketing_email_statistics_temp', 'campaign_ratio_spamreport', 'FLOAT', 56, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_ratio_bounce', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_ratio_bounce', 'STRING', 'marketing_email_statistics_temp', 'campaign_ratio_bounce', 'FLOAT', 57, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_ratio_hardbounce', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_ratio_hardbounce', 'STRING', 'marketing_email_statistics_temp', 'campaign_ratio_hardbounce', 'FLOAT', 58, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_ratio_softbounce', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_ratio_softbounce', 'STRING', 'marketing_email_statistics_temp', 'campaign_ratio_softbounce', 'FLOAT', 59, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_ratio_contactslost', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_ratio_contactslost', 'STRING', 'marketing_email_statistics_temp', 'campaign_ratio_contactslost', 'FLOAT', 60, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_ratio_pending', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_ratio_pending', 'STRING', 'marketing_email_statistics_temp', 'campaign_ratio_pending', 'FLOAT', 61, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_ratio_notsent', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_ratio_notsent', 'STRING', 'marketing_email_statistics_temp', 'campaign_ratio_notsent', 'FLOAT', 62, 1, 0, 0, '0', 1, GETUTCDATE()),
+-- campaign blobs
+('HubSpot', 'marketing_email_statistics', 'campaign_device_breakdown_json', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_device_breakdown_json', 'STRING', 'marketing_email_statistics_temp', 'campaign_device_breakdown_json', 'STRING', 63, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'marketing_email_statistics', 'campaign_qualifier_stats_json', 'STRING', 'marketing_email_statistics_base_temp', 'campaign_qualifier_stats_json', 'STRING', 'marketing_email_statistics_temp', 'campaign_qualifier_stats_json', 'STRING', 64, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
+VALUES
 -- [H17] event_details (IDs 1177–1227)
-  (1177, 'HubSpot', 'event_details', 'event_details_base', 'id',                                        'id',                                        'STRING',  1, 0, 1, 1, GETUTCDATE()),
-  (1178, 'HubSpot', 'event_details', 'event_details_base', 'objectType',                                'object_type',                               'STRING',  2, 1, 0, 1, GETUTCDATE()),
-  (1179, 'HubSpot', 'event_details', 'event_details_base', 'objectId',                                  'object_id',                                 'STRING',  3, 1, 0, 1, GETUTCDATE()),
-  (1180, 'HubSpot', 'event_details', 'event_details_base', 'eventType',                                 'event_type',                                'STRING',  4, 1, 0, 1, GETUTCDATE()),
-  (1181, 'HubSpot', 'event_details', 'event_details_base', 'occurredAt',                                'occurred_at',                               'STRING',  5, 1, 0, 1, GETUTCDATE()),
-  (1182, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_base_url',                   'hs_base_url',                               'STRING',  6, 1, 0, 1, GETUTCDATE()),
-  (1183, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_url',                        'hs_url',                                    'STRING',  7, 1, 0, 1, GETUTCDATE()),
-  (1184, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_query_params',               'hs_query_params',                           'STRING',  8, 1, 0, 1, GETUTCDATE()),
-  (1185, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_canonical_url',              'hs_canonical_url',                          'STRING',  9, 1, 0, 1, GETUTCDATE()),
-  (1186, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_url_domain',                 'hs_url_domain',                             'STRING', 10, 1, 0, 1, GETUTCDATE()),
-  (1187, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_url_path',                   'hs_url_path',                               'STRING', 11, 1, 0, 1, GETUTCDATE()),
-  (1188, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_analytics_normalized_page_url', 'hs_analytics_normalized_page_url',       'STRING', 12, 1, 0, 1, GETUTCDATE()),
-  (1189, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_is_virtual_url',             'hs_is_virtual_url',                         'STRING', 13, 1, 0, 1, GETUTCDATE()),
-  (1190, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_page_id',                    'hs_page_id',                                'STRING', 14, 1, 0, 1, GETUTCDATE()),
-  (1191, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_page_title',                 'hs_page_title',                             'STRING', 15, 1, 0, 1, GETUTCDATE()),
-  (1192, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_title',                      'hs_title',                                  'STRING', 16, 1, 0, 1, GETUTCDATE()),
-  (1193, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_targeted_content_aggregation', 'hs_targeted_content_aggregation',         'STRING', 17, 1, 0, 1, GETUTCDATE()),
-  (1194, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_is_virtual_referrer',        'hs_is_virtual_referrer',                    'STRING', 18, 1, 0, 1, GETUTCDATE()),
-  (1195, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_is_external',                'hs_is_external',                            'STRING', 19, 1, 0, 1, GETUTCDATE()),
-  (1196, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_is_amp',                     'hs_is_amp',                                 'STRING', 20, 1, 0, 1, GETUTCDATE()),
-  (1197, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_is_in_chat_view',            'hs_is_in_chat_view',                        'STRING', 21, 1, 0, 1, GETUTCDATE()),
-  (1198, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_is_new_cookie',              'hs_is_new_cookie',                          'STRING', 22, 1, 0, 1, GETUTCDATE()),
-  (1199, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_is_contact',                 'hs_is_contact',                             'STRING', 23, 1, 0, 1, GETUTCDATE()),
-  (1200, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_referrer',                   'hs_referrer',                               'STRING', 24, 1, 0, 1, GETUTCDATE()),
-  (1201, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_device_type',                'hs_device_type',                            'STRING', 25, 1, 0, 1, GETUTCDATE()),
-  (1202, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_device_name',                'hs_device_name',                            'STRING', 26, 1, 0, 1, GETUTCDATE()),
-  (1203, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_browser',                    'hs_browser',                                'STRING', 27, 1, 0, 1, GETUTCDATE()),
-  (1204, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_browser_type',               'hs_browser_type',                           'STRING', 28, 1, 0, 1, GETUTCDATE()),
-  (1205, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_browser_version_major',      'hs_browser_version_major',                  'STRING', 29, 1, 0, 1, GETUTCDATE()),
-  (1206, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_browser_fingerprint',        'hs_browser_fingerprint',                    'STRING', 30, 1, 0, 1, GETUTCDATE()),
-  (1207, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_operating_system',           'hs_operating_system',                       'STRING', 31, 1, 0, 1, GETUTCDATE()),
-  (1208, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_vendor',                     'hs_vendor',                                 'STRING', 32, 1, 0, 1, GETUTCDATE()),
-  (1209, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_user_agent',                 'hs_user_agent',                             'STRING', 33, 1, 0, 1, GETUTCDATE()),
-  (1210, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_country',                    'hs_country',                                'STRING', 34, 1, 0, 1, GETUTCDATE()),
-  (1211, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_region',                     'hs_region',                                 'STRING', 35, 1, 0, 1, GETUTCDATE()),
-  (1212, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_qualified_region',           'hs_qualified_region',                       'STRING', 36, 1, 0, 1, GETUTCDATE()),
-  (1213, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_city',                       'hs_city',                                   'STRING', 37, 1, 0, 1, GETUTCDATE()),
-  (1214, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_cf_bot_score',               'hs_cf_bot_score',                           'STRING', 38, 1, 0, 1, GETUTCDATE()),
-  (1215, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_hash_id',                    'hs_hash_id',                                'STRING', 39, 1, 0, 1, GETUTCDATE()),
-  (1216, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_log_line_timestamp',         'hs_log_line_timestamp',                     'STRING', 40, 1, 0, 1, GETUTCDATE()),
-  (1217, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_processed_timestamp',        'hs_processed_timestamp',                    'STRING', 41, 1, 0, 1, GETUTCDATE()),
-  (1218, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_visit_source',               'hs_visit_source',                           'STRING', 42, 1, 0, 1, GETUTCDATE()),
-  (1219, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_visit_source_details_1',     'hs_visit_source_details_1',                 'STRING', 43, 1, 0, 1, GETUTCDATE()),
-  (1220, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_visit_source_details_2',     'hs_visit_source_details_2',                 'STRING', 44, 1, 0, 1, GETUTCDATE()),
-  (1221, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_utm_campaign',               'hs_utm_campaign',                           'STRING', 45, 1, 0, 1, GETUTCDATE()),
-  (1222, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_leviathan_linked_vids',      'hs_leviathan_linked_vids',                  'STRING', 46, 1, 0, 1, GETUTCDATE()),
-  (1223, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_company_id',                 'hs_company_id',                             'STRING', 47, 1, 0, 1, GETUTCDATE()),
-  (1224, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_company_domain',             'hs_company_domain',                         'STRING', 48, 1, 0, 1, GETUTCDATE()),
-  (1225, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_company_domain_by_association', 'hs_company_domain_by_association',       'STRING', 49, 1, 0, 1, GETUTCDATE()),
-  (1226, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_historical_contact_associatedcompanyid', 'hs_historical_contact_associatedcompanyid', 'STRING', 50, 1, 0, 1, GETUTCDATE()),
-  (1227, 'HubSpot', 'event_details', 'event_details_base', 'properties.hs_historical_contact_lifecyclestage',      'hs_historical_contact_lifecyclestage',      'STRING', 51, 1, 0, 1, GETUTCDATE());
-
--- Total HubSpot: 333 column mappings across 17 landing tables (IDs 911–1243)
---   911–932  : marketing_events                                          (22 rows)
---   933–985  : marketing_emails base cols                                (53 rows)
---   986      : events_event_types                                         (1 row)
---   987–995 + 1086–1091 + 1235–1243: crm_contacts fully flattened        (24 rows)
---   996–1004 + 1092–1096 + 1228–1234: crm_companies fully flattened      (21 rows)
---   1005–1085: crm_deals through crm_tasks (9 cols × 9 tables)           (81 rows)
---   1097–1107: crm_owners                                                (11 rows)
---   1108–1112: marketing_emails to_json expansion                         (5 rows)
---   1113–1176: marketing_email_statistics (agg + campaign fully flattened)(64 rows)
---   1177–1227: event_details (5 top-level + 46 properties.hs_* fields)   (51 rows)
-
-
--- ============================================================
--- EQ_ODS source — schema_config seed data
--- IDs 3001–3286  (286 rows across 15 base tables)
--- source_name     = 'EQ_ODS'
--- source_schema   = 'seg_editsolutions' (except ref_Product=dbo, ProductStructure=seg_engine)
--- target_schema   = 'seg_editsolutions' in lh_landing
--- Naming rules applied:
---   PK/FK suffix → _id   |   CT suffix → _code   |   Ind suffix → is_xxx
--- ============================================================
+('HubSpot', 'event_details', 'id', 'STRING', 'event_details_base_temp', 'id', 'STRING', 'event_details_temp', 'id', 'STRING', 1, 0, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'objectType', 'STRING', 'event_details_base_temp', 'object_type', 'STRING', 'event_details_temp', 'object_type', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'objectId', 'STRING', 'event_details_base_temp', 'object_id', 'STRING', 'event_details_temp', 'object_id', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'eventType', 'STRING', 'event_details_base_temp', 'event_type', 'STRING', 'event_details_temp', 'event_type', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'occurredAt', 'STRING', 'event_details_base_temp', 'occurred_at', 'STRING', 'event_details_temp', 'occurred_at', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_base_url', 'STRING', 'event_details_base_temp', 'properties.hs_base_url', 'STRING', 'event_details_temp', 'hs_base_url', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_url', 'STRING', 'event_details_base_temp', 'properties.hs_url', 'STRING', 'event_details_temp', 'hs_url', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_query_params', 'STRING', 'event_details_base_temp', 'properties.hs_query_params', 'STRING', 'event_details_temp', 'hs_query_params', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_canonical_url', 'STRING', 'event_details_base_temp', 'properties.hs_canonical_url', 'STRING', 'event_details_temp', 'hs_canonical_url', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_url_domain', 'STRING', 'event_details_base_temp', 'properties.hs_url_domain', 'STRING', 'event_details_temp', 'hs_url_domain', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_url_path', 'STRING', 'event_details_base_temp', 'properties.hs_url_path', 'STRING', 'event_details_temp', 'hs_url_path', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_analytics_normalized_page_url', 'STRING', 'event_details_base_temp', 'properties.hs_analytics_normalized_page_url', 'STRING', 'event_details_temp', 'hs_analytics_normalized_page_url', 'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_is_virtual_url', 'STRING', 'event_details_base_temp', 'properties.hs_is_virtual_url', 'STRING', 'event_details_temp', 'hs_is_virtual_url', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_page_id', 'STRING', 'event_details_base_temp', 'properties.hs_page_id', 'STRING', 'event_details_temp', 'hs_page_id', 'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_page_title', 'STRING', 'event_details_base_temp', 'properties.hs_page_title', 'STRING', 'event_details_temp', 'hs_page_title', 'STRING', 15, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_title', 'STRING', 'event_details_base_temp', 'properties.hs_title', 'STRING', 'event_details_temp', 'hs_title', 'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_targeted_content_aggregation', 'STRING', 'event_details_base_temp', 'properties.hs_targeted_content_aggregation', 'STRING', 'event_details_temp', 'hs_targeted_content_aggregation', 'STRING', 17, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_is_virtual_referrer', 'STRING', 'event_details_base_temp', 'properties.hs_is_virtual_referrer', 'STRING', 'event_details_temp', 'hs_is_virtual_referrer', 'STRING', 18, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_is_external', 'STRING', 'event_details_base_temp', 'properties.hs_is_external', 'STRING', 'event_details_temp', 'hs_is_external', 'STRING', 19, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_is_amp', 'STRING', 'event_details_base_temp', 'properties.hs_is_amp', 'STRING', 'event_details_temp', 'hs_is_amp', 'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_is_in_chat_view', 'STRING', 'event_details_base_temp', 'properties.hs_is_in_chat_view', 'STRING', 'event_details_temp', 'hs_is_in_chat_view', 'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_is_new_cookie', 'STRING', 'event_details_base_temp', 'properties.hs_is_new_cookie', 'STRING', 'event_details_temp', 'hs_is_new_cookie', 'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_is_contact', 'STRING', 'event_details_base_temp', 'properties.hs_is_contact', 'STRING', 'event_details_temp', 'hs_is_contact', 'STRING', 23, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_referrer', 'STRING', 'event_details_base_temp', 'properties.hs_referrer', 'STRING', 'event_details_temp', 'hs_referrer', 'STRING', 24, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_device_type', 'STRING', 'event_details_base_temp', 'properties.hs_device_type', 'STRING', 'event_details_temp', 'hs_device_type', 'STRING', 25, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_device_name', 'STRING', 'event_details_base_temp', 'properties.hs_device_name', 'STRING', 'event_details_temp', 'hs_device_name', 'STRING', 26, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_browser', 'STRING', 'event_details_base_temp', 'properties.hs_browser', 'STRING', 'event_details_temp', 'hs_browser', 'STRING', 27, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_browser_type', 'STRING', 'event_details_base_temp', 'properties.hs_browser_type', 'STRING', 'event_details_temp', 'hs_browser_type', 'STRING', 28, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_browser_version_major', 'STRING', 'event_details_base_temp', 'properties.hs_browser_version_major', 'STRING', 'event_details_temp', 'hs_browser_version_major', 'STRING', 29, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_browser_fingerprint', 'STRING', 'event_details_base_temp', 'properties.hs_browser_fingerprint', 'STRING', 'event_details_temp', 'hs_browser_fingerprint', 'STRING', 30, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_operating_system', 'STRING', 'event_details_base_temp', 'properties.hs_operating_system', 'STRING', 'event_details_temp', 'hs_operating_system', 'STRING', 31, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_vendor', 'STRING', 'event_details_base_temp', 'properties.hs_vendor', 'STRING', 'event_details_temp', 'hs_vendor', 'STRING', 32, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_user_agent', 'STRING', 'event_details_base_temp', 'properties.hs_user_agent', 'STRING', 'event_details_temp', 'hs_user_agent', 'STRING', 33, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_country', 'STRING', 'event_details_base_temp', 'properties.hs_country', 'STRING', 'event_details_temp', 'hs_country', 'STRING', 34, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_region', 'STRING', 'event_details_base_temp', 'properties.hs_region', 'STRING', 'event_details_temp', 'hs_region', 'STRING', 35, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_qualified_region', 'STRING', 'event_details_base_temp', 'properties.hs_qualified_region', 'STRING', 'event_details_temp', 'hs_qualified_region', 'STRING', 36, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_city', 'STRING', 'event_details_base_temp', 'properties.hs_city', 'STRING', 'event_details_temp', 'hs_city', 'STRING', 37, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_cf_bot_score', 'STRING', 'event_details_base_temp', 'properties.hs_cf_bot_score', 'STRING', 'event_details_temp', 'hs_cf_bot_score', 'STRING', 38, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_hash_id', 'STRING', 'event_details_base_temp', 'properties.hs_hash_id', 'STRING', 'event_details_temp', 'hs_hash_id', 'STRING', 39, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_log_line_timestamp', 'STRING', 'event_details_base_temp', 'properties.hs_log_line_timestamp', 'STRING', 'event_details_temp', 'hs_log_line_timestamp', 'STRING', 40, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_processed_timestamp', 'STRING', 'event_details_base_temp', 'properties.hs_processed_timestamp', 'STRING', 'event_details_temp', 'hs_processed_timestamp', 'STRING', 41, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_visit_source', 'STRING', 'event_details_base_temp', 'properties.hs_visit_source', 'STRING', 'event_details_temp', 'hs_visit_source', 'STRING', 42, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_visit_source_details_1', 'STRING', 'event_details_base_temp', 'properties.hs_visit_source_details_1', 'STRING', 'event_details_temp', 'hs_visit_source_details_1', 'STRING', 43, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_visit_source_details_2', 'STRING', 'event_details_base_temp', 'properties.hs_visit_source_details_2', 'STRING', 'event_details_temp', 'hs_visit_source_details_2', 'STRING', 44, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_utm_campaign', 'STRING', 'event_details_base_temp', 'properties.hs_utm_campaign', 'STRING', 'event_details_temp', 'hs_utm_campaign', 'STRING', 45, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_leviathan_linked_vids', 'STRING', 'event_details_base_temp', 'properties.hs_leviathan_linked_vids', 'STRING', 'event_details_temp', 'hs_leviathan_linked_vids', 'STRING', 46, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_company_id', 'STRING', 'event_details_base_temp', 'properties.hs_company_id', 'STRING', 'event_details_temp', 'hs_company_id', 'STRING', 47, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_company_domain', 'STRING', 'event_details_base_temp', 'properties.hs_company_domain', 'STRING', 'event_details_temp', 'hs_company_domain', 'STRING', 48, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_company_domain_by_association', 'STRING', 'event_details_base_temp', 'properties.hs_company_domain_by_association', 'STRING', 'event_details_temp', 'hs_company_domain_by_association', 'STRING', 49, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_historical_contact_associatedcompanyid', 'STRING', 'event_details_base_temp', 'properties.hs_historical_contact_associatedcompanyid', 'STRING', 'event_details_temp', 'hs_historical_contact_associatedcompanyid', 'STRING', 50, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'event_details', 'properties.hs_historical_contact_lifecyclestage', 'STRING', 'event_details_base_temp', 'properties.hs_historical_contact_lifecyclestage', 'STRING', 'event_details_temp', 'hs_historical_contact_lifecyclestage', 'STRING', 51, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- ── [O01] ref_Product  (EQ_ODS.dbo — 9 cols, IDs 3001-3009) ────────────────
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3001, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'ProductPK',             'product_id',                'INT',     1, 0, 1, 1, GETUTCDATE()),
-  (3002, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'Product',               'product_name',              'STRING',  2, 1, 0, 1, GETUTCDATE()),
-  (3003, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'SecondSaleProduct',     'is_second_sale',            'BOOLEAN', 3, 1, 0, 1, GETUTCDATE()),
-  (3004, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'ProductGroupName',      'product_group_name',        'STRING',  4, 1, 0, 1, GETUTCDATE()),
-  (3005, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'AgentCommStatmentAbbr', 'agent_comm_statement_abbr', 'STRING',  5, 1, 0, 1, GETUTCDATE()),
-  (3006, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'GLAbbr',                'gl_abbr',                   'STRING',  6, 1, 0, 1, GETUTCDATE()),
-  (3007, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'GLLOB',                 'gl_line_of_business',       'STRING',  7, 1, 0, 1, GETUTCDATE()),
-  (3008, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'MarketingName',         'marketing_name',            'STRING',  8, 1, 0, 1, GETUTCDATE()),
-  (3009, 'EQ_ODS', 'ref_Product', 'ref_product_base', 'CUSIPNumber',           'cusip_number',              'STRING',  9, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'ref_Product', 'ProductPK', 'STRING', 'ref_product_base_temp', 'product_id', 'STRING', 'ref_product_temp', 'product_id', 'INT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ref_Product', 'Product', 'STRING', 'ref_product_base_temp', 'product_name', 'STRING', 'ref_product_temp', 'product_name', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ref_Product', 'SecondSaleProduct', 'STRING', 'ref_product_base_temp', 'is_second_sale', 'STRING', 'ref_product_temp', 'is_second_sale', 'BOOLEAN', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ref_Product', 'ProductGroupName', 'STRING', 'ref_product_base_temp', 'product_group_name', 'STRING', 'ref_product_temp', 'product_group_name', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ref_Product', 'AgentCommStatmentAbbr', 'STRING', 'ref_product_base_temp', 'agent_comm_statement_abbr', 'STRING', 'ref_product_temp', 'agent_comm_statement_abbr', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ref_Product', 'GLAbbr', 'STRING', 'ref_product_base_temp', 'gl_abbr', 'STRING', 'ref_product_temp', 'gl_abbr', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ref_Product', 'GLLOB', 'STRING', 'ref_product_base_temp', 'gl_line_of_business', 'STRING', 'ref_product_temp', 'gl_line_of_business', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ref_Product', 'MarketingName', 'STRING', 'ref_product_base_temp', 'marketing_name', 'STRING', 'ref_product_temp', 'marketing_name', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ref_Product', 'CUSIPNumber', 'STRING', 'ref_product_base_temp', 'cusip_number', 'STRING', 'ref_product_temp', 'cusip_number', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- ── [O02] ContractClient  (25 cols, IDs 3010-3034) ──────────────────────────
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3010, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'ContractClientPK',            'contract_client_id',             'INT',            1, 0, 1, 1, GETUTCDATE()),
-  (3011, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'ClientRoleFK',                'client_role_id',                 'INT',            2, 1, 0, 1, GETUTCDATE()),
-  (3012, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'SegmentFK',                   'segment_id',                     'INT',            3, 1, 0, 1, GETUTCDATE()),
-  (3013, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'IssueAge',                    'issue_age',                      'INT',            4, 1, 0, 1, GETUTCDATE()),
-  (3014, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'EffectiveDate',               'effective_date',                 'TIMESTAMP',      5, 1, 0, 1, GETUTCDATE()),
-  (3015, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'TerminationDate',             'termination_date',               'TIMESTAMP',      6, 1, 0, 1, GETUTCDATE()),
-  (3016, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'RelationshipToInsuredCT',     'relationship_to_insured_code',   'STRING',         7, 1, 0, 1, GETUTCDATE()),
-  (3017, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'TelephoneAuthorizationCT',    'telephone_authorization_code',   'STRING',         8, 1, 0, 1, GETUTCDATE()),
-  (3018, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'ClassCT',                     'class_code',                     'STRING',         9, 1, 0, 1, GETUTCDATE()),
-  (3019, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'FlatExtra',                   'flat_extra',                     'DECIMAL(18,4)', 10, 1, 0, 1, GETUTCDATE()),
-  (3020, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'FlatExtraAge',                'flat_extra_age',                 'INT',           11, 1, 0, 1, GETUTCDATE()),
-  (3021, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'FlatExtraDur',                'flat_extra_duration',            'INT',           12, 1, 0, 1, GETUTCDATE()),
-  (3022, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'PercentExtra',                'percent_extra',                  'DECIMAL(18,4)', 13, 1, 0, 1, GETUTCDATE()),
-  (3023, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'PercentExtraAge',             'percent_extra_age',              'INT',           14, 1, 0, 1, GETUTCDATE()),
-  (3024, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'PercentExtraDur',             'percent_extra_duration',         'INT',           15, 1, 0, 1, GETUTCDATE()),
-  (3025, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'TableRatingCT',               'table_rating_code',              'STRING',        16, 1, 0, 1, GETUTCDATE()),
-  (3026, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'DisbursementAddressTypeCT',   'disbursement_address_type_code', 'STRING',        17, 1, 0, 1, GETUTCDATE()),
-  (3027, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'CorrespondenceAddressTypeCT', 'correspondence_address_type_code','STRING',       18, 1, 0, 1, GETUTCDATE()),
-  (3028, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'PendingClassChangeInd',       'is_pending_class_change',        'BOOLEAN',       19, 1, 0, 1, GETUTCDATE()),
-  (3029, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'PayorOfCT',                   'payor_of_code',                  'STRING',        20, 1, 0, 1, GETUTCDATE()),
-  (3030, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'RatedGenderCT',               'rated_gender_code',              'STRING',        21, 1, 0, 1, GETUTCDATE()),
-  (3031, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'UnderwritingClassCT',         'underwriting_class_code',        'STRING',        22, 1, 0, 1, GETUTCDATE()),
-  (3032, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'TerminationReasonCT',         'termination_reason_code',        'STRING',        23, 1, 0, 1, GETUTCDATE()),
-  (3033, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'EDeliveryIndicator',          'is_edelivery',                   'BOOLEAN',       24, 1, 0, 1, GETUTCDATE()),
-  (3034, 'EQ_ODS', 'ContractClient', 'contract_client_base', 'OverrideStatus',              'override_status',                'STRING',        25, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'ContractClient', 'ContractClientPK', 'STRING', 'contract_client_base_temp', 'contract_client_id', 'STRING', 'contract_client_temp', 'contract_client_id', 'INT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'ClientRoleFK', 'STRING', 'contract_client_base_temp', 'client_role_id', 'STRING', 'contract_client_temp', 'client_role_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'SegmentFK', 'STRING', 'contract_client_base_temp', 'segment_id', 'STRING', 'contract_client_temp', 'segment_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'IssueAge', 'STRING', 'contract_client_base_temp', 'issue_age', 'STRING', 'contract_client_temp', 'issue_age', 'INT', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'EffectiveDate', 'STRING', 'contract_client_base_temp', 'effective_date', 'STRING', 'contract_client_temp', 'effective_date', 'TIMESTAMP', 5, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'TerminationDate', 'STRING', 'contract_client_base_temp', 'termination_date', 'STRING', 'contract_client_temp', 'termination_date', 'TIMESTAMP', 6, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'RelationshipToInsuredCT', 'STRING', 'contract_client_base_temp', 'relationship_to_insured_code', 'STRING', 'contract_client_temp', 'relationship_to_insured_code', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'TelephoneAuthorizationCT', 'STRING', 'contract_client_base_temp', 'telephone_authorization_code', 'STRING', 'contract_client_temp', 'telephone_authorization_code', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'ClassCT', 'STRING', 'contract_client_base_temp', 'class_code', 'STRING', 'contract_client_temp', 'class_code', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'FlatExtra', 'STRING', 'contract_client_base_temp', 'flat_extra', 'STRING', 'contract_client_temp', 'flat_extra', 'DECIMAL(18,4)', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'FlatExtraAge', 'STRING', 'contract_client_base_temp', 'flat_extra_age', 'STRING', 'contract_client_temp', 'flat_extra_age', 'INT', 11, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'FlatExtraDur', 'STRING', 'contract_client_base_temp', 'flat_extra_duration', 'STRING', 'contract_client_temp', 'flat_extra_duration', 'INT', 12, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'PercentExtra', 'STRING', 'contract_client_base_temp', 'percent_extra', 'STRING', 'contract_client_temp', 'percent_extra', 'DECIMAL(18,4)', 13, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'PercentExtraAge', 'STRING', 'contract_client_base_temp', 'percent_extra_age', 'STRING', 'contract_client_temp', 'percent_extra_age', 'INT', 14, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'PercentExtraDur', 'STRING', 'contract_client_base_temp', 'percent_extra_duration', 'STRING', 'contract_client_temp', 'percent_extra_duration', 'INT', 15, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'TableRatingCT', 'STRING', 'contract_client_base_temp', 'table_rating_code', 'STRING', 'contract_client_temp', 'table_rating_code', 'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'DisbursementAddressTypeCT', 'STRING', 'contract_client_base_temp', 'disbursement_address_type_code', 'STRING', 'contract_client_temp', 'disbursement_address_type_code', 'STRING', 17, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'CorrespondenceAddressTypeCT', 'STRING', 'contract_client_base_temp', 'correspondence_address_type_code', 'STRING', 'contract_client_temp', 'correspondence_address_type_code', 'STRING', 18, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'PendingClassChangeInd', 'STRING', 'contract_client_base_temp', 'is_pending_class_change', 'STRING', 'contract_client_temp', 'is_pending_class_change', 'BOOLEAN', 19, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'PayorOfCT', 'STRING', 'contract_client_base_temp', 'payor_of_code', 'STRING', 'contract_client_temp', 'payor_of_code', 'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'RatedGenderCT', 'STRING', 'contract_client_base_temp', 'rated_gender_code', 'STRING', 'contract_client_temp', 'rated_gender_code', 'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'UnderwritingClassCT', 'STRING', 'contract_client_base_temp', 'underwriting_class_code', 'STRING', 'contract_client_temp', 'underwriting_class_code', 'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'TerminationReasonCT', 'STRING', 'contract_client_base_temp', 'termination_reason_code', 'STRING', 'contract_client_temp', 'termination_reason_code', 'STRING', 23, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'EDeliveryIndicator', 'STRING', 'contract_client_base_temp', 'is_edelivery', 'STRING', 'contract_client_temp', 'is_edelivery', 'BOOLEAN', 24, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClient', 'OverrideStatus', 'STRING', 'contract_client_base_temp', 'override_status', 'STRING', 'contract_client_temp', 'override_status', 'STRING', 25, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- ── [O03] ClientRole  (10 cols, IDs 3035-3044) ──────────────────────────────
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3035, 'EQ_ODS', 'ClientRole', 'client_role_base', 'ClientRolePK',                   'client_role_id',                    'INT',        1, 0, 1, 1, GETUTCDATE()),
-  (3036, 'EQ_ODS', 'ClientRole', 'client_role_base', 'ClientDetailFK',                 'client_detail_id',                  'INT',        2, 1, 0, 1, GETUTCDATE()),
-  (3037, 'EQ_ODS', 'ClientRole', 'client_role_base', 'AgentFK',                        'agent_id',                          'INT',        3, 1, 0, 1, GETUTCDATE()),
-  (3038, 'EQ_ODS', 'ClientRole', 'client_role_base', 'PreferenceFK',                   'preference_id',                     'INT',        4, 1, 0, 1, GETUTCDATE()),
-  (3039, 'EQ_ODS', 'ClientRole', 'client_role_base', 'TaxProfileFK',                   'tax_profile_id',                    'INT',        5, 1, 0, 1, GETUTCDATE()),
-  (3040, 'EQ_ODS', 'ClientRole', 'client_role_base', 'RoleTypeCT',                     'role_type_code',                    'STRING',     6, 1, 0, 1, GETUTCDATE()),
-  (3041, 'EQ_ODS', 'ClientRole', 'client_role_base', 'NewIssuesEligibilityStatusCT',   'new_issues_eligibility_status_code','STRING',     7, 1, 0, 1, GETUTCDATE()),
-  (3042, 'EQ_ODS', 'ClientRole', 'client_role_base', 'NewIssuesEligibilityStartDate',  'new_issues_eligibility_start_date', 'TIMESTAMP',  8, 1, 0, 1, GETUTCDATE()),
-  (3043, 'EQ_ODS', 'ClientRole', 'client_role_base', 'ReferenceID',                    'reference_id',                      'STRING',     9, 1, 0, 1, GETUTCDATE()),
-  (3044, 'EQ_ODS', 'ClientRole', 'client_role_base', 'OverrideStatus',                 'override_status',                   'STRING',    10, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'ClientRole', 'ClientRolePK', 'STRING', 'client_role_base_temp', 'client_role_id', 'STRING', 'client_role_temp', 'client_role_id', 'INT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientRole', 'ClientDetailFK', 'STRING', 'client_role_base_temp', 'client_detail_id', 'STRING', 'client_role_temp', 'client_detail_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientRole', 'AgentFK', 'STRING', 'client_role_base_temp', 'agent_id', 'STRING', 'client_role_temp', 'agent_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientRole', 'PreferenceFK', 'STRING', 'client_role_base_temp', 'preference_id', 'STRING', 'client_role_temp', 'preference_id', 'INT', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientRole', 'TaxProfileFK', 'STRING', 'client_role_base_temp', 'tax_profile_id', 'STRING', 'client_role_temp', 'tax_profile_id', 'INT', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientRole', 'RoleTypeCT', 'STRING', 'client_role_base_temp', 'role_type_code', 'STRING', 'client_role_temp', 'role_type_code', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientRole', 'NewIssuesEligibilityStatusCT', 'STRING', 'client_role_base_temp', 'new_issues_eligibility_status_code', 'STRING', 'client_role_temp', 'new_issues_eligibility_status_code', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientRole', 'NewIssuesEligibilityStartDate', 'STRING', 'client_role_base_temp', 'new_issues_eligibility_start_date', 'STRING', 'client_role_temp', 'new_issues_eligibility_start_date', 'TIMESTAMP', 8, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientRole', 'ReferenceID', 'STRING', 'client_role_base_temp', 'reference_id', 'STRING', 'client_role_temp', 'reference_id', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientRole', 'OverrideStatus', 'STRING', 'client_role_base_temp', 'override_status', 'STRING', 'client_role_temp', 'override_status', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- ── [O04] ClientDetail  (26 cols, IDs 3045-3070) ────────────────────────────
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3045, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'ClientDetailPK',           'client_detail_id',              'INT',        1, 0, 1, 1, GETUTCDATE()),
-  (3046, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'ClientIdentification',     'client_identification',         'STRING',     2, 1, 0, 1, GETUTCDATE()),
-  (3047, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'TaxIdentification',        'tax_identification',            'STRING',     3, 1, 0, 1, GETUTCDATE()),
-  (3048, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'LastName',                 'last_name',                     'STRING',     4, 1, 0, 1, GETUTCDATE()),
-  (3049, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'FirstName',                'first_name',                    'STRING',     5, 1, 0, 1, GETUTCDATE()),
-  (3050, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'MiddleName',               'middle_name',                   'STRING',     6, 1, 0, 1, GETUTCDATE()),
-  (3051, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'NamePrefix',               'name_prefix',                   'STRING',     7, 1, 0, 1, GETUTCDATE()),
-  (3052, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'NameSuffix',               'name_suffix',                   'STRING',     8, 1, 0, 1, GETUTCDATE()),
-  (3053, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'CorporateName',            'corporate_name',                'STRING',     9, 1, 0, 1, GETUTCDATE()),
-  (3054, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'BirthDate',                'birth_date',                    'TIMESTAMP', 10, 1, 0, 1, GETUTCDATE()),
-  (3055, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'MothersMaidenName',        'mothers_maiden_name',           'STRING',    11, 1, 0, 1, GETUTCDATE()),
-  (3056, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'Occupation',               'occupation',                    'STRING',    12, 1, 0, 1, GETUTCDATE()),
-  (3057, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'DateOfDeath',              'date_of_death',                 'TIMESTAMP', 13, 1, 0, 1, GETUTCDATE()),
-  (3058, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'Operator',                 'operator',                      'STRING',    14, 1, 0, 1, GETUTCDATE()),
-  (3059, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'MaintDateTime',            'maint_datetime',                'TIMESTAMP', 15, 1, 0, 1, GETUTCDATE()),
-  (3060, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'GenderCT',                 'gender_code',                   'STRING',    16, 1, 0, 1, GETUTCDATE()),
-  (3061, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'TrustTypeCT',              'trust_type_code',               'STRING',    17, 1, 0, 1, GETUTCDATE()),
-  (3062, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'StatusCT',                 'status_code',                   'STRING',    18, 1, 0, 1, GETUTCDATE()),
-  (3063, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'PrivacyInd',               'is_privacy',                    'BOOLEAN',   19, 1, 0, 1, GETUTCDATE()),
-  (3064, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'LastOFACCheckDate',        'last_ofac_check_date',          'TIMESTAMP', 20, 1, 0, 1, GETUTCDATE()),
-  (3065, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'StateOfDeathCT',           'state_of_death_code',           'STRING',    21, 1, 0, 1, GETUTCDATE()),
-  (3066, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'ResidentStateAtDeathCT',   'resident_state_at_death_code',  'STRING',    22, 1, 0, 1, GETUTCDATE()),
-  (3067, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'ProofOfDeathReceivedDate', 'proof_of_death_received_date',  'TIMESTAMP', 23, 1, 0, 1, GETUTCDATE()),
-  (3068, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'CaseTrackingProcess',      'case_tracking_process',         'STRING',    24, 1, 0, 1, GETUTCDATE()),
-  (3069, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'NotificationReceivedDate', 'notification_received_date',    'TIMESTAMP', 25, 1, 0, 1, GETUTCDATE()),
-  (3070, 'EQ_ODS', 'ClientDetail', 'client_detail_base', 'OverrideStatus',           'override_status',               'STRING',    26, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'ClientDetail', 'ClientDetailPK', 'STRING', 'client_detail_base_temp', 'client_detail_id', 'STRING', 'client_detail_temp', 'client_detail_id', 'INT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'ClientIdentification', 'STRING', 'client_detail_base_temp', 'client_identification', 'STRING', 'client_detail_temp', 'client_identification', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'TaxIdentification', 'STRING', 'client_detail_base_temp', 'tax_identification', 'STRING', 'client_detail_temp', 'tax_identification', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'LastName', 'STRING', 'client_detail_base_temp', 'last_name', 'STRING', 'client_detail_temp', 'last_name', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'FirstName', 'STRING', 'client_detail_base_temp', 'first_name', 'STRING', 'client_detail_temp', 'first_name', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'MiddleName', 'STRING', 'client_detail_base_temp', 'middle_name', 'STRING', 'client_detail_temp', 'middle_name', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'NamePrefix', 'STRING', 'client_detail_base_temp', 'name_prefix', 'STRING', 'client_detail_temp', 'name_prefix', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'NameSuffix', 'STRING', 'client_detail_base_temp', 'name_suffix', 'STRING', 'client_detail_temp', 'name_suffix', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'CorporateName', 'STRING', 'client_detail_base_temp', 'corporate_name', 'STRING', 'client_detail_temp', 'corporate_name', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'BirthDate', 'STRING', 'client_detail_base_temp', 'birth_date', 'STRING', 'client_detail_temp', 'birth_date', 'TIMESTAMP', 10, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'MothersMaidenName', 'STRING', 'client_detail_base_temp', 'mothers_maiden_name', 'STRING', 'client_detail_temp', 'mothers_maiden_name', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'Occupation', 'STRING', 'client_detail_base_temp', 'occupation', 'STRING', 'client_detail_temp', 'occupation', 'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'DateOfDeath', 'STRING', 'client_detail_base_temp', 'date_of_death', 'STRING', 'client_detail_temp', 'date_of_death', 'TIMESTAMP', 13, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'Operator', 'STRING', 'client_detail_base_temp', 'operator', 'STRING', 'client_detail_temp', 'operator', 'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'MaintDateTime', 'STRING', 'client_detail_base_temp', 'maint_datetime', 'STRING', 'client_detail_temp', 'maint_datetime', 'TIMESTAMP', 15, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'GenderCT', 'STRING', 'client_detail_base_temp', 'gender_code', 'STRING', 'client_detail_temp', 'gender_code', 'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'TrustTypeCT', 'STRING', 'client_detail_base_temp', 'trust_type_code', 'STRING', 'client_detail_temp', 'trust_type_code', 'STRING', 17, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'StatusCT', 'STRING', 'client_detail_base_temp', 'status_code', 'STRING', 'client_detail_temp', 'status_code', 'STRING', 18, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'PrivacyInd', 'STRING', 'client_detail_base_temp', 'is_privacy', 'STRING', 'client_detail_temp', 'is_privacy', 'BOOLEAN', 19, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'LastOFACCheckDate', 'STRING', 'client_detail_base_temp', 'last_ofac_check_date', 'STRING', 'client_detail_temp', 'last_ofac_check_date', 'TIMESTAMP', 20, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'StateOfDeathCT', 'STRING', 'client_detail_base_temp', 'state_of_death_code', 'STRING', 'client_detail_temp', 'state_of_death_code', 'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'ResidentStateAtDeathCT', 'STRING', 'client_detail_base_temp', 'resident_state_at_death_code', 'STRING', 'client_detail_temp', 'resident_state_at_death_code', 'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'ProofOfDeathReceivedDate', 'STRING', 'client_detail_base_temp', 'proof_of_death_received_date', 'STRING', 'client_detail_temp', 'proof_of_death_received_date', 'TIMESTAMP', 23, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'CaseTrackingProcess', 'STRING', 'client_detail_base_temp', 'case_tracking_process', 'STRING', 'client_detail_temp', 'case_tracking_process', 'STRING', 24, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'NotificationReceivedDate', 'STRING', 'client_detail_base_temp', 'notification_received_date', 'STRING', 'client_detail_temp', 'notification_received_date', 'TIMESTAMP', 25, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientDetail', 'OverrideStatus', 'STRING', 'client_detail_base_temp', 'override_status', 'STRING', 'client_detail_temp', 'override_status', 'STRING', 26, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- ── [O05] ContractClientAllocation  (6 cols, IDs 3071-3076) ─────────────────
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3071, 'EQ_ODS', 'ContractClientAllocation', 'contract_client_allocation_base', 'ContractClientAllocationPK', 'contract_client_allocation_id', 'INT',            1, 0, 1, 1, GETUTCDATE()),
-  (3072, 'EQ_ODS', 'ContractClientAllocation', 'contract_client_allocation_base', 'ContractClientFK',           'contract_client_id',            'INT',            2, 1, 0, 1, GETUTCDATE()),
-  (3073, 'EQ_ODS', 'ContractClientAllocation', 'contract_client_allocation_base', 'AllocationPercent',          'allocation_percent',            'DECIMAL(18,4)',  3, 1, 0, 1, GETUTCDATE()),
-  (3074, 'EQ_ODS', 'ContractClientAllocation', 'contract_client_allocation_base', 'AllocationDollars',          'allocation_dollars',            'DECIMAL(18,4)',  4, 1, 0, 1, GETUTCDATE()),
-  (3075, 'EQ_ODS', 'ContractClientAllocation', 'contract_client_allocation_base', 'SplitEqual',                 'is_split_equal',                'BOOLEAN',        5, 1, 0, 1, GETUTCDATE()),
-  (3076, 'EQ_ODS', 'ContractClientAllocation', 'contract_client_allocation_base', 'OverrideStatus',             'override_status',               'STRING',         6, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'ContractClientAllocation', 'ContractClientAllocationPK', 'STRING', 'contract_client_allocation_base_temp', 'contract_client_allocation_id', 'STRING', 'contract_client_allocation_temp', 'contract_client_allocation_id', 'INT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClientAllocation', 'ContractClientFK', 'STRING', 'contract_client_allocation_base_temp', 'contract_client_id', 'STRING', 'contract_client_allocation_temp', 'contract_client_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClientAllocation', 'AllocationPercent', 'STRING', 'contract_client_allocation_base_temp', 'allocation_percent', 'STRING', 'contract_client_allocation_temp', 'allocation_percent', 'DECIMAL(18,4)', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClientAllocation', 'AllocationDollars', 'STRING', 'contract_client_allocation_base_temp', 'allocation_dollars', 'STRING', 'contract_client_allocation_temp', 'allocation_dollars', 'DECIMAL(18,4)', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClientAllocation', 'SplitEqual', 'STRING', 'contract_client_allocation_base_temp', 'is_split_equal', 'STRING', 'contract_client_allocation_temp', 'is_split_equal', 'BOOLEAN', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractClientAllocation', 'OverrideStatus', 'STRING', 'contract_client_allocation_base_temp', 'override_status', 'STRING', 'contract_client_allocation_temp', 'override_status', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- ── [O06] Segment  (73 cols, IDs 3077-3149) ─────────────────────────────────
 -- Source for both vw_SEG_ContractPrimarySegment (SegmentFK IS NULL) and
 -- vw_SEG_ContractRiderSegment (SegmentFK IS NOT NULL) — same table, different filters.
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3077, 'EQ_ODS', 'Segment', 'segment_base', 'SegmentPK',                   'segment_id',                     'INT',            1, 0, 1, 1, GETUTCDATE()),
-  (3078, 'EQ_ODS', 'Segment', 'segment_base', 'SegmentFK',                   'parent_segment_id',              'INT',            2, 1, 0, 1, GETUTCDATE()),
-  (3079, 'EQ_ODS', 'Segment', 'segment_base', 'ProductStructureFK',          'product_structure_id',           'INT',            3, 1, 0, 1, GETUTCDATE()),
-  (3080, 'EQ_ODS', 'Segment', 'segment_base', 'ContractNumber',              'contract_number',                'STRING',         4, 1, 0, 1, GETUTCDATE()),
-  (3081, 'EQ_ODS', 'Segment', 'segment_base', 'EffectiveDate',               'effective_date',                 'TIMESTAMP',      5, 1, 0, 1, GETUTCDATE()),
-  (3082, 'EQ_ODS', 'Segment', 'segment_base', 'Amount',                      'amount',                         'DECIMAL(18,4)',  6, 1, 0, 1, GETUTCDATE()),
-  (3083, 'EQ_ODS', 'Segment', 'segment_base', 'QualNonQualCT',               'qual_non_qual_code',             'STRING',         7, 1, 0, 1, GETUTCDATE()),
-  (3084, 'EQ_ODS', 'Segment', 'segment_base', 'ExchangeInd',                 'is_exchange',                    'BOOLEAN',        8, 1, 0, 1, GETUTCDATE()),
-  (3085, 'EQ_ODS', 'Segment', 'segment_base', 'CostBasis',                   'cost_basis',                     'DECIMAL(18,4)',  9, 1, 0, 1, GETUTCDATE()),
-  (3086, 'EQ_ODS', 'Segment', 'segment_base', 'RecoveredCostBasis',          'recovered_cost_basis',           'DECIMAL(18,4)', 10, 1, 0, 1, GETUTCDATE()),
-  (3087, 'EQ_ODS', 'Segment', 'segment_base', 'TerminationDate',             'termination_date',               'TIMESTAMP',     11, 1, 0, 1, GETUTCDATE()),
-  (3088, 'EQ_ODS', 'Segment', 'segment_base', 'StatusChangeDate',            'status_change_date',             'TIMESTAMP',     12, 1, 0, 1, GETUTCDATE()),
-  (3089, 'EQ_ODS', 'Segment', 'segment_base', 'SegmentNameCT',               'segment_name_code',              'STRING',        13, 1, 0, 1, GETUTCDATE()),
-  (3090, 'EQ_ODS', 'Segment', 'segment_base', 'SegmentStatusCT',             'segment_status_code',            'STRING',        14, 1, 0, 1, GETUTCDATE()),
-  (3091, 'EQ_ODS', 'Segment', 'segment_base', 'OptionCodeCT',                'option_code',                    'STRING',        15, 1, 0, 1, GETUTCDATE()),
-  (3092, 'EQ_ODS', 'Segment', 'segment_base', 'IssueStateCT',                'issue_state_code',               'STRING',        16, 1, 0, 1, GETUTCDATE()),
-  (3093, 'EQ_ODS', 'Segment', 'segment_base', 'QualifiedTypeCT',             'qualified_type_code',            'STRING',        17, 1, 0, 1, GETUTCDATE()),
-  (3094, 'EQ_ODS', 'Segment', 'segment_base', 'QuoteDate',                   'quote_date',                     'TIMESTAMP',     18, 1, 0, 1, GETUTCDATE()),
-  (3095, 'EQ_ODS', 'Segment', 'segment_base', 'Charges',                     'charges',                        'DECIMAL(18,4)', 19, 1, 0, 1, GETUTCDATE()),
-  (3096, 'EQ_ODS', 'Segment', 'segment_base', 'Loads',                       'loads',                          'DECIMAL(18,4)', 20, 1, 0, 1, GETUTCDATE()),
-  (3097, 'EQ_ODS', 'Segment', 'segment_base', 'Fees',                        'fees',                           'DECIMAL(18,4)', 21, 1, 0, 1, GETUTCDATE()),
-  (3098, 'EQ_ODS', 'Segment', 'segment_base', 'TaxReportingGroup',           'tax_reporting_group',            'STRING',        22, 1, 0, 1, GETUTCDATE()),
-  (3099, 'EQ_ODS', 'Segment', 'segment_base', 'IssueDate',                   'issue_date',                     'TIMESTAMP',     23, 1, 0, 1, GETUTCDATE()),
-  (3100, 'EQ_ODS', 'Segment', 'segment_base', 'CashWithAppInd',              'is_cash_with_app',               'BOOLEAN',       24, 1, 0, 1, GETUTCDATE()),
-  (3101, 'EQ_ODS', 'Segment', 'segment_base', 'WaiverInEffect',              'is_waiver_in_effect',            'BOOLEAN',       25, 1, 0, 1, GETUTCDATE()),
-  (3102, 'EQ_ODS', 'Segment', 'segment_base', 'FreeAmountRemaining',         'free_amount_remaining',          'DECIMAL(18,4)', 26, 1, 0, 1, GETUTCDATE()),
-  (3103, 'EQ_ODS', 'Segment', 'segment_base', 'FreeAmount',                  'free_amount',                    'DECIMAL(18,4)', 27, 1, 0, 1, GETUTCDATE()),
-  (3104, 'EQ_ODS', 'Segment', 'segment_base', 'DateInEffect',                'date_in_effect',                 'TIMESTAMP',     28, 1, 0, 1, GETUTCDATE()),
-  (3105, 'EQ_ODS', 'Segment', 'segment_base', 'CreationOperator',            'creation_operator',              'STRING',        29, 1, 0, 1, GETUTCDATE()),
-  (3106, 'EQ_ODS', 'Segment', 'segment_base', 'CreationDate',                'creation_date',                  'TIMESTAMP',     30, 1, 0, 1, GETUTCDATE()),
-  (3107, 'EQ_ODS', 'Segment', 'segment_base', 'LastAnniversaryDate',         'last_anniversary_date',          'TIMESTAMP',     31, 1, 0, 1, GETUTCDATE()),
-  (3108, 'EQ_ODS', 'Segment', 'segment_base', 'ApplicationSignedDate',       'application_signed_date',        'TIMESTAMP',     32, 1, 0, 1, GETUTCDATE()),
-  (3109, 'EQ_ODS', 'Segment', 'segment_base', 'ApplicationReceivedDate',     'application_received_date',      'TIMESTAMP',     33, 1, 0, 1, GETUTCDATE()),
-  (3110, 'EQ_ODS', 'Segment', 'segment_base', 'SavingsPercent',              'savings_percent',                'DECIMAL(18,4)', 34, 1, 0, 1, GETUTCDATE()),
-  (3111, 'EQ_ODS', 'Segment', 'segment_base', 'AnnualInsuranceAmount',       'annual_insurance_amount',        'DECIMAL(18,4)', 35, 1, 0, 1, GETUTCDATE()),
-  (3112, 'EQ_ODS', 'Segment', 'segment_base', 'AnnualInvestmentAmount',      'annual_investment_amount',       'DECIMAL(18,4)', 36, 1, 0, 1, GETUTCDATE()),
-  (3113, 'EQ_ODS', 'Segment', 'segment_base', 'DismembermentPercent',        'dismemberment_percent',          'DECIMAL(18,4)', 37, 1, 0, 1, GETUTCDATE()),
-  (3114, 'EQ_ODS', 'Segment', 'segment_base', 'PolicyDeliveryDate',          'policy_delivery_date',           'TIMESTAMP',     38, 1, 0, 1, GETUTCDATE()),
-  (3115, 'EQ_ODS', 'Segment', 'segment_base', 'WaiveFreeLookIndicator',      'is_waive_free_look',             'BOOLEAN',       39, 1, 0, 1, GETUTCDATE()),
-  (3116, 'EQ_ODS', 'Segment', 'segment_base', 'FreeLookDaysOverride',        'free_look_days_override',        'INT',           40, 1, 0, 1, GETUTCDATE()),
-  (3117, 'EQ_ODS', 'Segment', 'segment_base', 'FreeLookEndDate',             'free_look_end_date',             'TIMESTAMP',     41, 1, 0, 1, GETUTCDATE()),
-  (3118, 'EQ_ODS', 'Segment', 'segment_base', 'PointInScaleIndicator',       'is_point_in_scale',              'BOOLEAN',       42, 1, 0, 1, GETUTCDATE()),
-  (3119, 'EQ_ODS', 'Segment', 'segment_base', 'ChargeDeductDivisionInd',     'is_charge_deduct_division',      'BOOLEAN',       43, 1, 0, 1, GETUTCDATE()),
-  (3120, 'EQ_ODS', 'Segment', 'segment_base', 'DialableSalesLoadPercentage', 'dialable_sales_load_percentage', 'DECIMAL(18,4)', 44, 1, 0, 1, GETUTCDATE()),
-  (3121, 'EQ_ODS', 'Segment', 'segment_base', 'ChargeDeductAmount',          'charge_deduct_amount',           'DECIMAL(18,4)', 45, 1, 0, 1, GETUTCDATE()),
-  (3122, 'EQ_ODS', 'Segment', 'segment_base', 'RiderNumber',                 'rider_number',                   'INT',           46, 1, 0, 1, GETUTCDATE()),
-  (3123, 'EQ_ODS', 'Segment', 'segment_base', 'CommitmentIndicator',         'is_commitment',                  'BOOLEAN',       47, 1, 0, 1, GETUTCDATE()),
-  (3124, 'EQ_ODS', 'Segment', 'segment_base', 'CommitmentAmount',            'commitment_amount',              'DECIMAL(18,4)', 48, 1, 0, 1, GETUTCDATE()),
-  (3125, 'EQ_ODS', 'Segment', 'segment_base', 'ChargeCodeStatus',            'charge_code_status',             'STRING',        49, 1, 0, 1, GETUTCDATE()),
-  (3126, 'EQ_ODS', 'Segment', 'segment_base', 'ROTHConvInd',                 'is_roth_conversion',             'BOOLEAN',       50, 1, 0, 1, GETUTCDATE()),
-  (3127, 'EQ_ODS', 'Segment', 'segment_base', 'DateOfDeathValue',            'date_of_death_value',            'DECIMAL(18,4)', 51, 1, 0, 1, GETUTCDATE()),
-  (3128, 'EQ_ODS', 'Segment', 'segment_base', 'SuppOriginalContractNumber',  'supp_original_contract_number',  'STRING',        52, 1, 0, 1, GETUTCDATE()),
-  (3129, 'EQ_ODS', 'Segment', 'segment_base', 'OpenClaimEndDate',            'open_claim_end_date',            'TIMESTAMP',     53, 1, 0, 1, GETUTCDATE()),
-  (3130, 'EQ_ODS', 'Segment', 'segment_base', 'AnnuitizationValue',          'annuitization_value',            'DECIMAL(18,4)', 54, 1, 0, 1, GETUTCDATE()),
-  (3131, 'EQ_ODS', 'Segment', 'segment_base', 'CasetrackingOptionCT',        'casetracking_option_code',       'STRING',        55, 1, 0, 1, GETUTCDATE()),
-  (3132, 'EQ_ODS', 'Segment', 'segment_base', 'PrintLine1',                  'print_line_1',                   'STRING',        56, 1, 0, 1, GETUTCDATE()),
-  (3133, 'EQ_ODS', 'Segment', 'segment_base', 'PrintLine2',                  'print_line_2',                   'STRING',        57, 1, 0, 1, GETUTCDATE()),
-  (3134, 'EQ_ODS', 'Segment', 'segment_base', 'TotalActiveBeneficiaries',    'total_active_beneficiaries',     'INT',           58, 1, 0, 1, GETUTCDATE()),
-  (3135, 'EQ_ODS', 'Segment', 'segment_base', 'RemainingBeneficiaries',      'remaining_beneficiaries',        'INT',           59, 1, 0, 1, GETUTCDATE()),
-  (3136, 'EQ_ODS', 'Segment', 'segment_base', 'SettlementAmount',            'settlement_amount',              'DECIMAL(18,4)', 60, 1, 0, 1, GETUTCDATE()),
-  (3137, 'EQ_ODS', 'Segment', 'segment_base', 'LastSettlementValDate',       'last_settlement_val_date',       'TIMESTAMP',     61, 1, 0, 1, GETUTCDATE()),
-  (3138, 'EQ_ODS', 'Segment', 'segment_base', 'ContractTypeCT',              'contract_type_code',             'STRING',        62, 1, 0, 1, GETUTCDATE()),
-  (3139, 'EQ_ODS', 'Segment', 'segment_base', 'TotalFaceAmount',             'total_face_amount',              'DECIMAL(18,4)', 63, 1, 0, 1, GETUTCDATE()),
-  (3140, 'EQ_ODS', 'Segment', 'segment_base', 'IncomeStartDate',             'income_start_date',              'TIMESTAMP',     64, 1, 0, 1, GETUTCDATE()),
-  (3141, 'EQ_ODS', 'Segment', 'segment_base', 'IncomeStartAge',              'income_start_age',               'INT',           65, 1, 0, 1, GETUTCDATE()),
-  (3142, 'EQ_ODS', 'Segment', 'segment_base', 'ExtendedIncomePeriodDate',    'extended_income_period_date',    'TIMESTAMP',     66, 1, 0, 1, GETUTCDATE()),
-  (3143, 'EQ_ODS', 'Segment', 'segment_base', 'BenefitBase',                 'benefit_base',                   'DECIMAL(18,4)', 67, 1, 0, 1, GETUTCDATE()),
-  (3144, 'EQ_ODS', 'Segment', 'segment_base', 'BenefitBaseLastValDate',      'benefit_base_last_val_date',     'TIMESTAMP',     68, 1, 0, 1, GETUTCDATE()),
-  (3145, 'EQ_ODS', 'Segment', 'segment_base', 'IncomeWDAmount',              'income_wd_amount',               'DECIMAL(18,4)', 69, 1, 0, 1, GETUTCDATE()),
-  (3146, 'EQ_ODS', 'Segment', 'segment_base', 'RemainingIncomeWDAmount',     'remaining_income_wd_amount',     'DECIMAL(18,4)', 70, 1, 0, 1, GETUTCDATE()),
-  (3147, 'EQ_ODS', 'Segment', 'segment_base', 'SysGainAccum',                'sys_gain_accum',                 'DECIMAL(18,4)', 71, 1, 0, 1, GETUTCDATE()),
-  (3148, 'EQ_ODS', 'Segment', 'segment_base', 'BillScheduleFK',              'bill_schedule_id',               'INT',           72, 1, 0, 1, GETUTCDATE()),
-  (3149, 'EQ_ODS', 'Segment', 'segment_base', 'FirstNotifyDate',             'first_notify_date',              'TIMESTAMP',     73, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'Segment', 'SegmentPK', 'STRING', 'segment_base_temp', 'segment_id', 'STRING', 'segment_temp', 'segment_id', 'INT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'SegmentFK', 'STRING', 'segment_base_temp', 'parent_segment_id', 'STRING', 'segment_temp', 'parent_segment_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'ProductStructureFK', 'STRING', 'segment_base_temp', 'product_structure_id', 'STRING', 'segment_temp', 'product_structure_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'ContractNumber', 'STRING', 'segment_base_temp', 'contract_number', 'STRING', 'segment_temp', 'contract_number', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'EffectiveDate', 'STRING', 'segment_base_temp', 'effective_date', 'STRING', 'segment_temp', 'effective_date', 'TIMESTAMP', 5, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'Amount', 'STRING', 'segment_base_temp', 'amount', 'STRING', 'segment_temp', 'amount', 'DECIMAL(18,4)', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'QualNonQualCT', 'STRING', 'segment_base_temp', 'qual_non_qual_code', 'STRING', 'segment_temp', 'qual_non_qual_code', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'ExchangeInd', 'STRING', 'segment_base_temp', 'is_exchange', 'STRING', 'segment_temp', 'is_exchange', 'BOOLEAN', 8, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'CostBasis', 'STRING', 'segment_base_temp', 'cost_basis', 'STRING', 'segment_temp', 'cost_basis', 'DECIMAL(18,4)', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'RecoveredCostBasis', 'STRING', 'segment_base_temp', 'recovered_cost_basis', 'STRING', 'segment_temp', 'recovered_cost_basis', 'DECIMAL(18,4)', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'TerminationDate', 'STRING', 'segment_base_temp', 'termination_date', 'STRING', 'segment_temp', 'termination_date', 'TIMESTAMP', 11, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'StatusChangeDate', 'STRING', 'segment_base_temp', 'status_change_date', 'STRING', 'segment_temp', 'status_change_date', 'TIMESTAMP', 12, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'SegmentNameCT', 'STRING', 'segment_base_temp', 'segment_name_code', 'STRING', 'segment_temp', 'segment_name_code', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'SegmentStatusCT', 'STRING', 'segment_base_temp', 'segment_status_code', 'STRING', 'segment_temp', 'segment_status_code', 'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'OptionCodeCT', 'STRING', 'segment_base_temp', 'option_code', 'STRING', 'segment_temp', 'option_code', 'STRING', 15, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'IssueStateCT', 'STRING', 'segment_base_temp', 'issue_state_code', 'STRING', 'segment_temp', 'issue_state_code', 'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'QualifiedTypeCT', 'STRING', 'segment_base_temp', 'qualified_type_code', 'STRING', 'segment_temp', 'qualified_type_code', 'STRING', 17, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'QuoteDate', 'STRING', 'segment_base_temp', 'quote_date', 'STRING', 'segment_temp', 'quote_date', 'TIMESTAMP', 18, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'Charges', 'STRING', 'segment_base_temp', 'charges', 'STRING', 'segment_temp', 'charges', 'DECIMAL(18,4)', 19, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'Loads', 'STRING', 'segment_base_temp', 'loads', 'STRING', 'segment_temp', 'loads', 'DECIMAL(18,4)', 20, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'Fees', 'STRING', 'segment_base_temp', 'fees', 'STRING', 'segment_temp', 'fees', 'DECIMAL(18,4)', 21, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'TaxReportingGroup', 'STRING', 'segment_base_temp', 'tax_reporting_group', 'STRING', 'segment_temp', 'tax_reporting_group', 'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'IssueDate', 'STRING', 'segment_base_temp', 'issue_date', 'STRING', 'segment_temp', 'issue_date', 'TIMESTAMP', 23, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'CashWithAppInd', 'STRING', 'segment_base_temp', 'is_cash_with_app', 'STRING', 'segment_temp', 'is_cash_with_app', 'BOOLEAN', 24, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'WaiverInEffect', 'STRING', 'segment_base_temp', 'is_waiver_in_effect', 'STRING', 'segment_temp', 'is_waiver_in_effect', 'BOOLEAN', 25, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'FreeAmountRemaining', 'STRING', 'segment_base_temp', 'free_amount_remaining', 'STRING', 'segment_temp', 'free_amount_remaining', 'DECIMAL(18,4)', 26, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'FreeAmount', 'STRING', 'segment_base_temp', 'free_amount', 'STRING', 'segment_temp', 'free_amount', 'DECIMAL(18,4)', 27, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'DateInEffect', 'STRING', 'segment_base_temp', 'date_in_effect', 'STRING', 'segment_temp', 'date_in_effect', 'TIMESTAMP', 28, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'CreationOperator', 'STRING', 'segment_base_temp', 'creation_operator', 'STRING', 'segment_temp', 'creation_operator', 'STRING', 29, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'CreationDate', 'STRING', 'segment_base_temp', 'creation_date', 'STRING', 'segment_temp', 'creation_date', 'TIMESTAMP', 30, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'LastAnniversaryDate', 'STRING', 'segment_base_temp', 'last_anniversary_date', 'STRING', 'segment_temp', 'last_anniversary_date', 'TIMESTAMP', 31, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'ApplicationSignedDate', 'STRING', 'segment_base_temp', 'application_signed_date', 'STRING', 'segment_temp', 'application_signed_date', 'TIMESTAMP', 32, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'ApplicationReceivedDate', 'STRING', 'segment_base_temp', 'application_received_date', 'STRING', 'segment_temp', 'application_received_date', 'TIMESTAMP', 33, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'SavingsPercent', 'STRING', 'segment_base_temp', 'savings_percent', 'STRING', 'segment_temp', 'savings_percent', 'DECIMAL(18,4)', 34, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'AnnualInsuranceAmount', 'STRING', 'segment_base_temp', 'annual_insurance_amount', 'STRING', 'segment_temp', 'annual_insurance_amount', 'DECIMAL(18,4)', 35, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'AnnualInvestmentAmount', 'STRING', 'segment_base_temp', 'annual_investment_amount', 'STRING', 'segment_temp', 'annual_investment_amount', 'DECIMAL(18,4)', 36, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'DismembermentPercent', 'STRING', 'segment_base_temp', 'dismemberment_percent', 'STRING', 'segment_temp', 'dismemberment_percent', 'DECIMAL(18,4)', 37, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'PolicyDeliveryDate', 'STRING', 'segment_base_temp', 'policy_delivery_date', 'STRING', 'segment_temp', 'policy_delivery_date', 'TIMESTAMP', 38, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'WaiveFreeLookIndicator', 'STRING', 'segment_base_temp', 'is_waive_free_look', 'STRING', 'segment_temp', 'is_waive_free_look', 'BOOLEAN', 39, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'FreeLookDaysOverride', 'STRING', 'segment_base_temp', 'free_look_days_override', 'STRING', 'segment_temp', 'free_look_days_override', 'INT', 40, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'FreeLookEndDate', 'STRING', 'segment_base_temp', 'free_look_end_date', 'STRING', 'segment_temp', 'free_look_end_date', 'TIMESTAMP', 41, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'PointInScaleIndicator', 'STRING', 'segment_base_temp', 'is_point_in_scale', 'STRING', 'segment_temp', 'is_point_in_scale', 'BOOLEAN', 42, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'ChargeDeductDivisionInd', 'STRING', 'segment_base_temp', 'is_charge_deduct_division', 'STRING', 'segment_temp', 'is_charge_deduct_division', 'BOOLEAN', 43, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'DialableSalesLoadPercentage', 'STRING', 'segment_base_temp', 'dialable_sales_load_percentage', 'STRING', 'segment_temp', 'dialable_sales_load_percentage', 'DECIMAL(18,4)', 44, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'ChargeDeductAmount', 'STRING', 'segment_base_temp', 'charge_deduct_amount', 'STRING', 'segment_temp', 'charge_deduct_amount', 'DECIMAL(18,4)', 45, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'RiderNumber', 'STRING', 'segment_base_temp', 'rider_number', 'STRING', 'segment_temp', 'rider_number', 'INT', 46, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'CommitmentIndicator', 'STRING', 'segment_base_temp', 'is_commitment', 'STRING', 'segment_temp', 'is_commitment', 'BOOLEAN', 47, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'CommitmentAmount', 'STRING', 'segment_base_temp', 'commitment_amount', 'STRING', 'segment_temp', 'commitment_amount', 'DECIMAL(18,4)', 48, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'ChargeCodeStatus', 'STRING', 'segment_base_temp', 'charge_code_status', 'STRING', 'segment_temp', 'charge_code_status', 'STRING', 49, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'ROTHConvInd', 'STRING', 'segment_base_temp', 'is_roth_conversion', 'STRING', 'segment_temp', 'is_roth_conversion', 'BOOLEAN', 50, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'DateOfDeathValue', 'STRING', 'segment_base_temp', 'date_of_death_value', 'STRING', 'segment_temp', 'date_of_death_value', 'DECIMAL(18,4)', 51, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'SuppOriginalContractNumber', 'STRING', 'segment_base_temp', 'supp_original_contract_number', 'STRING', 'segment_temp', 'supp_original_contract_number', 'STRING', 52, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'OpenClaimEndDate', 'STRING', 'segment_base_temp', 'open_claim_end_date', 'STRING', 'segment_temp', 'open_claim_end_date', 'TIMESTAMP', 53, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'AnnuitizationValue', 'STRING', 'segment_base_temp', 'annuitization_value', 'STRING', 'segment_temp', 'annuitization_value', 'DECIMAL(18,4)', 54, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'CasetrackingOptionCT', 'STRING', 'segment_base_temp', 'casetracking_option_code', 'STRING', 'segment_temp', 'casetracking_option_code', 'STRING', 55, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'PrintLine1', 'STRING', 'segment_base_temp', 'print_line_1', 'STRING', 'segment_temp', 'print_line_1', 'STRING', 56, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'PrintLine2', 'STRING', 'segment_base_temp', 'print_line_2', 'STRING', 'segment_temp', 'print_line_2', 'STRING', 57, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'TotalActiveBeneficiaries', 'STRING', 'segment_base_temp', 'total_active_beneficiaries', 'STRING', 'segment_temp', 'total_active_beneficiaries', 'INT', 58, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'RemainingBeneficiaries', 'STRING', 'segment_base_temp', 'remaining_beneficiaries', 'STRING', 'segment_temp', 'remaining_beneficiaries', 'INT', 59, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'SettlementAmount', 'STRING', 'segment_base_temp', 'settlement_amount', 'STRING', 'segment_temp', 'settlement_amount', 'DECIMAL(18,4)', 60, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'LastSettlementValDate', 'STRING', 'segment_base_temp', 'last_settlement_val_date', 'STRING', 'segment_temp', 'last_settlement_val_date', 'TIMESTAMP', 61, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'ContractTypeCT', 'STRING', 'segment_base_temp', 'contract_type_code', 'STRING', 'segment_temp', 'contract_type_code', 'STRING', 62, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'TotalFaceAmount', 'STRING', 'segment_base_temp', 'total_face_amount', 'STRING', 'segment_temp', 'total_face_amount', 'DECIMAL(18,4)', 63, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'IncomeStartDate', 'STRING', 'segment_base_temp', 'income_start_date', 'STRING', 'segment_temp', 'income_start_date', 'TIMESTAMP', 64, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'IncomeStartAge', 'STRING', 'segment_base_temp', 'income_start_age', 'STRING', 'segment_temp', 'income_start_age', 'INT', 65, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'ExtendedIncomePeriodDate', 'STRING', 'segment_base_temp', 'extended_income_period_date', 'STRING', 'segment_temp', 'extended_income_period_date', 'TIMESTAMP', 66, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'BenefitBase', 'STRING', 'segment_base_temp', 'benefit_base', 'STRING', 'segment_temp', 'benefit_base', 'DECIMAL(18,4)', 67, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'BenefitBaseLastValDate', 'STRING', 'segment_base_temp', 'benefit_base_last_val_date', 'STRING', 'segment_temp', 'benefit_base_last_val_date', 'TIMESTAMP', 68, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'IncomeWDAmount', 'STRING', 'segment_base_temp', 'income_wd_amount', 'STRING', 'segment_temp', 'income_wd_amount', 'DECIMAL(18,4)', 69, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'RemainingIncomeWDAmount', 'STRING', 'segment_base_temp', 'remaining_income_wd_amount', 'STRING', 'segment_temp', 'remaining_income_wd_amount', 'DECIMAL(18,4)', 70, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'SysGainAccum', 'STRING', 'segment_base_temp', 'sys_gain_accum', 'STRING', 'segment_temp', 'sys_gain_accum', 'DECIMAL(18,4)', 71, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'BillScheduleFK', 'STRING', 'segment_base_temp', 'bill_schedule_id', 'STRING', 'segment_temp', 'bill_schedule_id', 'INT', 72, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Segment', 'FirstNotifyDate', 'STRING', 'segment_base_temp', 'first_notify_date', 'STRING', 'segment_temp', 'first_notify_date', 'TIMESTAMP', 73, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
 -- ── [O07] Agent (ODS)  (18 cols, IDs 3150-3167) ─────────────────────────────
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3150, 'EQ_ODS', 'Agent', 'agent_ods_base', 'AgentPK',                      'agent_id',                        'INT',        1, 0, 1, 1, GETUTCDATE()),
-  (3151, 'EQ_ODS', 'Agent', 'agent_ods_base', 'CompanyFK',                    'company_id',                      'INT',        2, 1, 0, 1, GETUTCDATE()),
-  (3152, 'EQ_ODS', 'Agent', 'agent_ods_base', 'HireDate',                     'hire_date',                       'TIMESTAMP',  3, 1, 0, 1, GETUTCDATE()),
-  (3153, 'EQ_ODS', 'Agent', 'agent_ods_base', 'TerminationDate',              'termination_date',                'TIMESTAMP',  4, 1, 0, 1, GETUTCDATE()),
-  (3154, 'EQ_ODS', 'Agent', 'agent_ods_base', 'AgentStatusCT',                'agent_status_code',               'STRING',     5, 1, 0, 1, GETUTCDATE()),
-  (3155, 'EQ_ODS', 'Agent', 'agent_ods_base', 'AgentTypeCT',                  'agent_type_code',                 'STRING',     6, 1, 0, 1, GETUTCDATE()),
-  (3156, 'EQ_ODS', 'Agent', 'agent_ods_base', 'WithholdingStatus',            'withholding_status',              'STRING',     7, 1, 0, 1, GETUTCDATE()),
-  (3157, 'EQ_ODS', 'Agent', 'agent_ods_base', 'Department',                   'department',                      'STRING',     8, 1, 0, 1, GETUTCDATE()),
-  (3158, 'EQ_ODS', 'Agent', 'agent_ods_base', 'Region',                       'region',                          'STRING',     9, 1, 0, 1, GETUTCDATE()),
-  (3159, 'EQ_ODS', 'Agent', 'agent_ods_base', 'Branch',                       'branch',                          'STRING',    10, 1, 0, 1, GETUTCDATE()),
-  (3160, 'EQ_ODS', 'Agent', 'agent_ods_base', 'NPN',                          'npn',                             'STRING',    11, 1, 0, 1, GETUTCDATE()),
-  (3161, 'EQ_ODS', 'Agent', 'agent_ods_base', 'IntDebitBalStatusCT',          'int_debit_bal_status_code',       'STRING',    12, 1, 0, 1, GETUTCDATE()),
-  (3162, 'EQ_ODS', 'Agent', 'agent_ods_base', 'HoldCommStatus',               'hold_comm_status',                'STRING',    13, 1, 0, 1, GETUTCDATE()),
-  (3163, 'EQ_ODS', 'Agent', 'agent_ods_base', 'Operator',                     'operator',                        'STRING',    14, 1, 0, 1, GETUTCDATE()),
-  (3164, 'EQ_ODS', 'Agent', 'agent_ods_base', 'MaintDateTime',                'maint_datetime',                  'TIMESTAMP', 15, 1, 0, 1, GETUTCDATE()),
-  (3165, 'EQ_ODS', 'Agent', 'agent_ods_base', 'DisbursementAddressTypeCT',    'disbursement_address_type_code',  'STRING',    16, 1, 0, 1, GETUTCDATE()),
-  (3166, 'EQ_ODS', 'Agent', 'agent_ods_base', 'CorrespondenceAddressTypeCT',  'correspondence_address_type_code','STRING',    17, 1, 0, 1, GETUTCDATE()),
-  (3167, 'EQ_ODS', 'Agent', 'agent_ods_base', 'RehireEligibleDate',           'rehire_eligible_date',            'TIMESTAMP', 18, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'Agent', 'AgentPK', 'STRING', 'agent_ods_base_temp', 'agent_id', 'STRING', 'agent_ods_temp', 'agent_id', 'INT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'CompanyFK', 'STRING', 'agent_ods_base_temp', 'company_id', 'STRING', 'agent_ods_temp', 'company_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'HireDate', 'STRING', 'agent_ods_base_temp', 'hire_date', 'STRING', 'agent_ods_temp', 'hire_date', 'TIMESTAMP', 3, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'TerminationDate', 'STRING', 'agent_ods_base_temp', 'termination_date', 'STRING', 'agent_ods_temp', 'termination_date', 'TIMESTAMP', 4, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'AgentStatusCT', 'STRING', 'agent_ods_base_temp', 'agent_status_code', 'STRING', 'agent_ods_temp', 'agent_status_code', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'AgentTypeCT', 'STRING', 'agent_ods_base_temp', 'agent_type_code', 'STRING', 'agent_ods_temp', 'agent_type_code', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'WithholdingStatus', 'STRING', 'agent_ods_base_temp', 'withholding_status', 'STRING', 'agent_ods_temp', 'withholding_status', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'Department', 'STRING', 'agent_ods_base_temp', 'department', 'STRING', 'agent_ods_temp', 'department', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'Region', 'STRING', 'agent_ods_base_temp', 'region', 'STRING', 'agent_ods_temp', 'region', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'Branch', 'STRING', 'agent_ods_base_temp', 'branch', 'STRING', 'agent_ods_temp', 'branch', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'NPN', 'STRING', 'agent_ods_base_temp', 'npn', 'STRING', 'agent_ods_temp', 'npn', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'IntDebitBalStatusCT', 'STRING', 'agent_ods_base_temp', 'int_debit_bal_status_code', 'STRING', 'agent_ods_temp', 'int_debit_bal_status_code', 'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'HoldCommStatus', 'STRING', 'agent_ods_base_temp', 'hold_comm_status', 'STRING', 'agent_ods_temp', 'hold_comm_status', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'Operator', 'STRING', 'agent_ods_base_temp', 'operator', 'STRING', 'agent_ods_temp', 'operator', 'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'MaintDateTime', 'STRING', 'agent_ods_base_temp', 'maint_datetime', 'STRING', 'agent_ods_temp', 'maint_datetime', 'TIMESTAMP', 15, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'DisbursementAddressTypeCT', 'STRING', 'agent_ods_base_temp', 'disbursement_address_type_code', 'STRING', 'agent_ods_temp', 'disbursement_address_type_code', 'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'CorrespondenceAddressTypeCT', 'STRING', 'agent_ods_base_temp', 'correspondence_address_type_code', 'STRING', 'agent_ods_temp', 'correspondence_address_type_code', 'STRING', 17, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Agent', 'RehireEligibleDate', 'STRING', 'agent_ods_base_temp', 'rehire_eligible_date', 'STRING', 'agent_ods_temp', 'rehire_eligible_date', 'TIMESTAMP', 18, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
 -- ── [O08] ContractTreaty  (20 cols, IDs 3168-3187) ──────────────────────────
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3168, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'ContractTreatyPK',        'contract_treaty_id',         'INT',            1, 0, 1, 1, GETUTCDATE()),
-  (3169, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'SegmentFK',               'segment_id',                 'INT',            2, 1, 0, 1, GETUTCDATE()),
-  (3170, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'TreatyFK',                'treaty_id',                  'INT',            3, 1, 0, 1, GETUTCDATE()),
-  (3171, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'ReinsuranceIndicatorCT',  'reinsurance_indicator_code', 'STRING',         4, 1, 0, 1, GETUTCDATE()),
-  (3172, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'EffectiveDate',           'effective_date',             'TIMESTAMP',      5, 1, 0, 1, GETUTCDATE()),
-  (3173, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'ReinsuranceClassCT',      'reinsurance_class_code',     'STRING',         6, 1, 0, 1, GETUTCDATE()),
-  (3174, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'RetentionAmount',         'retention_amount',           'DECIMAL(18,4)',  7, 1, 0, 1, GETUTCDATE()),
-  (3175, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'PoolPercentage',          'pool_percentage',            'DECIMAL(18,4)',  8, 1, 0, 1, GETUTCDATE()),
-  (3176, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'ReinsuranceTypeCT',       'reinsurance_type_code',      'STRING',         9, 1, 0, 1, GETUTCDATE()),
-  (3177, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'TableRatingCT',           'table_rating_code',          'STRING',        10, 1, 0, 1, GETUTCDATE()),
-  (3178, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'FlatExtra',               'flat_extra',                 'DECIMAL(18,4)', 11, 1, 0, 1, GETUTCDATE()),
-  (3179, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'FlatExtraAge',            'flat_extra_age',             'INT',           12, 1, 0, 1, GETUTCDATE()),
-  (3180, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'FlatExtraDuration',       'flat_extra_duration',        'INT',           13, 1, 0, 1, GETUTCDATE()),
-  (3181, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'PercentExtra',            'percent_extra',              'DECIMAL(18,4)', 14, 1, 0, 1, GETUTCDATE()),
-  (3182, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'PercentExtraAge',         'percent_extra_age',          'INT',           15, 1, 0, 1, GETUTCDATE()),
-  (3183, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'PercentExtraDuration',    'percent_extra_duration',     'INT',           16, 1, 0, 1, GETUTCDATE()),
-  (3184, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'MaxReinsuranceAmount',    'max_reinsurance_amount',     'DECIMAL(18,4)', 17, 1, 0, 1, GETUTCDATE()),
-  (3185, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'TreatyOverrideInd',       'is_treaty_override',         'BOOLEAN',       18, 1, 0, 1, GETUTCDATE()),
-  (3186, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'PolicyOverrideInd',       'is_policy_override',         'BOOLEAN',       19, 1, 0, 1, GETUTCDATE()),
-  (3187, 'EQ_ODS', 'ContractTreaty', 'contract_treaty_base', 'Status',                  'status',                     'STRING',        20, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'ContractTreaty', 'ContractTreatyPK', 'STRING', 'contract_treaty_base_temp', 'contract_treaty_id', 'STRING', 'contract_treaty_temp', 'contract_treaty_id', 'INT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'SegmentFK', 'STRING', 'contract_treaty_base_temp', 'segment_id', 'STRING', 'contract_treaty_temp', 'segment_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'TreatyFK', 'STRING', 'contract_treaty_base_temp', 'treaty_id', 'STRING', 'contract_treaty_temp', 'treaty_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'ReinsuranceIndicatorCT', 'STRING', 'contract_treaty_base_temp', 'reinsurance_indicator_code', 'STRING', 'contract_treaty_temp', 'reinsurance_indicator_code', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'EffectiveDate', 'STRING', 'contract_treaty_base_temp', 'effective_date', 'STRING', 'contract_treaty_temp', 'effective_date', 'TIMESTAMP', 5, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'ReinsuranceClassCT', 'STRING', 'contract_treaty_base_temp', 'reinsurance_class_code', 'STRING', 'contract_treaty_temp', 'reinsurance_class_code', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'RetentionAmount', 'STRING', 'contract_treaty_base_temp', 'retention_amount', 'STRING', 'contract_treaty_temp', 'retention_amount', 'DECIMAL(18,4)', 7, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'PoolPercentage', 'STRING', 'contract_treaty_base_temp', 'pool_percentage', 'STRING', 'contract_treaty_temp', 'pool_percentage', 'DECIMAL(18,4)', 8, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'ReinsuranceTypeCT', 'STRING', 'contract_treaty_base_temp', 'reinsurance_type_code', 'STRING', 'contract_treaty_temp', 'reinsurance_type_code', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'TableRatingCT', 'STRING', 'contract_treaty_base_temp', 'table_rating_code', 'STRING', 'contract_treaty_temp', 'table_rating_code', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'FlatExtra', 'STRING', 'contract_treaty_base_temp', 'flat_extra', 'STRING', 'contract_treaty_temp', 'flat_extra', 'DECIMAL(18,4)', 11, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'FlatExtraAge', 'STRING', 'contract_treaty_base_temp', 'flat_extra_age', 'STRING', 'contract_treaty_temp', 'flat_extra_age', 'INT', 12, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'FlatExtraDuration', 'STRING', 'contract_treaty_base_temp', 'flat_extra_duration', 'STRING', 'contract_treaty_temp', 'flat_extra_duration', 'INT', 13, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'PercentExtra', 'STRING', 'contract_treaty_base_temp', 'percent_extra', 'STRING', 'contract_treaty_temp', 'percent_extra', 'DECIMAL(18,4)', 14, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'PercentExtraAge', 'STRING', 'contract_treaty_base_temp', 'percent_extra_age', 'STRING', 'contract_treaty_temp', 'percent_extra_age', 'INT', 15, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'PercentExtraDuration', 'STRING', 'contract_treaty_base_temp', 'percent_extra_duration', 'STRING', 'contract_treaty_temp', 'percent_extra_duration', 'INT', 16, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'MaxReinsuranceAmount', 'STRING', 'contract_treaty_base_temp', 'max_reinsurance_amount', 'STRING', 'contract_treaty_temp', 'max_reinsurance_amount', 'DECIMAL(18,4)', 17, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'TreatyOverrideInd', 'STRING', 'contract_treaty_base_temp', 'is_treaty_override', 'STRING', 'contract_treaty_temp', 'is_treaty_override', 'BOOLEAN', 18, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'PolicyOverrideInd', 'STRING', 'contract_treaty_base_temp', 'is_policy_override', 'STRING', 'contract_treaty_temp', 'is_policy_override', 'BOOLEAN', 19, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ContractTreaty', 'Status', 'STRING', 'contract_treaty_base_temp', 'status', 'STRING', 'contract_treaty_temp', 'status', 'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- ── [O09] Treaty  (10 cols, IDs 3188-3197) ──────────────────────────────────
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3188, 'EQ_ODS', 'Treaty', 'treaty_base', 'TreatyPK',             'treaty_id',              'INT',            1, 0, 1, 1, GETUTCDATE()),
-  (3189, 'EQ_ODS', 'Treaty', 'treaty_base', 'TreatyGroupFK',        'treaty_group_id',        'INT',            2, 1, 0, 1, GETUTCDATE()),
-  (3190, 'EQ_ODS', 'Treaty', 'treaty_base', 'StartDate',            'start_date',             'TIMESTAMP',      3, 1, 0, 1, GETUTCDATE()),
-  (3191, 'EQ_ODS', 'Treaty', 'treaty_base', 'StopDate',             'stop_date',              'TIMESTAMP',      4, 1, 0, 1, GETUTCDATE()),
-  (3192, 'EQ_ODS', 'Treaty', 'treaty_base', 'SettlementPeriod',     'settlement_period',      'INT',            5, 1, 0, 1, GETUTCDATE()),
-  (3193, 'EQ_ODS', 'Treaty', 'treaty_base', 'PaymentModeCT',        'payment_mode_code',      'STRING',         6, 1, 0, 1, GETUTCDATE()),
-  (3194, 'EQ_ODS', 'Treaty', 'treaty_base', 'CalculationModeCT',    'calculation_mode_code',  'STRING',         7, 1, 0, 1, GETUTCDATE()),
-  (3195, 'EQ_ODS', 'Treaty', 'treaty_base', 'LastCheckDate',        'last_check_date',        'TIMESTAMP',      8, 1, 0, 1, GETUTCDATE()),
-  (3196, 'EQ_ODS', 'Treaty', 'treaty_base', 'ReinsurerBalance',     'reinsurer_balance',      'DECIMAL(18,4)',  9, 1, 0, 1, GETUTCDATE()),
-  (3197, 'EQ_ODS', 'Treaty', 'treaty_base', 'CoinsurancePercentage','coinsurance_percentage', 'DECIMAL(18,4)', 10, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'Treaty', 'TreatyPK', 'STRING', 'treaty_base_temp', 'treaty_id', 'STRING', 'treaty_temp', 'treaty_id', 'INT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Treaty', 'TreatyGroupFK', 'STRING', 'treaty_base_temp', 'treaty_group_id', 'STRING', 'treaty_temp', 'treaty_group_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Treaty', 'StartDate', 'STRING', 'treaty_base_temp', 'start_date', 'STRING', 'treaty_temp', 'start_date', 'TIMESTAMP', 3, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Treaty', 'StopDate', 'STRING', 'treaty_base_temp', 'stop_date', 'STRING', 'treaty_temp', 'stop_date', 'TIMESTAMP', 4, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Treaty', 'SettlementPeriod', 'STRING', 'treaty_base_temp', 'settlement_period', 'STRING', 'treaty_temp', 'settlement_period', 'INT', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Treaty', 'PaymentModeCT', 'STRING', 'treaty_base_temp', 'payment_mode_code', 'STRING', 'treaty_temp', 'payment_mode_code', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Treaty', 'CalculationModeCT', 'STRING', 'treaty_base_temp', 'calculation_mode_code', 'STRING', 'treaty_temp', 'calculation_mode_code', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'Treaty', 'LastCheckDate', 'STRING', 'treaty_base_temp', 'last_check_date', 'STRING', 'treaty_temp', 'last_check_date', 'TIMESTAMP', 8, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'Treaty', 'ReinsurerBalance', 'STRING', 'treaty_base_temp', 'reinsurer_balance', 'STRING', 'treaty_temp', 'reinsurer_balance', 'DECIMAL(18,4)', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'Treaty', 'CoinsurancePercentage', 'STRING', 'treaty_base_temp', 'coinsurance_percentage', 'STRING', 'treaty_temp', 'coinsurance_percentage', 'DECIMAL(18,4)', 10, 1, 0, 0, '0', 1, GETUTCDATE());
 
 -- ── [O10] TreatyGroup  (2 cols, IDs 3198-3199) ──────────────────────────────
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3198, 'EQ_ODS', 'TreatyGroup', 'treaty_group_base', 'TreatyGroupPK',     'treaty_group_id',     'INT',    1, 0, 1, 1, GETUTCDATE()),
-  (3199, 'EQ_ODS', 'TreatyGroup', 'treaty_group_base', 'TreatyGroupNumber', 'treaty_group_number', 'STRING', 2, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'TreatyGroup', 'TreatyGroupPK', 'STRING', 'treaty_group_base_temp', 'treaty_group_id', 'STRING', 'treaty_group_temp', 'treaty_group_id', 'INT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'TreatyGroup', 'TreatyGroupNumber', 'STRING', 'treaty_group_base_temp', 'treaty_group_number', 'STRING', 'treaty_group_temp', 'treaty_group_number', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- ── [O11] EDITTrx  (38 cols, IDs 3200-3237) ─────────────────────────────────
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3200, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'EDITTrxPK',                    'edit_trx_id',                    'BIGINT',         1, 0, 1, 1, GETUTCDATE()),
-  (3201, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'ClientSetupFK',                'client_setup_id',                'INT',            2, 1, 0, 1, GETUTCDATE()),
-  (3202, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'EffectiveDate',                'effective_date',                 'TIMESTAMP',      3, 1, 0, 1, GETUTCDATE()),
-  (3203, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'Status',                       'status',                         'STRING',         4, 1, 0, 1, GETUTCDATE()),
-  (3204, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'PendingStatus',                'pending_status',                 'STRING',         5, 1, 0, 1, GETUTCDATE()),
-  (3205, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'SequenceNumber',               'sequence_number',                'INT',            6, 1, 0, 1, GETUTCDATE()),
-  (3206, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'TaxYear',                      'tax_year',                       'INT',            7, 1, 0, 1, GETUTCDATE()),
-  (3207, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'TrxAmount',                    'trx_amount',                     'DECIMAL(18,4)',  8, 1, 0, 1, GETUTCDATE()),
-  (3208, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'DueDate',                      'due_date',                       'TIMESTAMP',      9, 1, 0, 1, GETUTCDATE()),
-  (3209, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'TransactionTypeCT',            'transaction_type_code',          'STRING',        10, 1, 0, 1, GETUTCDATE()),
-  (3210, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'TrxIsRescheduledInd',          'is_trx_rescheduled',             'BOOLEAN',       11, 1, 0, 1, GETUTCDATE()),
-  (3211, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'ReapplyEDITTrxFK',             'reapply_edit_trx_id',            'BIGINT',        12, 1, 0, 1, GETUTCDATE()),
-  (3212, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'CommissionStatus',             'commission_status',              'STRING',        13, 1, 0, 1, GETUTCDATE()),
-  (3213, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'LookBackInd',                  'is_look_back',                   'BOOLEAN',       14, 1, 0, 1, GETUTCDATE()),
-  (3214, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'OriginatingTrxFK',             'originating_trx_id',             'BIGINT',        15, 1, 0, 1, GETUTCDATE()),
-  (3215, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'NoCorrespondenceInd',          'is_no_correspondence',           'BOOLEAN',       16, 1, 0, 1, GETUTCDATE()),
-  (3216, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'NoAccountingInd',              'is_no_accounting',               'BOOLEAN',       17, 1, 0, 1, GETUTCDATE()),
-  (3217, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'NoCommissionInd',              'is_no_commission',               'BOOLEAN',       18, 1, 0, 1, GETUTCDATE()),
-  (3218, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'MaintDateTime',                'maint_datetime',                 'TIMESTAMP',     19, 1, 0, 1, GETUTCDATE()),
-  (3219, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'Operator',                     'operator',                       'STRING',        20, 1, 0, 1, GETUTCDATE()),
-  (3220, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'NotificationAmount',           'notification_amount',            'DECIMAL(18,4)', 21, 1, 0, 1, GETUTCDATE()),
-  (3221, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'NotificationAmountReceived',   'notification_amount_received',   'DECIMAL(18,4)', 22, 1, 0, 1, GETUTCDATE()),
-  (3222, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'TransferTypeCT',               'transfer_type_code',             'STRING',        23, 1, 0, 1, GETUTCDATE()),
-  (3223, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'AdvanceNotificationOverride',  'advance_notification_override',  'INT',           24, 1, 0, 1, GETUTCDATE()),
-  (3224, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'AccountingPeriod',             'accounting_period',              'STRING',        25, 1, 0, 1, GETUTCDATE()),
-  (3225, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'ReinsuranceStatus',            'reinsurance_status',             'STRING',        26, 1, 0, 1, GETUTCDATE()),
-  (3226, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'BonusCommissionAmount',        'bonus_commission_amount',        'DECIMAL(18,4)', 27, 1, 0, 1, GETUTCDATE()),
-  (3227, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'ExcessBonusCommissionAmount',  'excess_bonus_commission_amount', 'DECIMAL(18,4)', 28, 1, 0, 1, GETUTCDATE()),
-  (3228, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'DateContributionExcess',       'date_contribution_excess',       'TIMESTAMP',     29, 1, 0, 1, GETUTCDATE()),
-  (3229, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'TransferUnitsType',            'transfer_units_type',            'STRING',        30, 1, 0, 1, GETUTCDATE()),
-  (3230, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'NoCheckEFT',                   'is_no_check_eft',                'BOOLEAN',       31, 1, 0, 1, GETUTCDATE()),
-  (3231, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'InterestProceedsOverride',     'interest_proceeds_override',     'DECIMAL(18,4)', 32, 1, 0, 1, GETUTCDATE()),
-  (3232, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'NewPolicyNumber',              'new_policy_number',              'STRING',        33, 1, 0, 1, GETUTCDATE()),
-  (3233, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'ReversalReasonCodeCT',         'reversal_reason_code',           'STRING',        34, 1, 0, 1, GETUTCDATE()),
-  (3234, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'CheckAdjustmentFK',            'check_adjustment_id',            'INT',           35, 1, 0, 1, GETUTCDATE()),
-  (3235, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'TrxPercent',                   'trx_percent',                    'DECIMAL(18,4)', 36, 1, 0, 1, GETUTCDATE()),
-  (3236, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'OriginalAccountingPeriod',     'original_accounting_period',     'STRING',        37, 1, 0, 1, GETUTCDATE()),
-  (3237, 'EQ_ODS', 'EDITTrx', 'edit_trx_base', 'BGA',                          'bga',                            'STRING',        38, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'EDITTrx', 'EDITTrxPK', 'STRING', 'edit_trx_base_temp', 'edit_trx_id', 'STRING', 'edit_trx_temp', 'edit_trx_id', 'BIGINT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'ClientSetupFK', 'STRING', 'edit_trx_base_temp', 'client_setup_id', 'STRING', 'edit_trx_temp', 'client_setup_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'EffectiveDate', 'STRING', 'edit_trx_base_temp', 'effective_date', 'STRING', 'edit_trx_temp', 'effective_date', 'TIMESTAMP', 3, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'Status', 'STRING', 'edit_trx_base_temp', 'status', 'STRING', 'edit_trx_temp', 'status', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'PendingStatus', 'STRING', 'edit_trx_base_temp', 'pending_status', 'STRING', 'edit_trx_temp', 'pending_status', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'SequenceNumber', 'STRING', 'edit_trx_base_temp', 'sequence_number', 'STRING', 'edit_trx_temp', 'sequence_number', 'INT', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'TaxYear', 'STRING', 'edit_trx_base_temp', 'tax_year', 'STRING', 'edit_trx_temp', 'tax_year', 'INT', 7, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'TrxAmount', 'STRING', 'edit_trx_base_temp', 'trx_amount', 'STRING', 'edit_trx_temp', 'trx_amount', 'DECIMAL(18,4)', 8, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'DueDate', 'STRING', 'edit_trx_base_temp', 'due_date', 'STRING', 'edit_trx_temp', 'due_date', 'TIMESTAMP', 9, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'TransactionTypeCT', 'STRING', 'edit_trx_base_temp', 'transaction_type_code', 'STRING', 'edit_trx_temp', 'transaction_type_code', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'TrxIsRescheduledInd', 'STRING', 'edit_trx_base_temp', 'is_trx_rescheduled', 'STRING', 'edit_trx_temp', 'is_trx_rescheduled', 'BOOLEAN', 11, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'ReapplyEDITTrxFK', 'STRING', 'edit_trx_base_temp', 'reapply_edit_trx_id', 'STRING', 'edit_trx_temp', 'reapply_edit_trx_id', 'BIGINT', 12, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'CommissionStatus', 'STRING', 'edit_trx_base_temp', 'commission_status', 'STRING', 'edit_trx_temp', 'commission_status', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'LookBackInd', 'STRING', 'edit_trx_base_temp', 'is_look_back', 'STRING', 'edit_trx_temp', 'is_look_back', 'BOOLEAN', 14, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'OriginatingTrxFK', 'STRING', 'edit_trx_base_temp', 'originating_trx_id', 'STRING', 'edit_trx_temp', 'originating_trx_id', 'BIGINT', 15, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'NoCorrespondenceInd', 'STRING', 'edit_trx_base_temp', 'is_no_correspondence', 'STRING', 'edit_trx_temp', 'is_no_correspondence', 'BOOLEAN', 16, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'NoAccountingInd', 'STRING', 'edit_trx_base_temp', 'is_no_accounting', 'STRING', 'edit_trx_temp', 'is_no_accounting', 'BOOLEAN', 17, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'NoCommissionInd', 'STRING', 'edit_trx_base_temp', 'is_no_commission', 'STRING', 'edit_trx_temp', 'is_no_commission', 'BOOLEAN', 18, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'MaintDateTime', 'STRING', 'edit_trx_base_temp', 'maint_datetime', 'STRING', 'edit_trx_temp', 'maint_datetime', 'TIMESTAMP', 19, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'Operator', 'STRING', 'edit_trx_base_temp', 'operator', 'STRING', 'edit_trx_temp', 'operator', 'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'NotificationAmount', 'STRING', 'edit_trx_base_temp', 'notification_amount', 'STRING', 'edit_trx_temp', 'notification_amount', 'DECIMAL(18,4)', 21, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'NotificationAmountReceived', 'STRING', 'edit_trx_base_temp', 'notification_amount_received', 'STRING', 'edit_trx_temp', 'notification_amount_received', 'DECIMAL(18,4)', 22, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'TransferTypeCT', 'STRING', 'edit_trx_base_temp', 'transfer_type_code', 'STRING', 'edit_trx_temp', 'transfer_type_code', 'STRING', 23, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'AdvanceNotificationOverride', 'STRING', 'edit_trx_base_temp', 'advance_notification_override', 'STRING', 'edit_trx_temp', 'advance_notification_override', 'INT', 24, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'AccountingPeriod', 'STRING', 'edit_trx_base_temp', 'accounting_period', 'STRING', 'edit_trx_temp', 'accounting_period', 'STRING', 25, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'ReinsuranceStatus', 'STRING', 'edit_trx_base_temp', 'reinsurance_status', 'STRING', 'edit_trx_temp', 'reinsurance_status', 'STRING', 26, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'BonusCommissionAmount', 'STRING', 'edit_trx_base_temp', 'bonus_commission_amount', 'STRING', 'edit_trx_temp', 'bonus_commission_amount', 'DECIMAL(18,4)', 27, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'ExcessBonusCommissionAmount', 'STRING', 'edit_trx_base_temp', 'excess_bonus_commission_amount', 'STRING', 'edit_trx_temp', 'excess_bonus_commission_amount', 'DECIMAL(18,4)', 28, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'DateContributionExcess', 'STRING', 'edit_trx_base_temp', 'date_contribution_excess', 'STRING', 'edit_trx_temp', 'date_contribution_excess', 'TIMESTAMP', 29, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'TransferUnitsType', 'STRING', 'edit_trx_base_temp', 'transfer_units_type', 'STRING', 'edit_trx_temp', 'transfer_units_type', 'STRING', 30, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'NoCheckEFT', 'STRING', 'edit_trx_base_temp', 'is_no_check_eft', 'STRING', 'edit_trx_temp', 'is_no_check_eft', 'BOOLEAN', 31, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'InterestProceedsOverride', 'STRING', 'edit_trx_base_temp', 'interest_proceeds_override', 'STRING', 'edit_trx_temp', 'interest_proceeds_override', 'DECIMAL(18,4)', 32, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'NewPolicyNumber', 'STRING', 'edit_trx_base_temp', 'new_policy_number', 'STRING', 'edit_trx_temp', 'new_policy_number', 'STRING', 33, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'ReversalReasonCodeCT', 'STRING', 'edit_trx_base_temp', 'reversal_reason_code', 'STRING', 'edit_trx_temp', 'reversal_reason_code', 'STRING', 34, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'CheckAdjustmentFK', 'STRING', 'edit_trx_base_temp', 'check_adjustment_id', 'STRING', 'edit_trx_temp', 'check_adjustment_id', 'INT', 35, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'TrxPercent', 'STRING', 'edit_trx_base_temp', 'trx_percent', 'STRING', 'edit_trx_temp', 'trx_percent', 'DECIMAL(18,4)', 36, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'OriginalAccountingPeriod', 'STRING', 'edit_trx_base_temp', 'original_accounting_period', 'STRING', 'edit_trx_temp', 'original_accounting_period', 'STRING', 37, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrx', 'BGA', 'STRING', 'edit_trx_base_temp', 'bga', 'STRING', 'edit_trx_temp', 'bga', 'STRING', 38, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- ── [O12] ClientSetup  (4 cols, IDs 3238-3241) ──────────────────────────────
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3238, 'EQ_ODS', 'ClientSetup', 'client_setup_base', 'ClientSetupPK',      'client_setup_id',      'INT', 1, 0, 1, 1, GETUTCDATE()),
-  (3239, 'EQ_ODS', 'ClientSetup', 'client_setup_base', 'ClientRoleFK',       'client_role_id',       'INT', 2, 1, 0, 1, GETUTCDATE()),
-  (3240, 'EQ_ODS', 'ClientSetup', 'client_setup_base', 'ContractSetupFK',    'contract_setup_id',    'INT', 3, 1, 0, 1, GETUTCDATE()),
-  (3241, 'EQ_ODS', 'ClientSetup', 'client_setup_base', 'ContractClientFK',   'contract_client_id',   'INT', 4, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'ClientSetup', 'ClientSetupPK', 'STRING', 'client_setup_base_temp', 'client_setup_id', 'STRING', 'client_setup_temp', 'client_setup_id', 'INT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientSetup', 'ClientRoleFK', 'STRING', 'client_setup_base_temp', 'client_role_id', 'STRING', 'client_setup_temp', 'client_role_id', 'INT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientSetup', 'ContractSetupFK', 'STRING', 'client_setup_base_temp', 'contract_setup_id', 'STRING', 'client_setup_temp', 'contract_setup_id', 'INT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ClientSetup', 'ContractClientFK', 'STRING', 'client_setup_base_temp', 'contract_client_id', 'STRING', 'client_setup_temp', 'contract_client_id', 'INT', 4, 1, 0, 0, '0', 1, GETUTCDATE());
 
 -- ── [O13] EDITTrxHistory  (13 cols, IDs 3242-3254) ──────────────────────────
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3242, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'EDITTrxHistoryPK',          'edit_trx_history_id',         'BIGINT',    1, 0, 1, 1, GETUTCDATE()),
-  (3243, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'EDITTrxFK',                 'edit_trx_id',                 'BIGINT',    2, 1, 0, 1, GETUTCDATE()),
-  (3244, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'CycleDate',                 'cycle_date',                  'TIMESTAMP', 3, 1, 0, 1, GETUTCDATE()),
-  (3245, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'OriginalProcessDateTime',   'original_process_datetime',   'TIMESTAMP', 4, 1, 0, 1, GETUTCDATE()),
-  (3246, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'AccountingPendingStatus',   'accounting_pending_status',   'STRING',    5, 1, 0, 1, GETUTCDATE()),
-  (3247, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'ControlNumber',             'control_number',              'STRING',    6, 1, 0, 1, GETUTCDATE()),
-  (3248, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'ReleaseDate',               'release_date',                'TIMESTAMP', 7, 1, 0, 1, GETUTCDATE()),
-  (3249, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'ReturnDate',                'return_date',                 'TIMESTAMP', 8, 1, 0, 1, GETUTCDATE()),
-  (3250, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'CorrespondenceTypeCT',      'correspondence_type_code',    'STRING',    9, 1, 0, 1, GETUTCDATE()),
-  (3251, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'ProcessID',                 'process_id',                  'STRING',   10, 1, 0, 1, GETUTCDATE()),
-  (3252, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'RealTimeInd',               'is_real_time',                'BOOLEAN',  11, 1, 0, 1, GETUTCDATE()),
-  (3253, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'AddressTypeCT',             'address_type_code',           'STRING',   12, 1, 0, 1, GETUTCDATE()),
-  (3254, 'EQ_ODS', 'EDITTrxHistory', 'edit_trx_history_base', 'ProcessDateTime',           'process_datetime',            'TIMESTAMP',13, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'EDITTrxHistory', 'EDITTrxHistoryPK', 'STRING', 'edit_trx_history_base_temp', 'edit_trx_history_id', 'STRING', 'edit_trx_history_temp', 'edit_trx_history_id', 'BIGINT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrxHistory', 'EDITTrxFK', 'STRING', 'edit_trx_history_base_temp', 'edit_trx_id', 'STRING', 'edit_trx_history_temp', 'edit_trx_id', 'BIGINT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrxHistory', 'CycleDate', 'STRING', 'edit_trx_history_base_temp', 'cycle_date', 'STRING', 'edit_trx_history_temp', 'cycle_date', 'TIMESTAMP', 3, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrxHistory', 'OriginalProcessDateTime', 'STRING', 'edit_trx_history_base_temp', 'original_process_datetime', 'STRING', 'edit_trx_history_temp', 'original_process_datetime', 'TIMESTAMP', 4, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrxHistory', 'AccountingPendingStatus', 'STRING', 'edit_trx_history_base_temp', 'accounting_pending_status', 'STRING', 'edit_trx_history_temp', 'accounting_pending_status', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrxHistory', 'ControlNumber', 'STRING', 'edit_trx_history_base_temp', 'control_number', 'STRING', 'edit_trx_history_temp', 'control_number', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrxHistory', 'ReleaseDate', 'STRING', 'edit_trx_history_base_temp', 'release_date', 'STRING', 'edit_trx_history_temp', 'release_date', 'TIMESTAMP', 7, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrxHistory', 'ReturnDate', 'STRING', 'edit_trx_history_base_temp', 'return_date', 'STRING', 'edit_trx_history_temp', 'return_date', 'TIMESTAMP', 8, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrxHistory', 'CorrespondenceTypeCT', 'STRING', 'edit_trx_history_base_temp', 'correspondence_type_code', 'STRING', 'edit_trx_history_temp', 'correspondence_type_code', 'STRING', 9, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrxHistory', 'ProcessID', 'STRING', 'edit_trx_history_base_temp', 'process_id', 'STRING', 'edit_trx_history_temp', 'process_id', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrxHistory', 'RealTimeInd', 'STRING', 'edit_trx_history_base_temp', 'is_real_time', 'STRING', 'edit_trx_history_temp', 'is_real_time', 'BOOLEAN', 11, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrxHistory', 'AddressTypeCT', 'STRING', 'edit_trx_history_base_temp', 'address_type_code', 'STRING', 'edit_trx_history_temp', 'address_type_code', 'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'EDITTrxHistory', 'ProcessDateTime', 'STRING', 'edit_trx_history_base_temp', 'process_datetime', 'STRING', 'edit_trx_history_temp', 'process_datetime', 'TIMESTAMP', 13, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
 
 -- ── [O14] FinancialHistory  (27 cols, IDs 3255-3281) ────────────────────────
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3255, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'FinancialHistoryPK',        'financial_history_id',       'BIGINT',         1, 0, 1, 1, GETUTCDATE()),
-  (3256, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'EDITTrxHistoryFK',          'edit_trx_history_id',        'BIGINT',         2, 1, 0, 1, GETUTCDATE()),
-  (3257, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'GrossAmount',               'gross_amount',               'DECIMAL(18,4)',  3, 1, 0, 1, GETUTCDATE()),
-  (3258, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'NetAmount',                 'net_amount',                 'DECIMAL(18,4)',  4, 1, 0, 1, GETUTCDATE()),
-  (3259, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'CheckAmount',               'check_amount',               'DECIMAL(18,4)',  5, 1, 0, 1, GETUTCDATE()),
-  (3260, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'FreeAmount',                'free_amount',                'DECIMAL(18,4)',  6, 1, 0, 1, GETUTCDATE()),
-  (3261, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'TaxableBenefit',            'taxable_benefit',            'DECIMAL(18,4)',  7, 1, 0, 1, GETUTCDATE()),
-  (3262, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'DisbursementSourceCT',      'disbursement_source_code',   'STRING',         8, 1, 0, 1, GETUTCDATE()),
-  (3263, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'Liability',                 'liability',                  'DECIMAL(18,4)',  9, 1, 0, 1, GETUTCDATE()),
-  (3264, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'CommissionableAmount',      'commissionable_amount',      'DECIMAL(18,4)', 10, 1, 0, 1, GETUTCDATE()),
-  (3265, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'MaxCommissionAmount',       'max_commission_amount',      'DECIMAL(18,4)', 11, 1, 0, 1, GETUTCDATE()),
-  (3266, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'CostBasis',                 'cost_basis',                 'DECIMAL(18,4)', 12, 1, 0, 1, GETUTCDATE()),
-  (3267, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'AccumulatedValue',          'accumulated_value',          'DECIMAL(18,4)', 13, 1, 0, 1, GETUTCDATE()),
-  (3268, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'SurrenderValue',            'surrender_value',            'DECIMAL(18,4)', 14, 1, 0, 1, GETUTCDATE()),
-  (3269, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'GuarAccumulatedValue',      'guar_accumulated_value',     'DECIMAL(18,4)', 15, 1, 0, 1, GETUTCDATE()),
-  (3270, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'PriorDueDate',              'prior_due_date',             'TIMESTAMP',     16, 1, 0, 1, GETUTCDATE()),
-  (3271, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'PriorExtractDate',          'prior_extract_date',         'TIMESTAMP',     17, 1, 0, 1, GETUTCDATE()),
-  (3272, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'PriorFixedAmount',          'prior_fixed_amount',         'DECIMAL(18,4)', 18, 1, 0, 1, GETUTCDATE()),
-  (3273, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'PrevComplexChangeValue',    'prev_complex_change_value',  'DECIMAL(18,4)', 19, 1, 0, 1, GETUTCDATE()),
-  (3274, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'TaxableIndicator',          'is_taxable',                 'BOOLEAN',       20, 1, 0, 1, GETUTCDATE()),
-  (3275, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'NetAmountAtRisk',           'net_amount_at_risk',         'DECIMAL(18,4)', 21, 1, 0, 1, GETUTCDATE()),
-  (3276, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'DistributionCodeCT',        'distribution_code',          'STRING',        22, 1, 0, 1, GETUTCDATE()),
-  (3277, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'NetIncomeAttributable',     'net_income_attributable',    'DECIMAL(18,4)', 23, 1, 0, 1, GETUTCDATE()),
-  (3278, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'InterestProceeds',          'interest_proceeds',          'DECIMAL(18,4)', 24, 1, 0, 1, GETUTCDATE()),
-  (3279, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'PriorInitialCYAccumValue',  'prior_initial_cy_accum_value','DECIMAL(18,4)',25, 1, 0, 1, GETUTCDATE()),
-  (3280, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'InsuranceInforce',          'insurance_inforce',          'DECIMAL(18,4)', 26, 1, 0, 1, GETUTCDATE()),
-  (3281, 'EQ_ODS', 'FinancialHistory', 'financial_history_base', 'SevenPayRate',              'seven_pay_rate',             'DECIMAL(18,4)', 27, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'FinancialHistory', 'FinancialHistoryPK', 'STRING', 'financial_history_base_temp', 'financial_history_id', 'STRING', 'financial_history_temp', 'financial_history_id', 'BIGINT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'EDITTrxHistoryFK', 'STRING', 'financial_history_base_temp', 'edit_trx_history_id', 'STRING', 'financial_history_temp', 'edit_trx_history_id', 'BIGINT', 2, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'GrossAmount', 'STRING', 'financial_history_base_temp', 'gross_amount', 'STRING', 'financial_history_temp', 'gross_amount', 'DECIMAL(18,4)', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'NetAmount', 'STRING', 'financial_history_base_temp', 'net_amount', 'STRING', 'financial_history_temp', 'net_amount', 'DECIMAL(18,4)', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'CheckAmount', 'STRING', 'financial_history_base_temp', 'check_amount', 'STRING', 'financial_history_temp', 'check_amount', 'DECIMAL(18,4)', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'FreeAmount', 'STRING', 'financial_history_base_temp', 'free_amount', 'STRING', 'financial_history_temp', 'free_amount', 'DECIMAL(18,4)', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'TaxableBenefit', 'STRING', 'financial_history_base_temp', 'taxable_benefit', 'STRING', 'financial_history_temp', 'taxable_benefit', 'DECIMAL(18,4)', 7, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'DisbursementSourceCT', 'STRING', 'financial_history_base_temp', 'disbursement_source_code', 'STRING', 'financial_history_temp', 'disbursement_source_code', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'Liability', 'STRING', 'financial_history_base_temp', 'liability', 'STRING', 'financial_history_temp', 'liability', 'DECIMAL(18,4)', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'CommissionableAmount', 'STRING', 'financial_history_base_temp', 'commissionable_amount', 'STRING', 'financial_history_temp', 'commissionable_amount', 'DECIMAL(18,4)', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'MaxCommissionAmount', 'STRING', 'financial_history_base_temp', 'max_commission_amount', 'STRING', 'financial_history_temp', 'max_commission_amount', 'DECIMAL(18,4)', 11, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'CostBasis', 'STRING', 'financial_history_base_temp', 'cost_basis', 'STRING', 'financial_history_temp', 'cost_basis', 'DECIMAL(18,4)', 12, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'AccumulatedValue', 'STRING', 'financial_history_base_temp', 'accumulated_value', 'STRING', 'financial_history_temp', 'accumulated_value', 'DECIMAL(18,4)', 13, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'SurrenderValue', 'STRING', 'financial_history_base_temp', 'surrender_value', 'STRING', 'financial_history_temp', 'surrender_value', 'DECIMAL(18,4)', 14, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'GuarAccumulatedValue', 'STRING', 'financial_history_base_temp', 'guar_accumulated_value', 'STRING', 'financial_history_temp', 'guar_accumulated_value', 'DECIMAL(18,4)', 15, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'PriorDueDate', 'STRING', 'financial_history_base_temp', 'prior_due_date', 'STRING', 'financial_history_temp', 'prior_due_date', 'TIMESTAMP', 16, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'PriorExtractDate', 'STRING', 'financial_history_base_temp', 'prior_extract_date', 'STRING', 'financial_history_temp', 'prior_extract_date', 'TIMESTAMP', 17, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'PriorFixedAmount', 'STRING', 'financial_history_base_temp', 'prior_fixed_amount', 'STRING', 'financial_history_temp', 'prior_fixed_amount', 'DECIMAL(18,4)', 18, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'PrevComplexChangeValue', 'STRING', 'financial_history_base_temp', 'prev_complex_change_value', 'STRING', 'financial_history_temp', 'prev_complex_change_value', 'DECIMAL(18,4)', 19, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'TaxableIndicator', 'STRING', 'financial_history_base_temp', 'is_taxable', 'STRING', 'financial_history_temp', 'is_taxable', 'BOOLEAN', 20, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'NetAmountAtRisk', 'STRING', 'financial_history_base_temp', 'net_amount_at_risk', 'STRING', 'financial_history_temp', 'net_amount_at_risk', 'DECIMAL(18,4)', 21, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'DistributionCodeCT', 'STRING', 'financial_history_base_temp', 'distribution_code', 'STRING', 'financial_history_temp', 'distribution_code', 'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'NetIncomeAttributable', 'STRING', 'financial_history_base_temp', 'net_income_attributable', 'STRING', 'financial_history_temp', 'net_income_attributable', 'DECIMAL(18,4)', 23, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'InterestProceeds', 'STRING', 'financial_history_base_temp', 'interest_proceeds', 'STRING', 'financial_history_temp', 'interest_proceeds', 'DECIMAL(18,4)', 24, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'PriorInitialCYAccumValue', 'STRING', 'financial_history_base_temp', 'prior_initial_cy_accum_value', 'STRING', 'financial_history_temp', 'prior_initial_cy_accum_value', 'DECIMAL(18,4)', 25, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'InsuranceInforce', 'STRING', 'financial_history_base_temp', 'insurance_inforce', 'STRING', 'financial_history_temp', 'insurance_inforce', 'DECIMAL(18,4)', 26, 1, 0, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'FinancialHistory', 'SevenPayRate', 'STRING', 'financial_history_base_temp', 'seven_pay_rate', 'STRING', 'financial_history_temp', 'seven_pay_rate', 'DECIMAL(18,4)', 27, 1, 0, 0, '0', 1, GETUTCDATE());
 
 -- ── [O15] ProductStructure (SEG_ENGINE)  (4 cols, IDs 3282-3285) ────────────
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (3282, 'EQ_ODS', 'ProductStructure', 'product_structure_base', 'ProductStructurePK',    'product_structure_id',    'INT',    1, 0, 1, 1, GETUTCDATE()),
-  (3283, 'EQ_ODS', 'ProductStructure', 'product_structure_base', 'MarketingPackageName',  'marketing_package_name',  'STRING', 2, 1, 0, 1, GETUTCDATE()),
-  (3284, 'EQ_ODS', 'ProductStructure', 'product_structure_base', 'BusinessContractName',  'business_contract_name',  'STRING', 3, 1, 0, 1, GETUTCDATE()),
-  (3285, 'EQ_ODS', 'ProductStructure', 'product_structure_base', 'ProductTypeCT',         'product_type_code',       'STRING', 4, 1, 0, 1, GETUTCDATE());
+('EQ_ODS', 'ProductStructure', 'ProductStructurePK', 'STRING', 'product_structure_base_temp', 'product_structure_id', 'STRING', 'product_structure_temp', 'product_structure_id', 'INT', 1, 0, 1, 0, '0', 1, GETUTCDATE()),
+('EQ_ODS', 'ProductStructure', 'MarketingPackageName', 'STRING', 'product_structure_base_temp', 'marketing_package_name', 'STRING', 'product_structure_temp', 'marketing_package_name', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ProductStructure', 'BusinessContractName', 'STRING', 'product_structure_base_temp', 'business_contract_name', 'STRING', 'product_structure_temp', 'business_contract_name', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('EQ_ODS', 'ProductStructure', 'ProductTypeCT', 'STRING', 'product_structure_base_temp', 'product_type_code', 'STRING', 'product_structure_temp', 'product_type_code', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- Total EQ_ODS: 285 column mappings across 15 base tables (IDs 3001-3285)
-
 
 -- ============================================================
 -- Raw-landing migration — HubSpot source_column_name updates
@@ -1689,154 +1531,152 @@ VALUES
 -- ============================================================
 
 -- [U01] marketing_events
-UPDATE schema_config SET source_column_name = 'objectId'          WHERE id = 911;
-UPDATE schema_config SET source_column_name = 'externalEventId'   WHERE id = 912;
-UPDATE schema_config SET source_column_name = 'eventName'         WHERE id = 913;
-UPDATE schema_config SET source_column_name = 'eventType'         WHERE id = 914;
-UPDATE schema_config SET source_column_name = 'eventStatus'       WHERE id = 915;
-UPDATE schema_config SET source_column_name = 'eventStatusV2'     WHERE id = 916;
-UPDATE schema_config SET source_column_name = 'startDateTime'     WHERE id = 917;
-UPDATE schema_config SET source_column_name = 'endDateTime'       WHERE id = 918;
-UPDATE schema_config SET source_column_name = 'eventOrganizer'    WHERE id = 919;
-UPDATE schema_config SET source_column_name = 'eventDescription'  WHERE id = 920;
-UPDATE schema_config SET source_column_name = 'eventUrl'          WHERE id = 921;
-UPDATE schema_config SET source_column_name = 'eventCancelled'    WHERE id = 922;
-UPDATE schema_config SET source_column_name = 'eventCompleted'    WHERE id = 923;
-UPDATE schema_config SET source_column_name = 'noShows'           WHERE id = 927;
-UPDATE schema_config SET source_column_name = 'appInfo.id'        WHERE id = 928;
-UPDATE schema_config SET source_column_name = 'appInfo.name'      WHERE id = 929;
-UPDATE schema_config SET source_column_name = 'createdAt'         WHERE id = 930;
-UPDATE schema_config SET source_column_name = 'updatedAt'         WHERE id = 931;
+UPDATE schema_config SET landing_column_name = 'objectId', bronze_column_name = 'objectId' WHERE id = 911;
+UPDATE schema_config SET landing_column_name = 'externalEventId', bronze_column_name = 'externalEventId' WHERE id = 912;
+UPDATE schema_config SET landing_column_name = 'eventName', bronze_column_name = 'eventName' WHERE id = 913;
+UPDATE schema_config SET landing_column_name = 'eventType', bronze_column_name = 'eventType' WHERE id = 914;
+UPDATE schema_config SET landing_column_name = 'eventStatus', bronze_column_name = 'eventStatus' WHERE id = 915;
+UPDATE schema_config SET landing_column_name = 'eventStatusV2', bronze_column_name = 'eventStatusV2' WHERE id = 916;
+UPDATE schema_config SET landing_column_name = 'startDateTime', bronze_column_name = 'startDateTime' WHERE id = 917;
+UPDATE schema_config SET landing_column_name = 'endDateTime', bronze_column_name = 'endDateTime' WHERE id = 918;
+UPDATE schema_config SET landing_column_name = 'eventOrganizer', bronze_column_name = 'eventOrganizer' WHERE id = 919;
+UPDATE schema_config SET landing_column_name = 'eventDescription', bronze_column_name = 'eventDescription' WHERE id = 920;
+UPDATE schema_config SET landing_column_name = 'eventUrl', bronze_column_name = 'eventUrl' WHERE id = 921;
+UPDATE schema_config SET landing_column_name = 'eventCancelled', bronze_column_name = 'eventCancelled' WHERE id = 922;
+UPDATE schema_config SET landing_column_name = 'eventCompleted', bronze_column_name = 'eventCompleted' WHERE id = 923;
+UPDATE schema_config SET landing_column_name = 'noShows', bronze_column_name = 'noShows' WHERE id = 927;
+UPDATE schema_config SET landing_column_name = 'appInfo.id', bronze_column_name = 'appInfo.id' WHERE id = 928;
+UPDATE schema_config SET landing_column_name = 'appInfo.name', bronze_column_name = 'appInfo.name' WHERE id = 929;
+UPDATE schema_config SET landing_column_name = 'createdAt', bronze_column_name = 'createdAt' WHERE id = 930;
+UPDATE schema_config SET landing_column_name = 'updatedAt', bronze_column_name = 'updatedAt' WHERE id = 931;
 
 -- [U02] marketing_emails base cols
-UPDATE schema_config SET source_column_name = 'isAb'                                WHERE id = 941;
-UPDATE schema_config SET source_column_name = 'isPublished'                         WHERE id = 942;
-UPDATE schema_config SET source_column_name = 'isTransactional'                     WHERE id = 943;
-UPDATE schema_config SET source_column_name = 'sendOnPublish'                       WHERE id = 944;
-UPDATE schema_config SET source_column_name = 'jitterSendTime'                      WHERE id = 945;
-UPDATE schema_config SET source_column_name = 'activeDomain'                        WHERE id = 946;
-UPDATE schema_config SET source_column_name = 'campaignName'                        WHERE id = 948;
-UPDATE schema_config SET source_column_name = 'campaignUtm'                         WHERE id = 949;
-UPDATE schema_config SET source_column_name = 'emailCampaignGroupId'                WHERE id = 950;
-UPDATE schema_config SET source_column_name = 'primaryEmailCampaignId'              WHERE id = 951;
-UPDATE schema_config SET source_column_name = 'emailTemplateMode'                   WHERE id = 952;
-UPDATE schema_config SET source_column_name = 'feedbackSurveyId'                    WHERE id = 953;
-UPDATE schema_config SET source_column_name = 'folderId'                            WHERE id = 954;
-UPDATE schema_config SET source_column_name = 'businessUnitId'                      WHERE id = 955;
-UPDATE schema_config SET source_column_name = 'clonedFrom'                          WHERE id = 956;
-UPDATE schema_config SET source_column_name = 'previewKey'                          WHERE id = 957;
-UPDATE schema_config SET source_column_name = 'publishDate'                         WHERE id = 958;
-UPDATE schema_config SET source_column_name = 'publishedAt'                         WHERE id = 959;
-UPDATE schema_config SET source_column_name = 'unpublishedAt'                       WHERE id = 960;
-UPDATE schema_config SET source_column_name = 'publishedByEmail'                    WHERE id = 961;
-UPDATE schema_config SET source_column_name = 'publishedById'                       WHERE id = 962;
-UPDATE schema_config SET source_column_name = 'publishedByName'                     WHERE id = 963;
-UPDATE schema_config SET source_column_name = 'createdAt'                           WHERE id = 964;
-UPDATE schema_config SET source_column_name = 'createdById'                         WHERE id = 965;
-UPDATE schema_config SET source_column_name = 'deletedAt'                           WHERE id = 966;
-UPDATE schema_config SET source_column_name = 'updatedAt'                           WHERE id = 967;
-UPDATE schema_config SET source_column_name = 'updatedById'                         WHERE id = 968;
-UPDATE schema_config SET source_column_name = 'from.fromName'                       WHERE id = 969;
-UPDATE schema_config SET source_column_name = 'from.replyTo'                        WHERE id = 970;
-UPDATE schema_config SET source_column_name = 'from.customReplyTo'                  WHERE id = 971;
-UPDATE schema_config SET source_column_name = 'subscriptionDetails.subscriptionId'  WHERE id = 972;
-UPDATE schema_config SET source_column_name = 'subscriptionDetails.subscriptionName' WHERE id = 973;
-UPDATE schema_config SET source_column_name = 'subscriptionDetails.officeLocationId' WHERE id = 974;
-UPDATE schema_config SET source_column_name = 'subscriptionDetails.preferencesGroupId' WHERE id = 975;
-UPDATE schema_config SET source_column_name = 'webversion.url'                      WHERE id = 976;
-UPDATE schema_config SET source_column_name = 'webversion.enabled'                  WHERE id = 977;
-UPDATE schema_config SET source_column_name = 'content'                             WHERE id = 978;
-UPDATE schema_config SET source_column_name = 'stats'                               WHERE id = 979;
-UPDATE schema_config SET source_column_name = 'testing'                             WHERE id = 980;
-UPDATE schema_config SET source_column_name = 'rssData'                             WHERE id = 981;
-UPDATE schema_config SET source_column_name = 'to'                                  WHERE id = 982;
-UPDATE schema_config SET source_column_name = 'allEmailCampaignIds'                 WHERE id = 983;
-UPDATE schema_config SET source_column_name = 'teamsWithAccess'                     WHERE id = 984;
-UPDATE schema_config SET source_column_name = 'workflowNames'                       WHERE id = 985;
+UPDATE schema_config SET landing_column_name = 'isAb', bronze_column_name = 'isAb' WHERE id = 941;
+UPDATE schema_config SET landing_column_name = 'isPublished', bronze_column_name = 'isPublished' WHERE id = 942;
+UPDATE schema_config SET landing_column_name = 'isTransactional', bronze_column_name = 'isTransactional' WHERE id = 943;
+UPDATE schema_config SET landing_column_name = 'sendOnPublish', bronze_column_name = 'sendOnPublish' WHERE id = 944;
+UPDATE schema_config SET landing_column_name = 'jitterSendTime', bronze_column_name = 'jitterSendTime' WHERE id = 945;
+UPDATE schema_config SET landing_column_name = 'activeDomain', bronze_column_name = 'activeDomain' WHERE id = 946;
+UPDATE schema_config SET landing_column_name = 'campaignName', bronze_column_name = 'campaignName' WHERE id = 948;
+UPDATE schema_config SET landing_column_name = 'campaignUtm', bronze_column_name = 'campaignUtm' WHERE id = 949;
+UPDATE schema_config SET landing_column_name = 'emailCampaignGroupId', bronze_column_name = 'emailCampaignGroupId' WHERE id = 950;
+UPDATE schema_config SET landing_column_name = 'primaryEmailCampaignId', bronze_column_name = 'primaryEmailCampaignId' WHERE id = 951;
+UPDATE schema_config SET landing_column_name = 'emailTemplateMode', bronze_column_name = 'emailTemplateMode' WHERE id = 952;
+UPDATE schema_config SET landing_column_name = 'feedbackSurveyId', bronze_column_name = 'feedbackSurveyId' WHERE id = 953;
+UPDATE schema_config SET landing_column_name = 'folderId', bronze_column_name = 'folderId' WHERE id = 954;
+UPDATE schema_config SET landing_column_name = 'businessUnitId', bronze_column_name = 'businessUnitId' WHERE id = 955;
+UPDATE schema_config SET landing_column_name = 'clonedFrom', bronze_column_name = 'clonedFrom' WHERE id = 956;
+UPDATE schema_config SET landing_column_name = 'previewKey', bronze_column_name = 'previewKey' WHERE id = 957;
+UPDATE schema_config SET landing_column_name = 'publishDate', bronze_column_name = 'publishDate' WHERE id = 958;
+UPDATE schema_config SET landing_column_name = 'publishedAt', bronze_column_name = 'publishedAt' WHERE id = 959;
+UPDATE schema_config SET landing_column_name = 'unpublishedAt', bronze_column_name = 'unpublishedAt' WHERE id = 960;
+UPDATE schema_config SET landing_column_name = 'publishedByEmail', bronze_column_name = 'publishedByEmail' WHERE id = 961;
+UPDATE schema_config SET landing_column_name = 'publishedById', bronze_column_name = 'publishedById' WHERE id = 962;
+UPDATE schema_config SET landing_column_name = 'publishedByName', bronze_column_name = 'publishedByName' WHERE id = 963;
+UPDATE schema_config SET landing_column_name = 'createdAt', bronze_column_name = 'createdAt' WHERE id = 964;
+UPDATE schema_config SET landing_column_name = 'createdById', bronze_column_name = 'createdById' WHERE id = 965;
+UPDATE schema_config SET landing_column_name = 'deletedAt', bronze_column_name = 'deletedAt' WHERE id = 966;
+UPDATE schema_config SET landing_column_name = 'updatedAt', bronze_column_name = 'updatedAt' WHERE id = 967;
+UPDATE schema_config SET landing_column_name = 'updatedById', bronze_column_name = 'updatedById' WHERE id = 968;
+UPDATE schema_config SET landing_column_name = 'from.fromName', bronze_column_name = 'from.fromName' WHERE id = 969;
+UPDATE schema_config SET landing_column_name = 'from.replyTo', bronze_column_name = 'from.replyTo' WHERE id = 970;
+UPDATE schema_config SET landing_column_name = 'from.customReplyTo', bronze_column_name = 'from.customReplyTo' WHERE id = 971;
+UPDATE schema_config SET landing_column_name = 'subscriptionDetails.subscriptionId', bronze_column_name = 'subscriptionDetails.subscriptionId' WHERE id = 972;
+UPDATE schema_config SET landing_column_name = 'subscriptionDetails.subscriptionName', bronze_column_name = 'subscriptionDetails.subscriptionName' WHERE id = 973;
+UPDATE schema_config SET landing_column_name = 'subscriptionDetails.officeLocationId', bronze_column_name = 'subscriptionDetails.officeLocationId' WHERE id = 974;
+UPDATE schema_config SET landing_column_name = 'subscriptionDetails.preferencesGroupId', bronze_column_name = 'subscriptionDetails.preferencesGroupId' WHERE id = 975;
+UPDATE schema_config SET landing_column_name = 'webversion.url', bronze_column_name = 'webversion.url' WHERE id = 976;
+UPDATE schema_config SET landing_column_name = 'webversion.enabled', bronze_column_name = 'webversion.enabled' WHERE id = 977;
+UPDATE schema_config SET landing_column_name = 'content', bronze_column_name = 'content' WHERE id = 978;
+UPDATE schema_config SET landing_column_name = 'stats', bronze_column_name = 'stats' WHERE id = 979;
+UPDATE schema_config SET landing_column_name = 'testing', bronze_column_name = 'testing' WHERE id = 980;
+UPDATE schema_config SET landing_column_name = 'rssData', bronze_column_name = 'rssData' WHERE id = 981;
+UPDATE schema_config SET landing_column_name = 'to', bronze_column_name = 'to' WHERE id = 982;
+UPDATE schema_config SET landing_column_name = 'allEmailCampaignIds', bronze_column_name = 'allEmailCampaignIds' WHERE id = 983;
+UPDATE schema_config SET landing_column_name = 'teamsWithAccess', bronze_column_name = 'teamsWithAccess' WHERE id = 984;
+UPDATE schema_config SET landing_column_name = 'workflowNames', bronze_column_name = 'workflowNames' WHERE id = 985;
 
 -- [U08] crm_owners
-UPDATE schema_config SET source_column_name = 'firstName'              WHERE id = 1099;
-UPDATE schema_config SET source_column_name = 'lastName'               WHERE id = 1100;
-UPDATE schema_config SET source_column_name = 'userId'                 WHERE id = 1102;
-UPDATE schema_config SET source_column_name = 'userIdIncludingInactive' WHERE id = 1103;
-UPDATE schema_config SET source_column_name = 'createdAt'              WHERE id = 1104;
-UPDATE schema_config SET source_column_name = 'updatedAt'              WHERE id = 1105;
-UPDATE schema_config SET source_column_name = 'teams'                  WHERE id = 1107;
+UPDATE schema_config SET landing_column_name = 'firstName', bronze_column_name = 'firstName' WHERE id = 1099;
+UPDATE schema_config SET landing_column_name = 'lastName', bronze_column_name = 'lastName' WHERE id = 1100;
+UPDATE schema_config SET landing_column_name = 'userId', bronze_column_name = 'userId' WHERE id = 1102;
+UPDATE schema_config SET landing_column_name = 'userIdIncludingInactive', bronze_column_name = 'userIdIncludingInactive' WHERE id = 1103;
+UPDATE schema_config SET landing_column_name = 'createdAt', bronze_column_name = 'createdAt' WHERE id = 1104;
+UPDATE schema_config SET landing_column_name = 'updatedAt', bronze_column_name = 'updatedAt' WHERE id = 1105;
+UPDATE schema_config SET landing_column_name = 'teams', bronze_column_name = 'teams' WHERE id = 1107;
 
 -- [U09] marketing_emails to_json expansion
-UPDATE schema_config SET source_column_name = 'to.contactIds'         WHERE id = 1108;
-UPDATE schema_config SET source_column_name = 'to.contactIlsLists'    WHERE id = 1109;
-UPDATE schema_config SET source_column_name = 'to.contactLists'       WHERE id = 1110;
-UPDATE schema_config SET source_column_name = 'to.limitSendFrequency' WHERE id = 1111;
-UPDATE schema_config SET source_column_name = 'to.suppressGraymail'   WHERE id = 1112;
+UPDATE schema_config SET landing_column_name = 'to.contactIds', bronze_column_name = 'to.contactIds' WHERE id = 1108;
+UPDATE schema_config SET landing_column_name = 'to.contactIlsLists', bronze_column_name = 'to.contactIlsLists' WHERE id = 1109;
+UPDATE schema_config SET landing_column_name = 'to.contactLists', bronze_column_name = 'to.contactLists' WHERE id = 1110;
+UPDATE schema_config SET landing_column_name = 'to.limitSendFrequency', bronze_column_name = 'to.limitSendFrequency' WHERE id = 1111;
+UPDATE schema_config SET landing_column_name = 'to.suppressGraymail', bronze_column_name = 'to.suppressGraymail' WHERE id = 1112;
 
 -- [U10] marketing_email_statistics — flat names → JSON paths
-UPDATE schema_config SET source_column_name = 'emails.$0'                                   WHERE id = 1113;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.sent'                     WHERE id = 1114;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.open'                     WHERE id = 1115;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.delivered'                WHERE id = 1116;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.bounce'                   WHERE id = 1117;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.unsubscribed'             WHERE id = 1118;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.click'                    WHERE id = 1119;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.reply'                    WHERE id = 1120;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.dropped'                  WHERE id = 1121;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.selected'                 WHERE id = 1122;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.spamreport'               WHERE id = 1123;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.suppressed'               WHERE id = 1124;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.hardbounced'              WHERE id = 1125;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.softbounced'              WHERE id = 1126;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.pending'                  WHERE id = 1127;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.contactslost'             WHERE id = 1128;
-UPDATE schema_config SET source_column_name = 'aggregate.counters.notsent'                  WHERE id = 1129;
-UPDATE schema_config SET source_column_name = 'aggregate.ratios.clickratio'                 WHERE id = 1130;
-UPDATE schema_config SET source_column_name = 'aggregate.ratios.clickthroughratio'          WHERE id = 1131;
-UPDATE schema_config SET source_column_name = 'aggregate.ratios.deliveredratio'             WHERE id = 1132;
-UPDATE schema_config SET source_column_name = 'aggregate.ratios.openratio'                  WHERE id = 1133;
-UPDATE schema_config SET source_column_name = 'aggregate.ratios.replyratio'                 WHERE id = 1134;
-UPDATE schema_config SET source_column_name = 'aggregate.ratios.unsubscribedratio'          WHERE id = 1135;
-UPDATE schema_config SET source_column_name = 'aggregate.ratios.spamreportratio'            WHERE id = 1136;
-UPDATE schema_config SET source_column_name = 'aggregate.ratios.bounceratio'                WHERE id = 1137;
-UPDATE schema_config SET source_column_name = 'aggregate.ratios.hardbounceratio'            WHERE id = 1138;
-UPDATE schema_config SET source_column_name = 'aggregate.ratios.softbounceratio'            WHERE id = 1139;
-UPDATE schema_config SET source_column_name = 'aggregate.ratios.contactslostratio'          WHERE id = 1140;
-UPDATE schema_config SET source_column_name = 'aggregate.ratios.pendingratio'               WHERE id = 1141;
-UPDATE schema_config SET source_column_name = 'aggregate.ratios.notsentratio'               WHERE id = 1142;
-UPDATE schema_config SET source_column_name = 'aggregate.deviceBreakdown'                   WHERE id = 1143;
-UPDATE schema_config SET source_column_name = 'aggregate.qualifierStats'                    WHERE id = 1144;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first_key'             WHERE id = 1145;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.sent'        WHERE id = 1146;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.open'        WHERE id = 1147;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.delivered'   WHERE id = 1148;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.bounce'      WHERE id = 1149;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.unsubscribed' WHERE id = 1150;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.click'       WHERE id = 1151;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.reply'       WHERE id = 1152;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.dropped'     WHERE id = 1153;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.selected'    WHERE id = 1154;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.spamreport'  WHERE id = 1155;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.suppressed'  WHERE id = 1156;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.hardbounced' WHERE id = 1157;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.softbounced' WHERE id = 1158;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.pending'     WHERE id = 1159;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.contactslost' WHERE id = 1160;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.counters.notsent'     WHERE id = 1161;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.clickratio'        WHERE id = 1162;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.clickthroughratio' WHERE id = 1163;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.deliveredratio'    WHERE id = 1164;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.openratio'         WHERE id = 1165;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.replyratio'        WHERE id = 1166;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.unsubscribedratio' WHERE id = 1167;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.spamreportratio'   WHERE id = 1168;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.bounceratio'       WHERE id = 1169;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.hardbounceratio'   WHERE id = 1170;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.softbounceratio'   WHERE id = 1171;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.contactslostratio' WHERE id = 1172;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.pendingratio'      WHERE id = 1173;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.ratios.notsentratio'      WHERE id = 1174;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.deviceBreakdown'          WHERE id = 1175;
-UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.qualifierStats'           WHERE id = 1176;
-
-
+UPDATE schema_config SET landing_column_name = 'emails.$0', bronze_column_name = 'emails.$0' WHERE id = 1113;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.sent', bronze_column_name = 'aggregate.counters.sent' WHERE id = 1114;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.open', bronze_column_name = 'aggregate.counters.open' WHERE id = 1115;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.delivered', bronze_column_name = 'aggregate.counters.delivered' WHERE id = 1116;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.bounce', bronze_column_name = 'aggregate.counters.bounce' WHERE id = 1117;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.unsubscribed', bronze_column_name = 'aggregate.counters.unsubscribed' WHERE id = 1118;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.click', bronze_column_name = 'aggregate.counters.click' WHERE id = 1119;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.reply', bronze_column_name = 'aggregate.counters.reply' WHERE id = 1120;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.dropped', bronze_column_name = 'aggregate.counters.dropped' WHERE id = 1121;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.selected', bronze_column_name = 'aggregate.counters.selected' WHERE id = 1122;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.spamreport', bronze_column_name = 'aggregate.counters.spamreport' WHERE id = 1123;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.suppressed', bronze_column_name = 'aggregate.counters.suppressed' WHERE id = 1124;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.hardbounced', bronze_column_name = 'aggregate.counters.hardbounced' WHERE id = 1125;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.softbounced', bronze_column_name = 'aggregate.counters.softbounced' WHERE id = 1126;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.pending', bronze_column_name = 'aggregate.counters.pending' WHERE id = 1127;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.contactslost', bronze_column_name = 'aggregate.counters.contactslost' WHERE id = 1128;
+UPDATE schema_config SET landing_column_name = 'aggregate.counters.notsent', bronze_column_name = 'aggregate.counters.notsent' WHERE id = 1129;
+UPDATE schema_config SET landing_column_name = 'aggregate.ratios.clickratio', bronze_column_name = 'aggregate.ratios.clickratio' WHERE id = 1130;
+UPDATE schema_config SET landing_column_name = 'aggregate.ratios.clickthroughratio', bronze_column_name = 'aggregate.ratios.clickthroughratio' WHERE id = 1131;
+UPDATE schema_config SET landing_column_name = 'aggregate.ratios.deliveredratio', bronze_column_name = 'aggregate.ratios.deliveredratio' WHERE id = 1132;
+UPDATE schema_config SET landing_column_name = 'aggregate.ratios.openratio', bronze_column_name = 'aggregate.ratios.openratio' WHERE id = 1133;
+UPDATE schema_config SET landing_column_name = 'aggregate.ratios.replyratio', bronze_column_name = 'aggregate.ratios.replyratio' WHERE id = 1134;
+UPDATE schema_config SET landing_column_name = 'aggregate.ratios.unsubscribedratio', bronze_column_name = 'aggregate.ratios.unsubscribedratio' WHERE id = 1135;
+UPDATE schema_config SET landing_column_name = 'aggregate.ratios.spamreportratio', bronze_column_name = 'aggregate.ratios.spamreportratio' WHERE id = 1136;
+UPDATE schema_config SET landing_column_name = 'aggregate.ratios.bounceratio', bronze_column_name = 'aggregate.ratios.bounceratio' WHERE id = 1137;
+UPDATE schema_config SET landing_column_name = 'aggregate.ratios.hardbounceratio', bronze_column_name = 'aggregate.ratios.hardbounceratio' WHERE id = 1138;
+UPDATE schema_config SET landing_column_name = 'aggregate.ratios.softbounceratio', bronze_column_name = 'aggregate.ratios.softbounceratio' WHERE id = 1139;
+UPDATE schema_config SET landing_column_name = 'aggregate.ratios.contactslostratio', bronze_column_name = 'aggregate.ratios.contactslostratio' WHERE id = 1140;
+UPDATE schema_config SET landing_column_name = 'aggregate.ratios.pendingratio', bronze_column_name = 'aggregate.ratios.pendingratio' WHERE id = 1141;
+UPDATE schema_config SET landing_column_name = 'aggregate.ratios.notsentratio', bronze_column_name = 'aggregate.ratios.notsentratio' WHERE id = 1142;
+UPDATE schema_config SET landing_column_name = 'aggregate.deviceBreakdown', bronze_column_name = 'aggregate.deviceBreakdown' WHERE id = 1143;
+UPDATE schema_config SET landing_column_name = 'aggregate.qualifierStats', bronze_column_name = 'aggregate.qualifierStats' WHERE id = 1144;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first_key', bronze_column_name = 'campaignAggregations.$first_key' WHERE id = 1145;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.sent', bronze_column_name = 'campaignAggregations.$first.counters.sent' WHERE id = 1146;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.open', bronze_column_name = 'campaignAggregations.$first.counters.open' WHERE id = 1147;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.delivered', bronze_column_name = 'campaignAggregations.$first.counters.delivered' WHERE id = 1148;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.bounce', bronze_column_name = 'campaignAggregations.$first.counters.bounce' WHERE id = 1149;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.unsubscribed', bronze_column_name = 'campaignAggregations.$first.counters.unsubscribed' WHERE id = 1150;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.click', bronze_column_name = 'campaignAggregations.$first.counters.click' WHERE id = 1151;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.reply', bronze_column_name = 'campaignAggregations.$first.counters.reply' WHERE id = 1152;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.dropped', bronze_column_name = 'campaignAggregations.$first.counters.dropped' WHERE id = 1153;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.selected', bronze_column_name = 'campaignAggregations.$first.counters.selected' WHERE id = 1154;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.spamreport', bronze_column_name = 'campaignAggregations.$first.counters.spamreport' WHERE id = 1155;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.suppressed', bronze_column_name = 'campaignAggregations.$first.counters.suppressed' WHERE id = 1156;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.hardbounced', bronze_column_name = 'campaignAggregations.$first.counters.hardbounced' WHERE id = 1157;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.softbounced', bronze_column_name = 'campaignAggregations.$first.counters.softbounced' WHERE id = 1158;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.pending', bronze_column_name = 'campaignAggregations.$first.counters.pending' WHERE id = 1159;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.contactslost', bronze_column_name = 'campaignAggregations.$first.counters.contactslost' WHERE id = 1160;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.counters.notsent', bronze_column_name = 'campaignAggregations.$first.counters.notsent' WHERE id = 1161;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.ratios.clickratio', bronze_column_name = 'campaignAggregations.$first.ratios.clickratio' WHERE id = 1162;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.ratios.clickthroughratio', bronze_column_name = 'campaignAggregations.$first.ratios.clickthroughratio' WHERE id = 1163;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.ratios.deliveredratio', bronze_column_name = 'campaignAggregations.$first.ratios.deliveredratio' WHERE id = 1164;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.ratios.openratio', bronze_column_name = 'campaignAggregations.$first.ratios.openratio' WHERE id = 1165;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.ratios.replyratio', bronze_column_name = 'campaignAggregations.$first.ratios.replyratio' WHERE id = 1166;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.ratios.unsubscribedratio', bronze_column_name = 'campaignAggregations.$first.ratios.unsubscribedratio' WHERE id = 1167;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.ratios.spamreportratio', bronze_column_name = 'campaignAggregations.$first.ratios.spamreportratio' WHERE id = 1168;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.ratios.bounceratio', bronze_column_name = 'campaignAggregations.$first.ratios.bounceratio' WHERE id = 1169;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.ratios.hardbounceratio', bronze_column_name = 'campaignAggregations.$first.ratios.hardbounceratio' WHERE id = 1170;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.ratios.softbounceratio', bronze_column_name = 'campaignAggregations.$first.ratios.softbounceratio' WHERE id = 1171;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.ratios.contactslostratio', bronze_column_name = 'campaignAggregations.$first.ratios.contactslostratio' WHERE id = 1172;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.ratios.pendingratio', bronze_column_name = 'campaignAggregations.$first.ratios.pendingratio' WHERE id = 1173;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.ratios.notsentratio', bronze_column_name = 'campaignAggregations.$first.ratios.notsentratio' WHERE id = 1174;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.deviceBreakdown', bronze_column_name = 'campaignAggregations.$first.deviceBreakdown' WHERE id = 1175;
+UPDATE schema_config SET landing_column_name = 'campaignAggregations.$first.qualifierStats', bronze_column_name = 'campaignAggregations.$first.qualifierStats' WHERE id = 1176;
 -- ============================================================
 -- Missing CRM object tables — IDs 1005-1085
 -- 9 tables × 9 cols = 81 rows; all share crm_objects.json schema
@@ -1844,145 +1684,124 @@ UPDATE schema_config SET source_column_name = 'campaignAggregations.$first.quali
 -- ============================================================
 
 -- [H06] crm_deals (IDs 1005-1013)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (1005, 'HubSpot', 'crm_deals', 'crm_deals_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1006, 'HubSpot', 'crm_deals', 'crm_deals_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1007, 'HubSpot', 'crm_deals', 'crm_deals_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1008, 'HubSpot', 'crm_deals', 'crm_deals_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1009, 'HubSpot', 'crm_deals', 'crm_deals_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1010, 'HubSpot', 'crm_deals', 'crm_deals_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1011, 'HubSpot', 'crm_deals', 'crm_deals_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
-  (1012, 'HubSpot', 'crm_deals', 'crm_deals_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1013, 'HubSpot', 'crm_deals', 'crm_deals_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+('HubSpot', 'crm_deals', 'id', 'STRING', 'crm_deals_base_temp', 'id', 'STRING', 'crm_deals_temp', 'id', 'STRING', 1, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_deals', 'createdAt', 'STRING', 'crm_deals_base_temp', 'created_at', 'STRING', 'crm_deals_temp', 'created_at', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_deals', 'updatedAt', 'STRING', 'crm_deals_base_temp', 'updated_at', 'STRING', 'crm_deals_temp', 'updated_at', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_deals', 'archived', 'STRING', 'crm_deals_base_temp', 'archived', 'STRING', 'crm_deals_temp', 'archived', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'crm_deals', 'archivedAt', 'STRING', 'crm_deals_base_temp', 'archived_at', 'STRING', 'crm_deals_temp', 'archived_at', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_deals', 'objectWriteTraceId', 'STRING', 'crm_deals_base_temp', 'object_write_trace_id', 'STRING', 'crm_deals_temp', 'object_write_trace_id', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_deals', 'url', 'STRING', 'crm_deals_base_temp', 'url', 'STRING', 'crm_deals_temp', 'url', 'STRING', 7, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_deals', 'properties', 'STRING', 'crm_deals_base_temp', 'properties', 'STRING', 'crm_deals_temp', 'properties_json', 'STRING', 8, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_deals', 'N/A', 'STRING', 'crm_deals_base_temp', 'N/A', 'STRING', 'crm_deals_temp', 'object_type', 'STRING', 9, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [H07] crm_tickets (IDs 1014-1022)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (1014, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1015, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1016, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1017, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1018, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1019, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1020, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
-  (1021, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1022, 'HubSpot', 'crm_tickets', 'crm_tickets_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+('HubSpot', 'crm_tickets', 'id', 'STRING', 'crm_tickets_base_temp', 'id', 'STRING', 'crm_tickets_temp', 'id', 'STRING', 1, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_tickets', 'createdAt', 'STRING', 'crm_tickets_base_temp', 'created_at', 'STRING', 'crm_tickets_temp', 'created_at', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_tickets', 'updatedAt', 'STRING', 'crm_tickets_base_temp', 'updated_at', 'STRING', 'crm_tickets_temp', 'updated_at', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_tickets', 'archived', 'STRING', 'crm_tickets_base_temp', 'archived', 'STRING', 'crm_tickets_temp', 'archived', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'crm_tickets', 'archivedAt', 'STRING', 'crm_tickets_base_temp', 'archived_at', 'STRING', 'crm_tickets_temp', 'archived_at', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_tickets', 'objectWriteTraceId', 'STRING', 'crm_tickets_base_temp', 'object_write_trace_id', 'STRING', 'crm_tickets_temp', 'object_write_trace_id', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_tickets', 'url', 'STRING', 'crm_tickets_base_temp', 'url', 'STRING', 'crm_tickets_temp', 'url', 'STRING', 7, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_tickets', 'properties', 'STRING', 'crm_tickets_base_temp', 'properties', 'STRING', 'crm_tickets_temp', 'properties_json', 'STRING', 8, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_tickets', 'N/A', 'STRING', 'crm_tickets_base_temp', 'N/A', 'STRING', 'crm_tickets_temp', 'object_type', 'STRING', 9, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [H08] crm_products (IDs 1023-1031)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (1023, 'HubSpot', 'crm_products', 'crm_products_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1024, 'HubSpot', 'crm_products', 'crm_products_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1025, 'HubSpot', 'crm_products', 'crm_products_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1026, 'HubSpot', 'crm_products', 'crm_products_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1027, 'HubSpot', 'crm_products', 'crm_products_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1028, 'HubSpot', 'crm_products', 'crm_products_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1029, 'HubSpot', 'crm_products', 'crm_products_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
-  (1030, 'HubSpot', 'crm_products', 'crm_products_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1031, 'HubSpot', 'crm_products', 'crm_products_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+('HubSpot', 'crm_products', 'id', 'STRING', 'crm_products_base_temp', 'id', 'STRING', 'crm_products_temp', 'id', 'STRING', 1, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_products', 'createdAt', 'STRING', 'crm_products_base_temp', 'created_at', 'STRING', 'crm_products_temp', 'created_at', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_products', 'updatedAt', 'STRING', 'crm_products_base_temp', 'updated_at', 'STRING', 'crm_products_temp', 'updated_at', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_products', 'archived', 'STRING', 'crm_products_base_temp', 'archived', 'STRING', 'crm_products_temp', 'archived', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'crm_products', 'archivedAt', 'STRING', 'crm_products_base_temp', 'archived_at', 'STRING', 'crm_products_temp', 'archived_at', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_products', 'objectWriteTraceId', 'STRING', 'crm_products_base_temp', 'object_write_trace_id', 'STRING', 'crm_products_temp', 'object_write_trace_id', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_products', 'url', 'STRING', 'crm_products_base_temp', 'url', 'STRING', 'crm_products_temp', 'url', 'STRING', 7, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_products', 'properties', 'STRING', 'crm_products_base_temp', 'properties', 'STRING', 'crm_products_temp', 'properties_json', 'STRING', 8, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_products', 'N/A', 'STRING', 'crm_products_base_temp', 'N/A', 'STRING', 'crm_products_temp', 'object_type', 'STRING', 9, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [H09] crm_line_items (IDs 1032-1040)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (1032, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1033, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1034, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1035, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1036, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1037, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1038, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
-  (1039, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1040, 'HubSpot', 'crm_line_items', 'crm_line_items_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+('HubSpot', 'crm_line_items', 'id', 'STRING', 'crm_line_items_base_temp', 'id', 'STRING', 'crm_line_items_temp', 'id', 'STRING', 1, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_line_items', 'createdAt', 'STRING', 'crm_line_items_base_temp', 'created_at', 'STRING', 'crm_line_items_temp', 'created_at', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_line_items', 'updatedAt', 'STRING', 'crm_line_items_base_temp', 'updated_at', 'STRING', 'crm_line_items_temp', 'updated_at', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_line_items', 'archived', 'STRING', 'crm_line_items_base_temp', 'archived', 'STRING', 'crm_line_items_temp', 'archived', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'crm_line_items', 'archivedAt', 'STRING', 'crm_line_items_base_temp', 'archived_at', 'STRING', 'crm_line_items_temp', 'archived_at', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_line_items', 'objectWriteTraceId', 'STRING', 'crm_line_items_base_temp', 'object_write_trace_id', 'STRING', 'crm_line_items_temp', 'object_write_trace_id', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_line_items', 'url', 'STRING', 'crm_line_items_base_temp', 'url', 'STRING', 'crm_line_items_temp', 'url', 'STRING', 7, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_line_items', 'properties', 'STRING', 'crm_line_items_base_temp', 'properties', 'STRING', 'crm_line_items_temp', 'properties_json', 'STRING', 8, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_line_items', 'N/A', 'STRING', 'crm_line_items_base_temp', 'N/A', 'STRING', 'crm_line_items_temp', 'object_type', 'STRING', 9, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [H10] crm_quotes (IDs 1041-1049)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (1041, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1042, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1043, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1044, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1045, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1046, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1047, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
-  (1048, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1049, 'HubSpot', 'crm_quotes', 'crm_quotes_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+('HubSpot', 'crm_quotes', 'id', 'STRING', 'crm_quotes_base_temp', 'id', 'STRING', 'crm_quotes_temp', 'id', 'STRING', 1, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_quotes', 'createdAt', 'STRING', 'crm_quotes_base_temp', 'created_at', 'STRING', 'crm_quotes_temp', 'created_at', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_quotes', 'updatedAt', 'STRING', 'crm_quotes_base_temp', 'updated_at', 'STRING', 'crm_quotes_temp', 'updated_at', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_quotes', 'archived', 'STRING', 'crm_quotes_base_temp', 'archived', 'STRING', 'crm_quotes_temp', 'archived', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'crm_quotes', 'archivedAt', 'STRING', 'crm_quotes_base_temp', 'archived_at', 'STRING', 'crm_quotes_temp', 'archived_at', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_quotes', 'objectWriteTraceId', 'STRING', 'crm_quotes_base_temp', 'object_write_trace_id', 'STRING', 'crm_quotes_temp', 'object_write_trace_id', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_quotes', 'url', 'STRING', 'crm_quotes_base_temp', 'url', 'STRING', 'crm_quotes_temp', 'url', 'STRING', 7, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_quotes', 'properties', 'STRING', 'crm_quotes_base_temp', 'properties', 'STRING', 'crm_quotes_temp', 'properties_json', 'STRING', 8, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_quotes', 'N/A', 'STRING', 'crm_quotes_base_temp', 'N/A', 'STRING', 'crm_quotes_temp', 'object_type', 'STRING', 9, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [H11] crm_calls (IDs 1050-1058)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (1050, 'HubSpot', 'crm_calls', 'crm_calls_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1051, 'HubSpot', 'crm_calls', 'crm_calls_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1052, 'HubSpot', 'crm_calls', 'crm_calls_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1053, 'HubSpot', 'crm_calls', 'crm_calls_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1054, 'HubSpot', 'crm_calls', 'crm_calls_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1055, 'HubSpot', 'crm_calls', 'crm_calls_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1056, 'HubSpot', 'crm_calls', 'crm_calls_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
-  (1057, 'HubSpot', 'crm_calls', 'crm_calls_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1058, 'HubSpot', 'crm_calls', 'crm_calls_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+('HubSpot', 'crm_calls', 'id', 'STRING', 'crm_calls_base_temp', 'id', 'STRING', 'crm_calls_temp', 'id', 'STRING', 1, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_calls', 'createdAt', 'STRING', 'crm_calls_base_temp', 'created_at', 'STRING', 'crm_calls_temp', 'created_at', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_calls', 'updatedAt', 'STRING', 'crm_calls_base_temp', 'updated_at', 'STRING', 'crm_calls_temp', 'updated_at', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_calls', 'archived', 'STRING', 'crm_calls_base_temp', 'archived', 'STRING', 'crm_calls_temp', 'archived', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'crm_calls', 'archivedAt', 'STRING', 'crm_calls_base_temp', 'archived_at', 'STRING', 'crm_calls_temp', 'archived_at', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_calls', 'objectWriteTraceId', 'STRING', 'crm_calls_base_temp', 'object_write_trace_id', 'STRING', 'crm_calls_temp', 'object_write_trace_id', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_calls', 'url', 'STRING', 'crm_calls_base_temp', 'url', 'STRING', 'crm_calls_temp', 'url', 'STRING', 7, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_calls', 'properties', 'STRING', 'crm_calls_base_temp', 'properties', 'STRING', 'crm_calls_temp', 'properties_json', 'STRING', 8, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_calls', 'N/A', 'STRING', 'crm_calls_base_temp', 'N/A', 'STRING', 'crm_calls_temp', 'object_type', 'STRING', 9, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [H12] crm_meetings (IDs 1059-1067)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (1059, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1060, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1061, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1062, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1063, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1064, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1065, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
-  (1066, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1067, 'HubSpot', 'crm_meetings', 'crm_meetings_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+('HubSpot', 'crm_meetings', 'id', 'STRING', 'crm_meetings_base_temp', 'id', 'STRING', 'crm_meetings_temp', 'id', 'STRING', 1, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_meetings', 'createdAt', 'STRING', 'crm_meetings_base_temp', 'created_at', 'STRING', 'crm_meetings_temp', 'created_at', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_meetings', 'updatedAt', 'STRING', 'crm_meetings_base_temp', 'updated_at', 'STRING', 'crm_meetings_temp', 'updated_at', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_meetings', 'archived', 'STRING', 'crm_meetings_base_temp', 'archived', 'STRING', 'crm_meetings_temp', 'archived', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'crm_meetings', 'archivedAt', 'STRING', 'crm_meetings_base_temp', 'archived_at', 'STRING', 'crm_meetings_temp', 'archived_at', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_meetings', 'objectWriteTraceId', 'STRING', 'crm_meetings_base_temp', 'object_write_trace_id', 'STRING', 'crm_meetings_temp', 'object_write_trace_id', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_meetings', 'url', 'STRING', 'crm_meetings_base_temp', 'url', 'STRING', 'crm_meetings_temp', 'url', 'STRING', 7, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_meetings', 'properties', 'STRING', 'crm_meetings_base_temp', 'properties', 'STRING', 'crm_meetings_temp', 'properties_json', 'STRING', 8, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_meetings', 'N/A', 'STRING', 'crm_meetings_base_temp', 'N/A', 'STRING', 'crm_meetings_temp', 'object_type', 'STRING', 9, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [H13] crm_notes (IDs 1068-1076)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (1068, 'HubSpot', 'crm_notes', 'crm_notes_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1069, 'HubSpot', 'crm_notes', 'crm_notes_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1070, 'HubSpot', 'crm_notes', 'crm_notes_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1071, 'HubSpot', 'crm_notes', 'crm_notes_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1072, 'HubSpot', 'crm_notes', 'crm_notes_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1073, 'HubSpot', 'crm_notes', 'crm_notes_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1074, 'HubSpot', 'crm_notes', 'crm_notes_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
-  (1075, 'HubSpot', 'crm_notes', 'crm_notes_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1076, 'HubSpot', 'crm_notes', 'crm_notes_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
+('HubSpot', 'crm_notes', 'id', 'STRING', 'crm_notes_base_temp', 'id', 'STRING', 'crm_notes_temp', 'id', 'STRING', 1, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_notes', 'createdAt', 'STRING', 'crm_notes_base_temp', 'created_at', 'STRING', 'crm_notes_temp', 'created_at', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_notes', 'updatedAt', 'STRING', 'crm_notes_base_temp', 'updated_at', 'STRING', 'crm_notes_temp', 'updated_at', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_notes', 'archived', 'STRING', 'crm_notes_base_temp', 'archived', 'STRING', 'crm_notes_temp', 'archived', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'crm_notes', 'archivedAt', 'STRING', 'crm_notes_base_temp', 'archived_at', 'STRING', 'crm_notes_temp', 'archived_at', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_notes', 'objectWriteTraceId', 'STRING', 'crm_notes_base_temp', 'object_write_trace_id', 'STRING', 'crm_notes_temp', 'object_write_trace_id', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_notes', 'url', 'STRING', 'crm_notes_base_temp', 'url', 'STRING', 'crm_notes_temp', 'url', 'STRING', 7, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_notes', 'properties', 'STRING', 'crm_notes_base_temp', 'properties', 'STRING', 'crm_notes_temp', 'properties_json', 'STRING', 8, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_notes', 'N/A', 'STRING', 'crm_notes_base_temp', 'N/A', 'STRING', 'crm_notes_temp', 'object_type', 'STRING', 9, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [H14] crm_tasks (IDs 1077-1085)
-INSERT INTO schema_config
-    (id, source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  (1077, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  (1078, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'createdAt',            'created_at',            'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  (1079, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'updatedAt',            'updated_at',            'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  (1080, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'archived',             'archived',              'BOOLEAN',  4, 1, 0, 1, GETUTCDATE()),
-  (1081, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'archivedAt',           'archived_at',           'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  (1082, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'objectWriteTraceId',   'object_write_trace_id', 'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  (1083, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'url',                  'url',                   'STRING',   7, 0, 0, 1, GETUTCDATE()),
-  (1084, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'properties',           'properties_json',       'STRING',   8, 0, 0, 1, GETUTCDATE()),
-  (1085, 'HubSpot', 'crm_tasks', 'crm_tasks_base', 'N/A',                  'object_type',           'STRING',   9, 0, 0, 1, GETUTCDATE());
-
+('HubSpot', 'crm_tasks', 'id', 'STRING', 'crm_tasks_base_temp', 'id', 'STRING', 'crm_tasks_temp', 'id', 'STRING', 1, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_tasks', 'createdAt', 'STRING', 'crm_tasks_base_temp', 'created_at', 'STRING', 'crm_tasks_temp', 'created_at', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_tasks', 'updatedAt', 'STRING', 'crm_tasks_base_temp', 'updated_at', 'STRING', 'crm_tasks_temp', 'updated_at', 'STRING', 3, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_tasks', 'archived', 'STRING', 'crm_tasks_base_temp', 'archived', 'STRING', 'crm_tasks_temp', 'archived', 'BOOLEAN', 4, 1, 0, 0, '0', 1, GETUTCDATE()),
+('HubSpot', 'crm_tasks', 'archivedAt', 'STRING', 'crm_tasks_base_temp', 'archived_at', 'STRING', 'crm_tasks_temp', 'archived_at', 'STRING', 5, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_tasks', 'objectWriteTraceId', 'STRING', 'crm_tasks_base_temp', 'object_write_trace_id', 'STRING', 'crm_tasks_temp', 'object_write_trace_id', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_tasks', 'url', 'STRING', 'crm_tasks_base_temp', 'url', 'STRING', 'crm_tasks_temp', 'url', 'STRING', 7, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_tasks', 'properties', 'STRING', 'crm_tasks_base_temp', 'properties', 'STRING', 'crm_tasks_temp', 'properties_json', 'STRING', 8, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+('HubSpot', 'crm_tasks', 'N/A', 'STRING', 'crm_tasks_base_temp', 'N/A', 'STRING', 'crm_tasks_temp', 'object_type', 'STRING', 9, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- ============================================================
 -- ── Auto-assigned IDs for new sources (Webex) ────────────────────────────
-SET IDENTITY_INSERT dbo.schema_config OFF;
-GO
 
 -- Webex source — schema_config seed data
 -- source_name = 'Webex'  (IDs auto-assigned by IDENTITY)
@@ -1993,623 +1812,658 @@ GO
 
 -- [W01] agent_activity — 13 data fields + 4 context
 INSERT INTO schema_config
-    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+    (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ('Webex', 'agent_activity', 'agent_activity_base', 'agentId',                       'agent_id',                       'STRING',  1, 1, 1, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'agentName',                     'agent_name',                     'STRING',  2, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'agentSessionId',                'agent_session_id',               'STRING',  3, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'siteId',                        'site_id',                        'STRING',  4, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'siteName',                      'site_name',                      'STRING',  5, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'teamId',                        'team_id',                        'STRING',  6, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'teamName',                      'team_name',                      'STRING',  7, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'userLoginId',                   'user_login_id',                  'STRING',  8, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'channelInfo.$0.channelId',      'channel_info_channel_id',        'STRING',  9, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'channelInfo.$0.channelType',    'channel_info_channel_type',      'STRING', 10, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'channelInfo.$0.subChannelType', 'channel_info_sub_channel_type',  'STRING', 11, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'channelInfo.$0.agentPhoneNumber','channel_info_agent_phone_number','STRING', 12, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'channelInfo.$0.activities',     'channel_info_activities_json',   'STRING', 13, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'N/A',                           'start_date',                     'STRING', 14, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'N/A',                           'end_date',                       'STRING', 15, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'N/A',                           'record_type',                    'STRING', 16, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'agent_activity_base', 'N/A',                           'source',                         'STRING', 17, 0, 0, 1, GETUTCDATE());
+  ('Webex', 'agent_activity', 'agentId',                                            'STRING', 'agent_activity_base_temp', 'agent_id',                      'STRING', 'agent_activity_temp', 'agent_id',                      'STRING', 1,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'agentName',                                          'STRING', 'agent_activity_base_temp', 'agent_name',                    'STRING', 'agent_activity_temp', 'agent_name',                    'STRING', 2,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'agentSessionId',                                     'STRING', 'agent_activity_base_temp', 'agent_session_id',               'STRING', 'agent_activity_temp', 'agent_session_id',               'STRING', 3,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_changedById',            'STRING', 'agent_activity_base_temp', 'changed_by_supervisor_id',      'STRING', 'agent_activity_temp', 'changed_by_supervisor_id',      'STRING', 4,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_changedByName',          'STRING', 'agent_activity_base_temp', 'changed_by_supervisor_name',    'STRING', 'agent_activity_temp', 'changed_by_supervisor_name',    'STRING', 5,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_contactAssignmentType',  'STRING', 'agent_activity_base_temp', 'contact_assignment_type',       'STRING', 'agent_activity_temp', 'contact_assignment_type',       'STRING', 6,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_duration',               'STRING', 'agent_activity_base_temp', 'activity_duration',             'STRING', 'agent_activity_temp', 'activity_duration',             'BIGINT', 7,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_endTime',                'STRING', 'agent_activity_base_temp', 'activity_end_time',             'STRING', 'agent_activity_temp', 'activity_end_time',             'BIGINT', 8,  1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_id',                     'STRING', 'agent_activity_base_temp', 'activity_id',                   'STRING', 'agent_activity_temp', 'activity_id',                   'STRING', 9,  1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_idleCode_id',            'STRING', 'agent_activity_base_temp', 'idle_code_id',                  'STRING', 'agent_activity_temp', 'idle_code_id',                  'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_idleCode_name',          'STRING', 'agent_activity_base_temp', 'idle_code_name',                'STRING', 'agent_activity_temp', 'idle_code_name',                'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_isCurrentActivity',      'STRING', 'agent_activity_base_temp', 'is_current_activity',           'STRING', 'agent_activity_temp', 'is_current_activity',           'INT',    12, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_isLoginActivity',        'STRING', 'agent_activity_base_temp', 'is_login_activity',             'STRING', 'agent_activity_temp', 'is_login_activity',             'INT',    13, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_isLogoutActivity',       'STRING', 'agent_activity_base_temp', 'is_logout_activity',            'STRING', 'agent_activity_temp', 'is_logout_activity',            'INT',    14, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_isOutdial',              'STRING', 'agent_activity_base_temp', 'is_outdial',                    'STRING', 'agent_activity_temp', 'is_outdial',                    'INT',    15, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_outboundType',           'STRING', 'agent_activity_base_temp', 'outbound_type',                 'STRING', 'agent_activity_temp', 'outbound_type',                 'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_queue_id',               'STRING', 'agent_activity_base_temp', 'queue_id',                      'STRING', 'agent_activity_temp', 'queue_id',                      'STRING', 17, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_queue_name',             'STRING', 'agent_activity_base_temp', 'queue_name',                    'STRING', 'agent_activity_temp', 'queue_name',                    'STRING', 18, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_startTime',              'STRING', 'agent_activity_base_temp', 'activity_start_time',           'STRING', 'agent_activity_temp', 'activity_start_time',           'BIGINT', 19, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_state',                  'STRING', 'agent_activity_base_temp', 'activity_state',                'STRING', 'agent_activity_temp', 'activity_state',                'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_taskId',                 'STRING', 'agent_activity_base_temp', 'task_id',                       'STRING', 'agent_activity_temp', 'task_id',                       'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_wrapupCode_id',          'STRING', 'agent_activity_base_temp', 'wrapup_code_id',                'STRING', 'agent_activity_temp', 'wrapup_code_id',                'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_activities_nodes_wrapupCode_name',        'STRING', 'agent_activity_base_temp', 'wrapup_code_name',              'STRING', 'agent_activity_temp', 'wrapup_code_name',              'STRING', 23, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_agentPhoneNumber',                        'STRING', 'agent_activity_base_temp', 'agent_phone_number',            'STRING', 'agent_activity_temp', 'agent_phone_number',            'STRING', 24, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_channelId',                               'STRING', 'agent_activity_base_temp', 'channel_id',                    'STRING', 'agent_activity_temp', 'channel_id',                    'STRING', 25, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_channelType',                             'STRING', 'agent_activity_base_temp', 'channel_type',                  'STRING', 'agent_activity_temp', 'channel_type',                  'STRING', 26, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'channelInfo_subChannelType',                          'STRING', 'agent_activity_base_temp', 'sub_channel_type',              'STRING', 'agent_activity_temp', 'sub_channel_type',              'STRING', 27, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'siteId',                                              'STRING', 'agent_activity_base_temp', 'site_id',                       'STRING', 'agent_activity_temp', 'site_id',                       'STRING', 28, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'siteName',                                            'STRING', 'agent_activity_base_temp', 'site_name',                     'STRING', 'agent_activity_temp', 'site_name',                     'STRING', 29, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'teamId',                                              'STRING', 'agent_activity_base_temp', 'team_id',                       'STRING', 'agent_activity_temp', 'team_id',                       'STRING', 30, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'teamName',                                            'STRING', 'agent_activity_base_temp', 'team_name',                     'STRING', 'agent_activity_temp', 'team_name',                     'STRING', 31, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'userLoginId',                                         'STRING', 'agent_activity_base_temp', 'user_login_id',                 'STRING', 'agent_activity_temp', 'user_login_id',                 'STRING', 32, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'N/A',                                                 'STRING', 'agent_activity_base_temp', 'ingestion_date',                'STRING', 'agent_activity_temp', 'ingestion_date',                'DATE',   33, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'N/A',                                                 'STRING', 'agent_activity_base_temp', 'data_timestamp',                'STRING', 'agent_activity_temp', 'data_timestamp',                'BIGINT', 34, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'N/A',                                                 'STRING', 'agent_activity_base_temp', 'source_system',                 'STRING', 'agent_activity_temp', 'source_system',                 'STRING', 35, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'N/A',                                                 'STRING', 'agent_activity_base_temp', 'ingestion_run_id',               'STRING', 'agent_activity_temp', 'ingestion_run_id',               'STRING', 36, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'N/A',                                                 'STRING', 'agent_activity_base_temp', 'ingestion_timestamp',            'STRING', 'agent_activity_temp', 'ingestion_timestamp',            'BIGINT', 37, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_activity', 'N/A',                                                 'STRING', 'agent_activity_base_temp', 'src_busn_asst',                  'STRING', 'agent_activity_temp', 'src_busn_asst',                  'STRING', 38, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [W02] agent_session — 113 data fields + 4 context
 INSERT INTO schema_config
-    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+    (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ('Webex', 'agent_session', 'agent_session_base', 'agentId',                                              'agent_id',                                        'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'agentName',                                            'agent_name',                                      'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'agentSessionId',                                       'agent_session_id',                                'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'agentSignOutReason',                                   'agent_sign_out_reason',                           'STRING',   4, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'endTime',                                              'end_time',                                        'BIGINT',   5, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'isActive',                                             'is_active',                                       'BOOLEAN',  6, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'multiMediaProfileType',                                'multi_media_profile_type',                        'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'orgId',                                                'org_id',                                          'STRING',   8, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'orgName',                                              'org_name',                                        'STRING',   9, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'parentOrgId',                                          'parent_org_id',                                   'STRING',  10, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'parentOrgName',                                        'parent_org_name',                                 'STRING',  11, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'siteId',                                               'site_id',                                         'STRING',  12, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'siteName',                                             'site_name',                                       'STRING',  13, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'skillsProfile',                                        'skills_profile',                                  'STRING',  14, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'startTime',                                            'start_time',                                      'BIGINT',  15, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'state',                                                'state',                                           'STRING',  16, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'teamId',                                               'team_id',                                         'STRING',  17, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'teamName',                                             'team_name',                                       'STRING',  18, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'userLoginId',                                          'user_login_id',                                   'STRING',  19, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'agentSkills.$0.name',                                  'agent_skill_name',                                'STRING',  20, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'agentSkills.$0.intVal',                                'agent_skill_value',                               'INT',     21, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.agentPhoneNumber',                      'channel_agent_phone_number',                      'STRING',  22, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.channelId',                             'channel_id',                                      'STRING',  23, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.channelType',                           'channel_type',                                    'STRING',  24, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.subChannelType',                        'channel_sub_type',                                'STRING',  25, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.currentState',                          'channel_current_state',                           'STRING',  26, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.idleCodeName',                          'channel_idle_code_name',                          'STRING',  27, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.lastActivityTime',                      'channel_last_activity_time',                      'BIGINT',  28, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.totalDuration',                         'channel_total_duration',                          'INT',     29, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.totalReservationTime',                  'channel_total_reservation_time',                  'INT',     30, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.availableCount',                        'channel_available_count',                         'INT',     31, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.availableDuration',                     'channel_available_duration',                      'INT',     32, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.idleCount',                             'channel_idle_count',                              'INT',     33, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.idleDuration',                          'channel_idle_duration',                           'INT',     34, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.reservationCount',                      'channel_reservation_count',                       'INT',     35, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.connectedCount',                        'channel_connected_count',                         'INT',     36, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.connectedDuration',                     'channel_connected_duration',                      'INT',     37, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.ringingCount',                          'channel_ringing_count',                           'INT',     38, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.ringingDuration',                       'channel_ringing_duration',                        'INT',     39, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.holdCount',                             'channel_hold_count',                              'INT',     40, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.holdDuration',                          'channel_hold_duration',                           'INT',     41, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.wrapupCount',                           'channel_wrapup_count',                            'INT',     42, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.wrapupDuration',                        'channel_wrapup_duration',                         'INT',     43, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.postCallCount',                         'channel_post_call_count',                         'INT',     44, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.postCallDuration',                      'channel_post_call_duration',                      'INT',     45, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.postCallAssistanceCount',               'channel_post_call_assistance_count',              'INT',     46, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.postCallAssistanceDuration',            'channel_post_call_assistance_duration',           'INT',     47, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.notRespondedCount',                     'channel_not_responded_count',                     'INT',     48, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.notRespondedDuration',                  'channel_not_responded_duration',                  'INT',     49, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.manualAssignCount',                     'channel_manual_assign_count',                     'INT',     50, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.blindTransferCount',                    'channel_blind_transfer_count',                    'INT',     51, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.callBackCount',                         'channel_call_back_count',                         'INT',     52, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.transferCount',                         'channel_transfer_count',                          'INT',     53, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.conferenceCount',                       'channel_conference_count',                        'INT',     54, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.conferenceDuration',                    'channel_conference_duration',                     'INT',     55, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.conferenceTransferInCount',             'channel_conference_transfer_in_count',            'INT',     56, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultCount',                          'channel_consult_count',                           'INT',     57, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultDuration',                       'channel_consult_duration',                        'INT',     58, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultRequestCount',                   'channel_consult_request_count',                   'INT',     59, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultRequestDuration',                'channel_consult_request_duration',                'INT',     60, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultAnswerCount',                    'channel_consult_answer_count',                    'INT',     61, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultAnswerDuration',                 'channel_consult_answer_duration',                 'INT',     62, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultTransferInCount',                'channel_consult_transfer_in_count',               'INT',     63, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultToQueueCount',                   'channel_consult_to_queue_count',                  'INT',     64, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultToQueueDuration',                'channel_consult_to_queue_duration',               'INT',     65, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultToQueueRequestCount',            'channel_consult_to_queue_request_count',          'INT',     66, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultToQueueRequestDuration',         'channel_consult_to_queue_request_duration',       'INT',     67, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultToQueueAnswerCount',             'channel_consult_to_queue_answer_count',           'INT',     68, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultToQueueAnswerDuration',          'channel_consult_to_queue_answer_duration',        'INT',     69, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultToEpRequestedCount',             'channel_consult_to_ep_requested_count',           'INT',     70, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultToEpRequestedDuration',          'channel_consult_to_ep_requested_duration',        'INT',     71, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultToEpAnsweredCount',              'channel_consult_to_ep_answered_count',            'INT',     72, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.consultToEpAnsweredDuration',           'channel_consult_to_ep_answered_duration',         'INT',     73, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.disconnectedCount',                     'channel_disconnected_count',                      'INT',     74, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.disconnectedHoldCallsCount',            'channel_disconnected_hold_calls_count',           'INT',     75, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.agentToAgentTransferCount',             'channel_agent_to_agent_transfer_count',           'INT',     76, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.agentTransferToQueueRequestCount',      'channel_agent_transfer_to_queue_request_count',   'INT',     77, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialCount',                          'channel_outdial_count',                           'INT',     78, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConnectedCount',                 'channel_outdial_connected_count',                 'INT',     79, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConnectedDuration',              'channel_outdial_connected_duration',              'INT',     80, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialHoldCount',                      'channel_outdial_hold_count',                      'INT',     81, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialHoldDuration',                   'channel_outdial_hold_duration',                   'INT',     82, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialWrapupCount',                    'channel_outdial_wrapup_count',                    'INT',     83, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialWrapupDuration',                 'channel_outdial_wrapup_duration',                 'INT',     84, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialRingingCount',                   'channel_outdial_ringing_count',                   'INT',     85, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialRingingDuration',                'channel_outdial_ringing_duration',                'INT',     86, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialNotRespondedCount',              'channel_outdial_not_responded_count',             'INT',     87, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialNotRespondedDuration',           'channel_outdial_not_responded_duration',          'INT',     88, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialBlindTransferCount',             'channel_outdial_blind_transfer_count',            'INT',     89, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialTransferCount',                  'channel_outdial_transfer_count',                  'INT',     90, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConferenceCount',                'channel_outdial_conference_count',                'INT',     91, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConferenceDuration',             'channel_outdial_conference_duration',             'INT',     92, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialPostCallCount',                  'channel_outdial_post_call_count',                 'INT',     93, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialPostCallDuration',               'channel_outdial_post_call_duration',              'INT',     94, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialPostCallAssistanceCount',        'channel_outdial_post_call_assistance_count',      'INT',     95, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialPostCallAssistanceDuration',     'channel_outdial_post_call_assistance_duration',   'INT',     96, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultCount',                   'channel_outdial_consult_count',                   'INT',     97, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultDuration',                'channel_outdial_consult_duration',                'INT',     98, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultRequestCount',            'channel_outdial_consult_request_count',           'INT',     99, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultRequestDuration',         'channel_outdial_consult_request_duration',        'INT',    100, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultAnswerCount',             'channel_outdial_consult_answer_count',            'INT',    101, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultAnswerDuration',          'channel_outdial_consult_answer_duration',         'INT',    102, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultToQueueCount',            'channel_outdial_consult_to_queue_count',          'INT',    103, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultToQueueDuration',         'channel_outdial_consult_to_queue_duration',       'INT',    104, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultToQueueRequestCount',     'channel_outdial_consult_to_queue_request_count',  'INT',    105, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultToQueueRequestDuration',  'channel_outdial_consult_to_queue_request_duration','INT',   106, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultToEpRequestedCount',      'channel_outdial_consult_to_ep_requested_count',   'INT',    107, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultToEpRequestedDuration',   'channel_outdial_consult_to_ep_requested_duration','INT',    108, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultToEpAnsweredCount',       'channel_outdial_consult_to_ep_answered_count',    'INT',    109, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultToEpAnsweredDuration',    'channel_outdial_consult_to_ep_answered_duration', 'INT',    110, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialConsultTransferDuration',        'channel_outdial_consult_transfer_duration',       'INT',    111, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialAgentToAgentTransferCount',      'channel_outdial_agent_to_agent_transfer_count',   'INT',    112, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'channelInfo.$0.outdialAgentTransferToQueueRequestCount','channel_outdial_agent_transfer_to_queue_request_count','INT',113, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'N/A',                                                  'start_date',                                      'STRING', 114, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'N/A',                                                  'end_date',                                        'STRING', 115, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'N/A',                                                  'record_type',                                     'STRING', 116, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'agent_session_base', 'N/A',                                                  'source',                                          'STRING', 117, 0, 0, 1, GETUTCDATE());
+  ('Webex', 'agent_session', 'agentId',                                        'STRING', 'agent_session_base_temp', 'agent_id',                                    'STRING', 'agent_session_temp', 'agent_id',                                    'STRING', 1,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'agentName',                                      'STRING', 'agent_session_base_temp', 'agent_name',                                  'STRING', 'agent_session_temp', 'agent_name',                                  'STRING', 2,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'agentSessionId',                                 'STRING', 'agent_session_base_temp', 'agent_session_id',                            'STRING', 'agent_session_temp', 'agent_session_id',                            'STRING', 3,  1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'agentSignOutReason',                             'STRING', 'agent_session_base_temp', 'agent_signout_reason',                        'STRING', 'agent_session_temp', 'agent_signout_reason',                        'STRING', 4,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'agentSkills',                                    'STRING', 'agent_session_base_temp', 'agent_skills_json',                           'STRING', 'agent_session_temp', 'agent_skills_json',                           'STRING', 5,  0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'agentskills_json_booleanValue',                  'STRING', 'agent_session_base_temp', 'agent_skill_boolean_value',                   'STRING', 'agent_session_temp', 'agent_skill_boolean_value',                   'INT',    6,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'agentskills_json_proficiencyLevel',              'STRING', 'agent_session_base_temp', 'agent_skill_proficiency_level',               'STRING', 'agent_session_temp', 'agent_skill_proficiency_level',               'INT',    7,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'agentskills_json_skillId',                       'STRING', 'agent_session_base_temp', 'agent_skill_id',                              'STRING', 'agent_session_temp', 'agent_skill_id',                              'STRING', 8,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'agentskills_json_skillName',                     'STRING', 'agent_session_base_temp', 'agent_skill_name',                            'STRING', 'agent_session_temp', 'agent_skill_name',                            'STRING', 9,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'agentskills_json_skillType',                     'STRING', 'agent_session_base_temp', 'agent_skill_type',                            'STRING', 'agent_session_temp', 'agent_skill_type',                            'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'agentskills_json_value',                         'STRING', 'agent_session_base_temp', 'agent_skill_value',                           'STRING', 'agent_session_temp', 'agent_skill_value',                           'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_agentPhoneNumber',                   'STRING', 'agent_session_base_temp', 'agent_phone_number',                          'STRING', 'agent_session_temp', 'agent_phone_number',                          'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_agentToAgentTransferCount',          'STRING', 'agent_session_base_temp', 'agent_to_agent_transfer_count',               'STRING', 'agent_session_temp', 'agent_to_agent_transfer_count',               'INT',    13, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_agentTransferToQueueRequestCount',   'STRING', 'agent_session_base_temp', 'agent_transfer_to_queue_request_count',       'STRING', 'agent_session_temp', 'agent_transfer_to_queue_request_count',       'INT',    14, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_availableCount',                     'STRING', 'agent_session_base_temp', 'available_count',                             'STRING', 'agent_session_temp', 'available_count',                             'INT',    15, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_availableDuration',                  'STRING', 'agent_session_base_temp', 'available_duration',                          'STRING', 'agent_session_temp', 'available_duration',                          'BIGINT', 16, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_blindTransferCount',                 'STRING', 'agent_session_base_temp', 'blind_transfer_count',                        'STRING', 'agent_session_temp', 'blind_transfer_count',                        'INT',    17, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_callBackCount',                      'STRING', 'agent_session_base_temp', 'call_back_count',                             'STRING', 'agent_session_temp', 'call_back_count',                             'INT',    18, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_channelId',                          'STRING', 'agent_session_base_temp', 'channel_id',                                  'STRING', 'agent_session_temp', 'channel_id',                                  'STRING', 19, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_channelType',                        'STRING', 'agent_session_base_temp', 'channel_type',                                'STRING', 'agent_session_temp', 'channel_type',                                'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_conferenceCount',                    'STRING', 'agent_session_base_temp', 'conference_count',                            'STRING', 'agent_session_temp', 'conference_count',                            'INT',    21, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_conferenceDuration',                 'STRING', 'agent_session_base_temp', 'conference_duration',                         'STRING', 'agent_session_temp', 'conference_duration',                         'BIGINT', 22, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_conferenceTransferInCount',          'STRING', 'agent_session_base_temp', 'conference_transfer_in_count',                'STRING', 'agent_session_temp', 'conference_transfer_in_count',                'INT',    23, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_connectedCount',                     'STRING', 'agent_session_base_temp', 'connected_count',                             'STRING', 'agent_session_temp', 'connected_count',                             'INT',    24, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_connectedDuration',                  'STRING', 'agent_session_base_temp', 'connected_duration',                          'STRING', 'agent_session_temp', 'connected_duration',                          'BIGINT', 25, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultAnswerCount',                 'STRING', 'agent_session_base_temp', 'consult_answer_count',                        'STRING', 'agent_session_temp', 'consult_answer_count',                        'INT',    26, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultAnswerDuration',              'STRING', 'agent_session_base_temp', 'consult_answer_duration',                     'STRING', 'agent_session_temp', 'consult_answer_duration',                     'BIGINT', 27, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultCount',                       'STRING', 'agent_session_base_temp', 'consult_count',                               'STRING', 'agent_session_temp', 'consult_count',                               'INT',    28, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultDuration',                    'STRING', 'agent_session_base_temp', 'consult_duration',                            'STRING', 'agent_session_temp', 'consult_duration',                            'BIGINT', 29, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultRequestCount',                'STRING', 'agent_session_base_temp', 'consult_request_count',                       'STRING', 'agent_session_temp', 'consult_request_count',                       'INT',    30, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultRequestDuration',             'STRING', 'agent_session_base_temp', 'consult_request_duration',                    'STRING', 'agent_session_temp', 'consult_request_duration',                    'BIGINT', 31, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultToEpAnsweredCount',           'STRING', 'agent_session_base_temp', 'consult_to_ep_answered_count',                'STRING', 'agent_session_temp', 'consult_to_ep_answered_count',                'INT',    32, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultToEpAnsweredDuration',        'STRING', 'agent_session_base_temp', 'consult_to_ep_answered_duration',             'STRING', 'agent_session_temp', 'consult_to_ep_answered_duration',             'BIGINT', 33, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultToEpRequestedCount',          'STRING', 'agent_session_base_temp', 'consult_to_ep_requested_count',               'STRING', 'agent_session_temp', 'consult_to_ep_requested_count',               'INT',    34, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultToEpRequestedDuration',       'STRING', 'agent_session_base_temp', 'consult_to_ep_requested_duration',            'STRING', 'agent_session_temp', 'consult_to_ep_requested_duration',            'BIGINT', 35, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultToQueueAnswerCount',          'STRING', 'agent_session_base_temp', 'consult_to_queue_answer_count',               'STRING', 'agent_session_temp', 'consult_to_queue_answer_count',               'INT',    36, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultToQueueAnswerDuration',       'STRING', 'agent_session_base_temp', 'consult_to_queue_answer_duration',            'STRING', 'agent_session_temp', 'consult_to_queue_answer_duration',            'BIGINT', 37, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultToQueueCount',                'STRING', 'agent_session_base_temp', 'consult_to_queue_count',                      'STRING', 'agent_session_temp', 'consult_to_queue_count',                      'INT',    38, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultToQueueDuration',             'STRING', 'agent_session_base_temp', 'consult_to_queue_duration',                   'STRING', 'agent_session_temp', 'consult_to_queue_duration',                   'BIGINT', 39, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultToQueueRequestCount',         'STRING', 'agent_session_base_temp', 'consult_to_queue_request_count',              'STRING', 'agent_session_temp', 'consult_to_queue_request_count',              'INT',    40, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultToQueueRequestDuration',      'STRING', 'agent_session_base_temp', 'consult_to_queue_request_duration',           'STRING', 'agent_session_temp', 'consult_to_queue_request_duration',           'BIGINT', 41, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_consultTransferInCount',             'STRING', 'agent_session_base_temp', 'consult_transfer_in_count',                   'STRING', 'agent_session_temp', 'consult_transfer_in_count',                   'INT',    42, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_currentState',                       'STRING', 'agent_session_base_temp', 'current_state',                               'STRING', 'agent_session_temp', 'current_state',                               'STRING', 43, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_disconnectedCount',                  'STRING', 'agent_session_base_temp', 'disconnected_count',                          'STRING', 'agent_session_temp', 'disconnected_count',                          'INT',    44, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_disconnectedHoldCallsCount',         'STRING', 'agent_session_base_temp', 'disconnected_hold_calls_count',               'STRING', 'agent_session_temp', 'disconnected_hold_calls_count',               'INT',    45, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_holdCount',                          'STRING', 'agent_session_base_temp', 'hold_count',                                  'STRING', 'agent_session_temp', 'hold_count',                                  'INT',    46, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_holdDuration',                       'STRING', 'agent_session_base_temp', 'hold_duration',                               'STRING', 'agent_session_temp', 'hold_duration',                               'BIGINT', 47, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_idleCodeName',                       'STRING', 'agent_session_base_temp', 'idle_code_name',                              'STRING', 'agent_session_temp', 'idle_code_name',                              'STRING', 48, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_idleCount',                          'STRING', 'agent_session_base_temp', 'idle_count',                                  'STRING', 'agent_session_temp', 'idle_count',                                  'INT',    49, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_idleDuration',                       'STRING', 'agent_session_base_temp', 'idle_duration',                               'STRING', 'agent_session_temp', 'idle_duration',                               'BIGINT', 50, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_lastActivityTime',                   'STRING', 'agent_session_base_temp', 'last_activity_time',                          'STRING', 'agent_session_temp', 'last_activity_time',                          'BIGINT', 51, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_manualAssignCount',                  'STRING', 'agent_session_base_temp', 'manual_assign_count',                         'STRING', 'agent_session_temp', 'manual_assign_count',                         'INT',    52, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_notRespondedCount',                  'STRING', 'agent_session_base_temp', 'not_responded_count',                         'STRING', 'agent_session_temp', 'not_responded_count',                         'INT',    53, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_notRespondedDuration',               'STRING', 'agent_session_base_temp', 'not_responded_duration',                      'STRING', 'agent_session_temp', 'not_responded_duration',                      'BIGINT', 54, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialAgentToAgentTransferCount',   'STRING', 'agent_session_base_temp', 'outdial_agent_to_agent_transfer_count',        'STRING', 'agent_session_temp', 'outdial_agent_to_agent_transfer_count',        'INT',    55, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialAgentTransferToQueueRequestCount', 'STRING', 'agent_session_base_temp', 'outdial_agent_transfer_to_queue_request_count', 'STRING', 'agent_session_temp', 'outdial_agent_transfer_to_queue_request_count', 'INT', 56, 1, 0, 0, '0', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialBlindTransferCount',          'STRING', 'agent_session_base_temp', 'outdial_blind_transfer_count',                'STRING', 'agent_session_temp', 'outdial_blind_transfer_count',                'INT',    57, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConferenceCount',             'STRING', 'agent_session_base_temp', 'outdial_conference_count',                    'STRING', 'agent_session_temp', 'outdial_conference_count',                    'INT',    58, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConferenceDuration',          'STRING', 'agent_session_base_temp', 'outdial_conference_duration',                 'STRING', 'agent_session_temp', 'outdial_conference_duration',                 'BIGINT', 59, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConnectedCount',              'STRING', 'agent_session_base_temp', 'outdial_connected_count',                     'STRING', 'agent_session_temp', 'outdial_connected_count',                     'INT',    60, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConnectedDuration',           'STRING', 'agent_session_base_temp', 'outdial_connected_duration',                  'STRING', 'agent_session_temp', 'outdial_connected_duration',                  'BIGINT', 61, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultAnswerCount',          'STRING', 'agent_session_base_temp', 'outdial_consult_answer_count',                'STRING', 'agent_session_temp', 'outdial_consult_answer_count',                'INT',    62, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultAnswerDuration',       'STRING', 'agent_session_base_temp', 'outdial_consult_answer_duration',             'STRING', 'agent_session_temp', 'outdial_consult_answer_duration',             'BIGINT', 63, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultCount',                'STRING', 'agent_session_base_temp', 'outdial_consult_count',                       'STRING', 'agent_session_temp', 'outdial_consult_count',                       'INT',    64, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultDuration',             'STRING', 'agent_session_base_temp', 'outdial_consult_duration',                    'STRING', 'agent_session_temp', 'outdial_consult_duration',                    'BIGINT', 65, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultRequestCount',         'STRING', 'agent_session_base_temp', 'outdial_consult_request_count',               'STRING', 'agent_session_temp', 'outdial_consult_request_count',               'INT',    66, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultRequestDuration',      'STRING', 'agent_session_base_temp', 'outdial_consult_request_duration',            'STRING', 'agent_session_temp', 'outdial_consult_request_duration',            'BIGINT', 67, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultToEpAnsweredCount',    'STRING', 'agent_session_base_temp', 'outdial_consult_to_ep_answered_count',         'STRING', 'agent_session_temp', 'outdial_consult_to_ep_answered_count',         'INT',    68, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultToEpAnsweredDuration', 'STRING', 'agent_session_base_temp', 'outdial_consult_to_ep_answered_duration',      'STRING', 'agent_session_temp', 'outdial_consult_to_ep_answered_duration',      'BIGINT', 69, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultToEpRequestedCount',   'STRING', 'agent_session_base_temp', 'outdial_consult_to_ep_requested_count',        'STRING', 'agent_session_temp', 'outdial_consult_to_ep_requested_count',        'INT',    70, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultToEpRequestedDuration','STRING', 'agent_session_base_temp', 'outdial_consult_to_ep_requested_duration',     'STRING', 'agent_session_temp', 'outdial_consult_to_ep_requested_duration',     'BIGINT', 71, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultToQueueAnswerCount',   'STRING', 'agent_session_base_temp', 'outdial_consult_to_queue_answer_count',        'STRING', 'agent_session_temp', 'outdial_consult_to_queue_answer_count',        'INT',    72, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultToQueueAnswerDuration','STRING', 'agent_session_base_temp', 'outdial_consult_to_ep_requested_duration',     'STRING', 'agent_session_temp', 'outdial_consult_to_ep_requested_duration',     'BIGINT', 73, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultToQueueRequestCount',  'STRING', 'agent_session_base_temp', 'outdial_consult_to_queue_request_count',       'STRING', 'agent_session_temp', 'outdial_consult_to_queue_request_count',       'INT',    74, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultToQueueRequestDuration','STRING','agent_session_base_temp', 'outdial_consult_to_queue_request_duration',    'STRING', 'agent_session_temp', 'outdial_consult_to_queue_request_duration',    'BIGINT', 75, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialConsultTransferDuration',     'STRING', 'agent_session_base_temp', 'outdial_consult_transfer_duration',            'STRING', 'agent_session_temp', 'outdial_consult_transfer_duration',            'BIGINT', 76, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialCount',                       'STRING', 'agent_session_base_temp', 'outdial_count',                               'STRING', 'agent_session_temp', 'outdial_count',                               'INT',    77, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialHoldCount',                   'STRING', 'agent_session_base_temp', 'outdial_hold_count',                          'STRING', 'agent_session_temp', 'outdial_hold_count',                          'INT',    78, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialHoldDuration',                'STRING', 'agent_session_base_temp', 'outdial_hold_duration',                       'STRING', 'agent_session_temp', 'outdial_hold_duration',                       'BIGINT', 79, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialNotRespondedCount',           'STRING', 'agent_session_base_temp', 'outdial_not_responded_count',                 'STRING', 'agent_session_temp', 'outdial_not_responded_count',                 'INT',    80, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialNotRespondedDuration',        'STRING', 'agent_session_base_temp', 'outdial_not_responded_duration',              'STRING', 'agent_session_temp', 'outdial_not_responded_duration',              'BIGINT', 81, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialPostCallAssistanceCount',     'STRING', 'agent_session_base_temp', 'outdial_post_call_assistance_count',           'STRING', 'agent_session_temp', 'outdial_post_call_assistance_count',           'INT',    82, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialPostCallAssistanceDuration',  'STRING', 'agent_session_base_temp', 'outdial_post_call_assistance_duration',        'STRING', 'agent_session_temp', 'outdial_post_call_assistance_duration',        'BIGINT', 83, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialPostCallCount',               'STRING', 'agent_session_base_temp', 'outdial_post_call_count',                     'STRING', 'agent_session_temp', 'outdial_post_call_count',                     'INT',    84, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialPostCallDuration',            'STRING', 'agent_session_base_temp', 'outdial_post_call_duration',                  'STRING', 'agent_session_temp', 'outdial_post_call_duration',                  'BIGINT', 85, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialRingingCount',                'STRING', 'agent_session_base_temp', 'outdial_ringing_count',                       'STRING', 'agent_session_temp', 'outdial_ringing_count',                       'INT',    86, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialRingingDuration',             'STRING', 'agent_session_base_temp', 'outdial_ringing_duration',                    'STRING', 'agent_session_temp', 'outdial_ringing_duration',                    'BIGINT', 87, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialTransferCount',               'STRING', 'agent_session_base_temp', 'outdial_transfer_count',                      'STRING', 'agent_session_temp', 'outdial_transfer_count',                      'INT',    88, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialWrapupCount',                 'STRING', 'agent_session_base_temp', 'outdial_wrapup_count',                        'STRING', 'agent_session_temp', 'outdial_wrapup_count',                        'INT',    89, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_outdialWrapupDuration',              'STRING', 'agent_session_base_temp', 'outdial_wrapup_duration',                     'STRING', 'agent_session_temp', 'outdial_wrapup_duration',                     'BIGINT', 90, 1, 0, 0, '0',            1, GETUTCDATE());
+
+-- [W02] agent_session — 124 rows [2 of 2] (rows 91–124, includes N/A audit rows 119–124)
+INSERT INTO schema_config
+    (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
+VALUES
+  ('Webex', 'agent_session', 'channelInfo_postCallAssistanceCount',            'STRING', 'agent_session_base_temp', 'post_call_assistance_count',                  'STRING', 'agent_session_temp', 'post_call_assistance_count',                  'INT',    91,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_postCallAssistanceDuration',         'STRING', 'agent_session_base_temp', 'post_call_assistance_duration',               'STRING', 'agent_session_temp', 'post_call_assistance_duration',               'BIGINT', 92,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_postCallCount',                      'STRING', 'agent_session_base_temp', 'post_call_count',                             'STRING', 'agent_session_temp', 'post_call_count',                             'INT',    93,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_postCallDuration',                   'STRING', 'agent_session_base_temp', 'post_call_duration',                          'STRING', 'agent_session_temp', 'post_call_duration',                          'BIGINT', 94,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_reservationCount',                   'STRING', 'agent_session_base_temp', 'reservation_count',                           'STRING', 'agent_session_temp', 'reservation_count',                           'INT',    95,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_ringingCount',                       'STRING', 'agent_session_base_temp', 'ringing_count',                               'STRING', 'agent_session_temp', 'ringing_count',                               'INT',    96,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_ringingDuration',                    'STRING', 'agent_session_base_temp', 'ringing_duration',                            'STRING', 'agent_session_temp', 'ringing_duration',                            'BIGINT', 97,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_subChannelType',                     'STRING', 'agent_session_base_temp', 'sub_channel_type',                            'STRING', 'agent_session_temp', 'sub_channel_type',                            'STRING', 98,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_totalDuration',                      'STRING', 'agent_session_base_temp', 'total_duration_seconds',                      'STRING', 'agent_session_temp', 'total_duration_seconds',                      'BIGINT', 99,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_totalReservationTime',               'STRING', 'agent_session_base_temp', 'total_reservation_time',                      'STRING', 'agent_session_temp', 'total_reservation_time',                      'BIGINT', 100, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_transferCount',                      'STRING', 'agent_session_base_temp', 'transfer_count',                              'STRING', 'agent_session_temp', 'transfer_count',                              'INT',    101, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_wrapupCount',                        'STRING', 'agent_session_base_temp', 'wrapup_count',                                'STRING', 'agent_session_temp', 'wrapup_count',                                'INT',    102, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'channelInfo_wrapupDuration',                     'STRING', 'agent_session_base_temp', 'wrapup_duration',                             'STRING', 'agent_session_temp', 'wrapup_duration',                             'BIGINT', 103, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'endTime',                                        'STRING', 'agent_session_base_temp', 'session_end_time',                            'STRING', 'agent_session_temp', 'session_end_time',                            'BIGINT', 104, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'isActive',                                       'STRING', 'agent_session_base_temp', 'is_active',                                   'STRING', 'agent_session_temp', 'is_active',                                   'INT',    105, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'multiMediaProfileType',                          'STRING', 'agent_session_base_temp', 'multimedia_profile_type',                     'STRING', 'agent_session_temp', 'multimedia_profile_type',                     'STRING', 106, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'orgId',                                          'STRING', 'agent_session_base_temp', 'org_id',                                      'STRING', 'agent_session_temp', 'org_id',                                      'STRING', 107, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'orgName',                                        'STRING', 'agent_session_base_temp', 'org_name',                                    'STRING', 'agent_session_temp', 'org_name',                                    'STRING', 108, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'parentOrgId',                                    'STRING', 'agent_session_base_temp', 'parent_org_id',                               'STRING', 'agent_session_temp', 'parent_org_id',                               'STRING', 109, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'parentOrgName',                                  'STRING', 'agent_session_base_temp', 'parent_org_name',                             'STRING', 'agent_session_temp', 'parent_org_name',                             'STRING', 110, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'siteId',                                         'STRING', 'agent_session_base_temp', 'site_id',                                     'STRING', 'agent_session_temp', 'site_id',                                     'STRING', 111, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'siteName',                                       'STRING', 'agent_session_base_temp', 'site_name',                                   'STRING', 'agent_session_temp', 'site_name',                                   'STRING', 112, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'skillsProfile',                                  'STRING', 'agent_session_base_temp', 'skills_profile_name',                         'STRING', 'agent_session_temp', 'skills_profile_name',                         'STRING', 113, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'startTime',                                      'STRING', 'agent_session_base_temp', 'session_start_time',                          'STRING', 'agent_session_temp', 'session_start_time',                          'BIGINT', 114, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'state',                                          'STRING', 'agent_session_base_temp', 'current_agent_state',                         'STRING', 'agent_session_temp', 'current_agent_state',                         'STRING', 115, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'teamId',                                         'STRING', 'agent_session_base_temp', 'team_id',                                     'STRING', 'agent_session_temp', 'team_id',                                     'STRING', 116, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'teamName',                                       'STRING', 'agent_session_base_temp', 'team_name',                                   'STRING', 'agent_session_temp', 'team_name',                                   'STRING', 117, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'userLoginId',                                    'STRING', 'agent_session_base_temp', 'user_login_id',                               'STRING', 'agent_session_temp', 'user_login_id',                               'STRING', 118, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'N/A',                                            'STRING', 'agent_session_base_temp', 'ingestion_date',                              'STRING', 'agent_session_temp', 'ingestion_date',                              'DATE',   119, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'N/A',                                            'STRING', 'agent_session_base_temp', 'data_timestamp',                              'STRING', 'agent_session_temp', 'data_timestamp',                              'BIGINT', 120, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'N/A',                                            'STRING', 'agent_session_base_temp', 'source_system',                               'STRING', 'agent_session_temp', 'source_system',                               'STRING', 121, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'N/A',                                            'STRING', 'agent_session_base_temp', 'ingestion_run_id',                            'STRING', 'agent_session_temp', 'ingestion_run_id',                            'STRING', 122, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'N/A',                                            'STRING', 'agent_session_base_temp', 'ingestion_timestamp',                         'STRING', 'agent_session_temp', 'ingestion_timestamp',                         'BIGINT', 123, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'agent_session', 'N/A',                                            'STRING', 'agent_session_base_temp', 'src_busn_asst',                               'STRING', 'agent_session_temp', 'src_busn_asst',                               'STRING', 124, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [W03] call_leg — 117 data fields + 4 context
 INSERT INTO schema_config
-    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+    (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ('Webex', 'call_leg', 'call_leg_base', 'id',                              'id',                                 'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'taskId',                          'task_id',                            'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'callLegType',                     'call_leg_type',                      'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'channelType',                     'channel_type',                       'STRING',   4, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'channelSubType',                  'channel_sub_type',                   'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'direction',                       'direction',                          'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'origin',                          'origin',                             'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'destination',                     'destination',                        'STRING',   8, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'contactState',                    'contact_state',                      'STRING',   9, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'status',                          'status',                             'STRING',  10, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'createdTime',                     'created_time',                       'BIGINT',  11, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'endedTime',                       'ended_time',                         'BIGINT',  12, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'lastActivityTime',                'last_activity_time',                 'BIGINT',  13, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'handleTime',                      'handle_time',                        'INT',     14, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'handleType',                      'handle_type',                        'STRING',  15, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'isActive',                        'is_active',                          'BOOLEAN', 16, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'isOutdial',                       'is_outdial',                         'BOOLEAN', 17, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'isOptOutOfQueue',                 'is_opt_out_of_queue',                'BOOLEAN', 18, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'isTaskLegHandled',                'is_task_leg_handled',                'BOOLEAN', 19, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'isWithinServiceLevel',            'is_within_service_level',            'BOOLEAN', 20, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'isHandledByPreferredAgent',       'is_handled_by_preferred_agent',      'BOOLEAN', 21, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'customer.email',                  'customer_email',                     'STRING',  22, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'customer.name',                   'customer_name',                      'STRING',  23, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'customer.phoneNumber',            'customer_phone_number',              'STRING',  24, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'entryPoint.id',                   'entry_point_id',                     'STRING',  25, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'entryPoint.name',                 'entry_point_name',                   'STRING',  26, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'owner.id',                        'owner_id',                           'STRING',  27, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'owner.name',                      'owner_name',                         'STRING',  28, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'owner.channelId',                 'owner_channel_id',                   'STRING',  29, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'owner.phoneNumber',               'owner_phone_number',                 'STRING',  30, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'owner.sessionId',                 'owner_session_id',                   'STRING',  31, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'owner.signInId',                  'owner_sign_in_id',                   'STRING',  32, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'queue.id',                        'queue_id',                           'STRING',  33, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'queue.name',                      'queue_name',                         'STRING',  34, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'queue.duration',                  'queue_duration',                     'INT',     35, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'site.id',                         'site_id',                            'STRING',  36, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'site.name',                       'site_name',                          'STRING',  37, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'team.id',                         'team_id',                            'STRING',  38, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'team.name',                       'team_name',                          'STRING',  39, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'nextDestination.agent',           'next_destination_agent',             'STRING',  40, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'nextDestination.queue',           'next_destination_queue',             'STRING',  41, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'nextDestination.team',            'next_destination_team',              'STRING',  42, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'queueCount',                      'queue_count',                        'INT',     43, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'queuedTo',                        'queued_to',                          'STRING',  44, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'optOutOfQueueTimestamp',          'opt_out_of_queue_timestamp',         'BIGINT',  45, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'holdCount',                       'hold_count',                         'INT',     46, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'holdDuration',                    'hold_duration',                      'INT',     47, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'connectedCount',                  'connected_count',                    'INT',     48, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'connectedDuration',               'connected_duration',                 'INT',     49, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'ringingDuration',                 'ringing_duration',                   'INT',     50, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'wrapupDuration',                  'wrapup_duration',                    'INT',     51, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'selfserviceCount',                'selfservice_count',                  'INT',     52, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'selfserviceDuration',             'selfservice_duration',               'INT',     53, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'consultDuration',                 'consult_duration',                   'INT',     54, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'consultSuccessCount',             'consult_success_count',              'INT',     55, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'consultToAgentErrorCount',        'consult_to_agent_error_count',       'INT',     56, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'consultToDnErrorCount',           'consult_to_dn_error_count',          'INT',     57, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'consultToEPCount',                'consult_to_ep_count',                'INT',     58, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'consultToEPDuration',             'consult_to_ep_duration',             'INT',     59, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'consultToEpErrorCount',           'consult_to_ep_error_count',          'INT',     60, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'consultToQueueCount',             'consult_to_queue_count',             'INT',     61, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'consultToQueueDuration',          'consult_to_queue_duration',          'INT',     62, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'consultToQueueErrorCount',        'consult_to_queue_error_count',       'INT',     63, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'consultToQueueHandledCount',      'consult_to_queue_handled_count',     'INT',     64, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'conferenceDuration',              'conference_duration',                'INT',     65, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'conferenceSuccessCount',          'conference_success_count',           'INT',     66, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'conferenceConnectedCount',        'conference_connected_count',         'STRING',  67, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'connectErrorCount',               'connect_error_count',                'INT',     68, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'transferCount',                   'transfer_count',                     'INT',     69, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'transferOutCount',                'transfer_out_count',                 'INT',     70, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'transferErrorCount',              'transfer_error_count',               'INT',     71, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'transferEpDN',                    'transfer_ep_dn',                     'STRING',  72, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'blindTransferCount',              'blind_transfer_count',               'INT',     73, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'blindTransferToAgentCount',       'blind_transfer_to_agent_count',      'INT',     74, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'agentToDnTransferCount',          'agent_to_dn_transfer_count',         'INT',     75, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'agentTransferedInCount',          'agent_transfered_in_count',          'INT',     76, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'interQueueBlindTransferCount',    'inter_queue_blind_transfer_count',   'INT',     77, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'interQueueConsultTransferCount',  'inter_queue_consult_transfer_count', 'INT',     78, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'outdialConferenceCount',          'outdial_conference_count',           'INT',     79, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'outdialConferenceDuration',       'outdial_conference_duration',        'INT',     80, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'outdialConsultCount',             'outdial_consult_count',              'INT',     81, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'outdialConsultDuration',          'outdial_consult_duration',           'INT',     82, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'outdialConsultToEPCount',         'outdial_consult_to_ep_count',        'INT',     83, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'outdialConsultToEPDuration',      'outdial_consult_to_ep_duration',     'INT',     84, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'outdialConsultToQueueCount',      'outdial_consult_to_queue_count',     'INT',     85, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'outdialConsultToQueueDuration',   'outdial_consult_to_queue_duration',  'INT',     86, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'outdialConsultToQueueErrorCount', 'outdial_consult_to_queue_error_count','INT',    87, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'outdialConsultToQueueHandledCount','outdial_consult_to_queue_handled_count','INT', 88, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'postCallConnectedCount',          'post_call_connected_count',          'STRING',  89, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'postCallConsultDuration',         'post_call_consult_duration',         'INT',     90, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'postCallDuration',                'post_call_duration',                 'INT',     91, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'ronaCount',                       'rona_count',                         'INT',     92, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'callRejectedCount',               'call_rejected_count',                'INT',     93, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'callType',                        'call_type',                          'STRING',  94, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'abandonedSlCount',                'abandoned_sl_count',                 'STRING',  95, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'abandonedType',                   'abandoned_type',                     'STRING',  96, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'slaValue',                        'sla_value',                          'STRING',  97, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'routingType',                     'routing_type',                       'STRING',  98, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'skillsAssignedIn',                'skills_assigned_in',                 'STRING',  99, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'matchedSkills',                   'matched_skills',                     'STRING', 100, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'matchedSkillsProfile',            'matched_skills_profile',             'STRING', 101, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'requiredSkills',                  'required_skills',                    'STRING', 102, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'preferredAgentName',              'preferred_agent_name',               'STRING', 103, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'preferredAgentSystemId',          'preferred_agent_system_id',          'STRING', 104, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'childContactId',                  'child_contact_id',                   'STRING', 105, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'childContactType',                'child_contact_type',                 'STRING', 106, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'consultEpId',                     'consult_ep_id',                      'STRING', 107, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'consultEpName',                   'consult_ep_name',                    'STRING', 108, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'taskLegCount',                    'task_leg_count',                     'INT',    109, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'manualAssignCount',               'manual_assign_count',                'INT',    110, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'ivrScriptId',                     'ivr_script_id',                      'STRING', 111, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'ivrScriptName',                   'ivr_script_name',                    'STRING', 112, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'ivrScriptTagId',                  'ivr_script_tag_id',                  'STRING', 113, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'ivrScriptTagName',                'ivr_script_tag_name',                'STRING', 114, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'lastWrapupCodeName',              'last_wrapup_code_name',              'STRING', 115, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'terminatingEnd',                  'terminating_end',                    'STRING', 116, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'terminationReason',               'termination_reason',                 'STRING', 117, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'N/A',                             'start_date',                         'STRING', 118, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'N/A',                             'end_date',                           'STRING', 119, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'N/A',                             'record_type',                        'STRING', 120, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'call_leg_base', 'N/A',                             'source',                             'STRING', 121, 0, 0, 1, GETUTCDATE());
+  ('Webex', 'call_leg', 'abandonedSlCount',                    'STRING', 'call_leg_base_temp', 'abandoned_sl_count',                   'STRING', 'call_leg_temp', 'abandoned_sl_count',                   'INT',    1,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'abandonedType',                       'STRING', 'call_leg_base_temp', 'abandoned_type',                       'STRING', 'call_leg_temp', 'abandoned_type',                       'STRING', 2,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'agentToDnTransferCount',              'STRING', 'call_leg_base_temp', 'agent_to_dn_transfer_count',           'STRING', 'call_leg_temp', 'agent_to_dn_transfer_count',           'INT',    3,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'agentTransferedInCount',              'STRING', 'call_leg_base_temp', 'agent_transferred_in_count',           'STRING', 'call_leg_temp', 'agent_transferred_in_count',           'INT',    4,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'blindTransferCount',                  'STRING', 'call_leg_base_temp', 'blind_transfer_count',                 'STRING', 'call_leg_temp', 'blind_transfer_count',                 'INT',    5,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'blindTransferToAgentCount',           'STRING', 'call_leg_base_temp', 'blind_transfer_to_agent_count',        'STRING', 'call_leg_temp', 'blind_transfer_to_agent_count',        'INT',    6,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'call_leg_type',                       'STRING', 'call_leg_base_temp', 'call_leg_type',                       'STRING', 'call_leg_temp', 'call_leg_type',                       'STRING', 7,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'call_rejected_count',                 'STRING', 'call_leg_base_temp', 'call_rejected_count',                 'STRING', 'call_leg_temp', 'call_rejected_count',                 'INT',    8,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'callType',                            'STRING', 'call_leg_base_temp', 'call_type',                           'STRING', 'call_leg_temp', 'call_type',                           'STRING', 9,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'channelSubType',                      'STRING', 'call_leg_base_temp', 'sub_channel_type',                    'STRING', 'call_leg_temp', 'sub_channel_type',                    'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'channelType',                         'STRING', 'call_leg_base_temp', 'channel_type',                        'STRING', 'call_leg_temp', 'channel_type',                        'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'childContactId',                      'STRING', 'call_leg_base_temp', 'child_contact_id',                    'STRING', 'call_leg_temp', 'child_contact_id',                    'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'childContactType',                    'STRING', 'call_leg_base_temp', 'child_contact_type',                  'STRING', 'call_leg_temp', 'child_contact_type',                  'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'conference_connected_count',          'STRING', 'call_leg_base_temp', 'conference_connected_count',          'STRING', 'call_leg_temp', 'conference_connected_count',          'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'conferenceDuration',                  'STRING', 'call_leg_base_temp', 'conference_duration',                 'STRING', 'call_leg_temp', 'conference_duration',                 'BIGINT', 15, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'conferenceSuccessCount',              'STRING', 'call_leg_base_temp', 'conference_success_count',            'STRING', 'call_leg_temp', 'conference_success_count',            'INT',    16, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'connect_error_count',                 'STRING', 'call_leg_base_temp', 'connect_error_count',                 'STRING', 'call_leg_temp', 'connect_error_count',                 'INT',    17, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'connectedCount',                      'STRING', 'call_leg_base_temp', 'connected_count',                     'STRING', 'call_leg_temp', 'connected_count',                     'INT',    18, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'connectedDuration',                   'STRING', 'call_leg_base_temp', 'connected_duration',                  'STRING', 'call_leg_temp', 'connected_duration',                  'BIGINT', 19, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'consultDuration',                     'STRING', 'call_leg_base_temp', 'consult_duration',                    'STRING', 'call_leg_temp', 'consult_duration',                    'BIGINT', 20, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'consultEpId',                         'STRING', 'call_leg_base_temp', 'consult_entrypoint_id',               'STRING', 'call_leg_temp', 'consult_entrypoint_id',               'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'consultEpName',                       'STRING', 'call_leg_base_temp', 'consult_entrypoint_name',             'STRING', 'call_leg_temp', 'consult_entrypoint_name',             'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'consultSuccessCount',                 'STRING', 'call_leg_base_temp', 'consult_success_count',               'STRING', 'call_leg_temp', 'consult_success_count',               'INT',    23, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'consultToAgentErrorCount',            'STRING', 'call_leg_base_temp', 'consult_to_agent_error_count',        'STRING', 'call_leg_temp', 'consult_to_agent_error_count',        'INT',    24, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'consultToDnErrorCount',               'STRING', 'call_leg_base_temp', 'consult_to_dn_error_count',           'STRING', 'call_leg_temp', 'consult_to_dn_error_count',           'INT',    25, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'consultToEPCount',                    'STRING', 'call_leg_base_temp', 'consult_to_entrypoint_count',         'STRING', 'call_leg_temp', 'consult_to_entrypoint_count',         'INT',    26, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'consultToEPDuration',                 'STRING', 'call_leg_base_temp', 'consult_to_entrypoint_duration',      'STRING', 'call_leg_temp', 'consult_to_entrypoint_duration',      'BIGINT', 27, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'consultToEpErrorCount',               'STRING', 'call_leg_base_temp', 'consult_to_entrypoint_error_count',   'STRING', 'call_leg_temp', 'consult_to_entrypoint_error_count',   'INT',    28, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'consultToQueueCount',                 'STRING', 'call_leg_base_temp', 'consult_to_queue_count',              'STRING', 'call_leg_temp', 'consult_to_queue_count',              'INT',    29, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'consultToQueueDuration',              'STRING', 'call_leg_base_temp', 'consult_to_queue_duration',           'STRING', 'call_leg_temp', 'consult_to_queue_duration',           'BIGINT', 30, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'consultToQueueErrorCount',            'STRING', 'call_leg_base_temp', 'consult_to_queue_error_count',        'STRING', 'call_leg_temp', 'consult_to_queue_error_count',        'INT',    31, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'consultToQueueHandledCount',          'STRING', 'call_leg_base_temp', 'consult_to_queue_handled_count',      'STRING', 'call_leg_temp', 'consult_to_queue_handled_count',      'INT',    32, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'contactState',                        'STRING', 'call_leg_base_temp', 'contact_state',                       'STRING', 'call_leg_temp', 'contact_state',                       'STRING', 33, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'createdTime',                         'STRING', 'call_leg_base_temp', 'call_leg_created_time',               'STRING', 'call_leg_temp', 'call_leg_created_time',               'BIGINT', 34, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'customer_email',                      'STRING', 'call_leg_base_temp', 'customer_email',                      'STRING', 'call_leg_temp', 'customer_email',                      'STRING', 35, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'customer_name',                       'STRING', 'call_leg_base_temp', 'customer_name',                       'STRING', 'call_leg_temp', 'customer_name',                       'STRING', 36, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'customer_phoneNumber',                'STRING', 'call_leg_base_temp', 'customer_phone_number',               'STRING', 'call_leg_temp', 'customer_phone_number',               'STRING', 37, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'destination',                         'STRING', 'call_leg_base_temp', 'call_leg_destination',                'STRING', 'call_leg_temp', 'call_leg_destination',                'STRING', 38, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'direction',                           'STRING', 'call_leg_base_temp', 'call_leg_direction',                  'STRING', 'call_leg_temp', 'call_leg_direction',                  'STRING', 39, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'endedTime',                           'STRING', 'call_leg_base_temp', 'call_ended_time',                     'STRING', 'call_leg_temp', 'call_ended_time',                     'BIGINT', 40, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'entryPoint_id',                       'STRING', 'call_leg_base_temp', 'entrypoint_id',                       'STRING', 'call_leg_temp', 'entrypoint_id',                       'STRING', 41, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'entryPoint_name',                     'STRING', 'call_leg_base_temp', 'entrypoint_name',                     'STRING', 'call_leg_temp', 'entrypoint_name',                     'STRING', 42, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'handleTime',                          'STRING', 'call_leg_base_temp', 'handle_time',                         'STRING', 'call_leg_temp', 'handle_time',                         'BIGINT', 43, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'handleType',                          'STRING', 'call_leg_base_temp', 'handle_type',                         'STRING', 'call_leg_temp', 'handle_type',                         'STRING', 44, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'holdCount',                           'STRING', 'call_leg_base_temp', 'hold_count',                          'STRING', 'call_leg_temp', 'hold_count',                          'INT',    45, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'holdDuration',                        'STRING', 'call_leg_base_temp', 'hold_duration',                       'STRING', 'call_leg_temp', 'hold_duration',                       'BIGINT', 46, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'id',                                  'STRING', 'call_leg_base_temp', 'call_leg_id',                         'STRING', 'call_leg_temp', 'call_leg_id',                         'STRING', 47, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'interQueueBlindTransferCount',        'STRING', 'call_leg_base_temp', 'inter_queue_blind_transfer_count',    'STRING', 'call_leg_temp', 'inter_queue_blind_transfer_count',    'INT',    48, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'interQueueConsultTransferCount',      'STRING', 'call_leg_base_temp', 'inter_queue_consult_transfer_count',  'STRING', 'call_leg_temp', 'inter_queue_consult_transfer_count',  'INT',    49, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'isActive',                            'STRING', 'call_leg_base_temp', 'is_active',                           'STRING', 'call_leg_temp', 'is_active',                           'INT',    50, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'isHandledByPreferredAgent',           'STRING', 'call_leg_base_temp', 'is_handled_by_preferred_agent',       'STRING', 'call_leg_temp', 'is_handled_by_preferred_agent',       'INT',    51, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'isOptOutOfQueue',                     'STRING', 'call_leg_base_temp', 'is_opt_out_of_queue',                 'STRING', 'call_leg_temp', 'is_opt_out_of_queue',                 'INT',    52, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'isOutdial',                           'STRING', 'call_leg_base_temp', 'is_outdial',                          'STRING', 'call_leg_temp', 'is_outdial',                          'INT',    53, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'isTaskLegHandled',                    'STRING', 'call_leg_base_temp', 'is_task_leg_handled',                 'STRING', 'call_leg_temp', 'is_task_leg_handled',                 'INT',    54, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'isWithinServiceLevel',                'STRING', 'call_leg_base_temp', 'is_within_service_level',             'STRING', 'call_leg_temp', 'is_within_service_level',             'INT',    55, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'ivrScriptId',                         'STRING', 'call_leg_base_temp', 'ivr_script_id',                       'STRING', 'call_leg_temp', 'ivr_script_id',                       'STRING', 56, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'ivrScriptName',                       'STRING', 'call_leg_base_temp', 'ivr_script_name',                     'STRING', 'call_leg_temp', 'ivr_script_name',                     'STRING', 57, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'ivrScriptTagId',                      'STRING', 'call_leg_base_temp', 'ivr_script_tag_id',                   'STRING', 'call_leg_temp', 'ivr_script_tag_id',                   'STRING', 58, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'ivrScriptTagName',                    'STRING', 'call_leg_base_temp', 'ivr_script_tag_name',                 'STRING', 'call_leg_temp', 'ivr_script_tag_name',                 'STRING', 59, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'lastActivityTime',                    'STRING', 'call_leg_base_temp', 'last_activity_time',                  'STRING', 'call_leg_temp', 'last_activity_time',                  'BIGINT', 60, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'lastWrapupCodeName',                  'STRING', 'call_leg_base_temp', 'last_wrapup_code_name',               'STRING', 'call_leg_temp', 'last_wrapup_code_name',               'STRING', 61, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'manualAssignCount',                   'STRING', 'call_leg_base_temp', 'manual_assign_count',                 'STRING', 'call_leg_temp', 'manual_assign_count',                 'INT',    62, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'matchedSkills',                       'STRING', 'call_leg_base_temp', 'matched_skills_json',                 'STRING', 'call_leg_temp', 'matched_skills_json',                 'STRING', 63, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'matchedSkills_json_booleanValue',     'STRING', 'call_leg_base_temp', 'matched_skill_boolean_value',         'STRING', 'call_leg_temp', 'matched_skill_boolean_value',         'INT',    64, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'matchedSkills_json_proficiencyLevel', 'STRING', 'call_leg_base_temp', 'matched_skill_proficiency_level',     'STRING', 'call_leg_temp', 'matched_skill_proficiency_level',     'INT',    65, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'matchedSkills_json_skillId',          'STRING', 'call_leg_base_temp', 'matched_skill_id',                    'STRING', 'call_leg_temp', 'matched_skill_id',                    'STRING', 66, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'matchedSkills_json_skillName',        'STRING', 'call_leg_base_temp', 'matched_skill_name',                  'STRING', 'call_leg_temp', 'matched_skill_name',                  'STRING', 67, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'matchedSkills_json_skillType',        'STRING', 'call_leg_base_temp', 'matched_skill_type',                  'STRING', 'call_leg_temp', 'matched_skill_type',                  'STRING', 68, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'matchedSkills_json_value',            'STRING', 'call_leg_base_temp', 'matched_skill_value',                 'STRING', 'call_leg_temp', 'matched_skill_value',                 'STRING', 69, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'matchedSkillsProfile',                'STRING', 'call_leg_base_temp', 'matched_skills_profile',              'STRING', 'call_leg_temp', 'matched_skills_profile',              'STRING', 70, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'next_destination_agent',              'STRING', 'call_leg_base_temp', 'next_destination_agent',              'STRING', 'call_leg_temp', 'next_destination_agent',              'STRING', 71, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'next_destination_queue',              'STRING', 'call_leg_base_temp', 'next_destination_queue',              'STRING', 'call_leg_temp', 'next_destination_queue',              'STRING', 72, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'next_destination_team',               'STRING', 'call_leg_base_temp', 'next_destination_team',               'STRING', 'call_leg_temp', 'next_destination_team',               'STRING', 73, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'nextDestination_agent_channelId',     'STRING', 'call_leg_base_temp', 'next_destination_agent_channel_id',   'STRING', 'call_leg_temp', 'next_destination_agent_channel_id',   'STRING', 74, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'nextDestination_agent_id',            'STRING', 'call_leg_base_temp', 'next_destination_agent_id',           'STRING', 'call_leg_temp', 'next_destination_agent_id',           'STRING', 75, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'nextDestination_agent_name',          'STRING', 'call_leg_base_temp', 'next_destination_agent_name',         'STRING', 'call_leg_temp', 'next_destination_agent_name',         'STRING', 76, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'nextDestination_agent_phoneNumber',   'STRING', 'call_leg_base_temp', 'next_destination_agent_phone_number', 'STRING', 'call_leg_temp', 'next_destination_agent_phone_number', 'STRING', 77, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'nextDestination_agent_sessionId',     'STRING', 'call_leg_base_temp', 'next_destination_agent_session_id',   'STRING', 'call_leg_temp', 'next_destination_agent_session_id',   'STRING', 78, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'nextDestination_agent_signInId',      'STRING', 'call_leg_base_temp', 'next_destination_user_login_id',      'STRING', 'call_leg_temp', 'next_destination_user_login_id',      'STRING', 79, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'nextDestination_queue_id',            'STRING', 'call_leg_base_temp', 'next_destination_queue_id',           'STRING', 'call_leg_temp', 'next_destination_queue_id',           'STRING', 80, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'nextDestination_queue_name',          'STRING', 'call_leg_base_temp', 'next_destination_queue_name',         'STRING', 'call_leg_temp', 'next_destination_queue_name',         'STRING', 81, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'nextDestination_team_id',             'STRING', 'call_leg_base_temp', 'next_destination_team_id',            'STRING', 'call_leg_temp', 'next_destination_team_id',            'STRING', 82, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'nextDestination_team_name',           'STRING', 'call_leg_base_temp', 'next_destination_team_name',          'STRING', 'call_leg_temp', 'next_destination_team_name',          'STRING', 83, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'optOutOfQueueTimestamp',              'STRING', 'call_leg_base_temp', 'opt_out_of_queue_timestamp',          'STRING', 'call_leg_temp', 'opt_out_of_queue_timestamp',          'BIGINT', 84, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'origin',                              'STRING', 'call_leg_base_temp', 'call_leg_origin',                     'STRING', 'call_leg_temp', 'call_leg_origin',                     'STRING', 85, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'outdialConferenceCount',              'STRING', 'call_leg_base_temp', 'outdial_conference_count',            'STRING', 'call_leg_temp', 'outdial_conference_count',            'INT',    86, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'outdialConferenceDuration',           'STRING', 'call_leg_base_temp', 'outdial_conference_duration',         'STRING', 'call_leg_temp', 'outdial_conference_duration',         'BIGINT', 87, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'outdialConsultCount',                 'STRING', 'call_leg_base_temp', 'outdial_consult_count',               'STRING', 'call_leg_temp', 'outdial_consult_count',               'INT',    88, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'outdialConsultDuration',              'STRING', 'call_leg_base_temp', 'outdial_consult_duration',            'STRING', 'call_leg_temp', 'outdial_consult_duration',            'BIGINT', 89, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'outdialConsultToEPCount',             'STRING', 'call_leg_base_temp', 'outdial_consult_to_entrypoint_count', 'STRING', 'call_leg_temp', 'outdial_consult_to_entrypoint_count', 'INT',    90, 1, 0, 0, '0',            1, GETUTCDATE());
+
+-- [W03] call_leg — 146 rows [2 of 2] (rows 91–146, includes N/A audit rows 141–146)
+INSERT INTO schema_config
+    (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
+VALUES
+  ('Webex', 'call_leg', 'outdialConsultToEPDuration',              'STRING', 'call_leg_base_temp', 'outdial_consult_to_entrypoint_duration',  'STRING', 'call_leg_temp', 'outdial_consult_to_entrypoint_duration',  'BIGINT', 91,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'outdialConsultToQueueCount',              'STRING', 'call_leg_base_temp', 'outdial_consult_to_queue_count',           'STRING', 'call_leg_temp', 'outdial_consult_to_queue_count',           'INT',    92,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'outdialConsultToQueueDuration',           'STRING', 'call_leg_base_temp', 'outdial_consult_to_queue_duration',        'STRING', 'call_leg_temp', 'outdial_consult_to_queue_duration',        'BIGINT', 93,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'outdialConsultToQueueErrorCount',         'STRING', 'call_leg_base_temp', 'outdial_consult_to_queue_error_count',     'STRING', 'call_leg_temp', 'outdial_consult_to_queue_error_count',     'INT',    94,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'outdialConsultToQueueHandledCount',       'STRING', 'call_leg_base_temp', 'outdial_consult_to_queue_handled_count',   'STRING', 'call_leg_temp', 'outdial_consult_to_queue_handled_count',   'INT',    95,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'owner_channelId',                         'STRING', 'call_leg_base_temp', 'owner_channel_id',                         'STRING', 'call_leg_temp', 'owner_channel_id',                         'STRING', 96,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'owner_id',                                'STRING', 'call_leg_base_temp', 'owner_id',                                 'STRING', 'call_leg_temp', 'owner_id',                                 'STRING', 97,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'owner_name',                              'STRING', 'call_leg_base_temp', 'owner_name',                               'STRING', 'call_leg_temp', 'owner_name',                               'STRING', 98,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'owner_phoneNumber',                       'STRING', 'call_leg_base_temp', 'owner_phone_number',                       'STRING', 'call_leg_temp', 'owner_phone_number',                       'STRING', 99,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'owner_sessionId',                         'STRING', 'call_leg_base_temp', 'owner_session_id',                         'STRING', 'call_leg_temp', 'owner_session_id',                         'STRING', 100, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'owner_signInId',                          'STRING', 'call_leg_base_temp', 'user_login_id',                            'STRING', 'call_leg_temp', 'user_login_id',                            'STRING', 101, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'post_call_connected_count',               'STRING', 'call_leg_base_temp', 'post_call_connected_count',                'STRING', 'call_leg_temp', 'post_call_connected_count',                'STRING', 102, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'post_call_consult_duration',              'STRING', 'call_leg_base_temp', 'post_call_consult_duration',               'STRING', 'call_leg_temp', 'post_call_consult_duration',               'BIGINT', 103, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'postCallDuration',                        'STRING', 'call_leg_base_temp', 'post_call_duration',                       'STRING', 'call_leg_temp', 'post_call_duration',                       'BIGINT', 104, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'preferredAgentName',                      'STRING', 'call_leg_base_temp', 'preferred_agent_name',                     'STRING', 'call_leg_temp', 'preferred_agent_name',                     'STRING', 105, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'preferredAgentSystemId',                  'STRING', 'call_leg_base_temp', 'preferred_agent_id',                       'STRING', 'call_leg_temp', 'preferred_agent_id',                       'STRING', 106, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'queue_duration',                          'STRING', 'call_leg_base_temp', 'queue_duration',                           'STRING', 'call_leg_temp', 'queue_duration',                           'BIGINT', 107, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'queue_id',                                'STRING', 'call_leg_base_temp', 'queue_id',                                 'STRING', 'call_leg_temp', 'queue_id',                                 'STRING', 108, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'queue_name',                              'STRING', 'call_leg_base_temp', 'queue_name',                               'STRING', 'call_leg_temp', 'queue_name',                               'STRING', 109, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'queueCount',                              'STRING', 'call_leg_base_temp', 'queue_count',                              'STRING', 'call_leg_temp', 'queue_count',                              'INT',    110, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'queuedTo',                                'STRING', 'call_leg_base_temp', 'queued_to',                                'STRING', 'call_leg_temp', 'queued_to',                                'STRING', 111, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'requiredSkills',                          'STRING', 'call_leg_base_temp', 'required_skills_json',                     'STRING', 'call_leg_temp', 'required_skills_json',                     'STRING', 112, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'requiredSkills_json_booleanValue',        'STRING', 'call_leg_base_temp', 'required_skill_boolean_value',             'STRING', 'call_leg_temp', 'required_skill_boolean_value',             'INT',    113, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'requiredSkills_json_matchCondition',      'STRING', 'call_leg_base_temp', 'required_skill_match_condition',           'STRING', 'call_leg_temp', 'required_skill_match_condition',           'STRING', 114, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'requiredSkills_json_proficiencyLevel',    'STRING', 'call_leg_base_temp', 'required_skill_proficiency_level',         'STRING', 'call_leg_temp', 'required_skill_proficiency_level',         'INT',    115, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'requiredSkills_json_skillId',             'STRING', 'call_leg_base_temp', 'required_skill_id',                        'STRING', 'call_leg_temp', 'required_skill_id',                        'STRING', 116, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'requiredSkills_json_skillName',           'STRING', 'call_leg_base_temp', 'required_skill_name',                      'STRING', 'call_leg_temp', 'required_skill_name',                      'STRING', 117, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'requiredSkills_json_skillType',           'STRING', 'call_leg_base_temp', 'required_skill_type',                      'STRING', 'call_leg_temp', 'required_skill_type',                      'STRING', 118, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'requiredSkills_json_value',               'STRING', 'call_leg_base_temp', 'required_skill_value',                     'STRING', 'call_leg_temp', 'required_skill_value',                     'STRING', 119, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'ringingDuration',                         'STRING', 'call_leg_base_temp', 'ringing_duration',                         'STRING', 'call_leg_temp', 'ringing_duration',                         'BIGINT', 120, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'rona_count',                              'STRING', 'call_leg_base_temp', 'rona_count',                               'STRING', 'call_leg_temp', 'rona_count',                               'INT',    121, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'routingType',                             'STRING', 'call_leg_base_temp', 'routing_type',                             'STRING', 'call_leg_temp', 'routing_type',                             'STRING', 122, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'selfserviceCount',                        'STRING', 'call_leg_base_temp', 'selfservice_count',                        'STRING', 'call_leg_temp', 'selfservice_count',                        'INT',    123, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'selfserviceDuration',                     'STRING', 'call_leg_base_temp', 'selfservice_duration',                     'STRING', 'call_leg_temp', 'selfservice_duration',                     'BIGINT', 124, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'site_id',                                 'STRING', 'call_leg_base_temp', 'site_id',                                  'STRING', 'call_leg_temp', 'site_id',                                  'STRING', 125, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'site_name',                               'STRING', 'call_leg_base_temp', 'site_name',                                'STRING', 'call_leg_temp', 'site_name',                                'STRING', 126, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'skillsAssignedIn',                        'STRING', 'call_leg_base_temp', 'skills_assigned_in',                       'STRING', 'call_leg_temp', 'skills_assigned_in',                       'STRING', 127, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'slaValue',                                'STRING', 'call_leg_base_temp', 'call_leg_sla',                             'STRING', 'call_leg_temp', 'call_leg_sla',                             'INT',    128, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'status',                                  'STRING', 'call_leg_base_temp', 'call_leg_status',                          'STRING', 'call_leg_temp', 'call_leg_status',                          'STRING', 129, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'taskId',                                  'STRING', 'call_leg_base_temp', 'call_leg_task_id',                         'STRING', 'call_leg_temp', 'call_leg_task_id',                         'STRING', 130, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'taskLegCount',                            'STRING', 'call_leg_base_temp', 'task_leg_count',                           'STRING', 'call_leg_temp', 'task_leg_count',                           'INT',    131, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'team_id',                                 'STRING', 'call_leg_base_temp', 'team_id',                                  'STRING', 'call_leg_temp', 'team_id',                                  'STRING', 132, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'team_name',                               'STRING', 'call_leg_base_temp', 'team_name',                                'STRING', 'call_leg_temp', 'team_name',                                'STRING', 133, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'terminatingEnd',                          'STRING', 'call_leg_base_temp', 'terminating_end',                          'STRING', 'call_leg_temp', 'terminating_end',                          'STRING', 134, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'terminationReason',                       'STRING', 'call_leg_base_temp', 'termination_reason',                       'STRING', 'call_leg_temp', 'termination_reason',                       'STRING', 135, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'transfer_out_count',                      'STRING', 'call_leg_base_temp', 'transfer_out_count',                       'STRING', 'call_leg_temp', 'transfer_out_count',                       'INT',    136, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'transferCount',                           'STRING', 'call_leg_base_temp', 'transfer_count',                           'STRING', 'call_leg_temp', 'transfer_count',                           'INT',    137, 1, 0, 0, '0',            1, GETUTCDATE()),
+  -- !! FLAGGED: intake sheet maps transferEpDN to silver 'call_leg_sla' -- same as slaValue (row 128). Confirm correct silver name with Patrick (likely 'transfer_entrypoint_dn').
+  ('Webex', 'call_leg', 'transferEpDN',                            'STRING', 'call_leg_base_temp', 'call_leg_sla',                             'STRING', 'call_leg_temp', 'call_leg_sla',                             'STRING', 138, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'transferErrorCount',                      'STRING', 'call_leg_base_temp', 'transfer_error_count',                     'STRING', 'call_leg_temp', 'transfer_error_count',                     'INT',    139, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'wrapupDuration',                          'STRING', 'call_leg_base_temp', 'wrapup_duration',                          'STRING', 'call_leg_temp', 'wrapup_duration',                          'BIGINT', 140, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'N/A',                                     'STRING', 'call_leg_base_temp', 'ingestion_date',                           'STRING', 'call_leg_temp', 'ingestion_date',                           'DATE',   141, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'N/A',                                     'STRING', 'call_leg_base_temp', 'data_timestamp',                           'STRING', 'call_leg_temp', 'data_timestamp',                           'BIGINT', 142, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'N/A',                                     'STRING', 'call_leg_base_temp', 'source_system',                            'STRING', 'call_leg_temp', 'source_system',                            'STRING', 143, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'N/A',                                     'STRING', 'call_leg_base_temp', 'ingestion_run_id',                         'STRING', 'call_leg_temp', 'ingestion_run_id',                         'STRING', 144, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'N/A',                                     'STRING', 'call_leg_base_temp', 'ingestion_timestamp',                      'STRING', 'call_leg_temp', 'ingestion_timestamp',                      'BIGINT', 145, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'N/A',                                     'STRING', 'call_leg_base_temp', 'src_busn_asst',                            'STRING', 'call_leg_temp', 'src_busn_asst',                            'STRING', 146, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [W04] customer_activity — 15 data fields + 4 context
 INSERT INTO schema_config
-    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+    (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ('Webex', 'customer_activity', 'customer_activity_base', 'id',                   'id',                    'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'channelType',           'channel_type',          'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'channelSubType',        'channel_sub_type',      'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'destination',           'destination',           'STRING',   4, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'origin',                'origin',                'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'isOutdial',             'is_outdial',            'BOOLEAN',  6, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'isEmailSent',           'is_email_sent',         'BOOLEAN',  7, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'emailToList',           'email_to_list',         'STRING',   8, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'emailCcList',           'email_cc_list',         'STRING',   9, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'emailBccList',          'email_bcc_list',        'STRING',  10, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'emailReplyTo',          'email_reply_to',        'STRING',  11, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'matchedSkillsProfile',  'matched_skills_profile','STRING',  12, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'preferredAgentName',    'preferred_agent_name',  'STRING',  13, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'routingType',           'routing_type',          'STRING',  14, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'activities.nodes',      'activity_nodes_json',   'STRING',  15, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'N/A',                   'start_date',            'STRING',  16, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'N/A',                   'end_date',              'STRING',  17, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'N/A',                   'record_type',           'STRING',  18, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'customer_activity_base', 'N/A',                   'source',                'STRING',  19, 0, 0, 1, GETUTCDATE());
+  ('Webex', 'customer_activity', 'activities_nodes_activityName',                'STRING', 'customer_activity_base_temp', 'activity_name',                   'STRING', 'customer_activity_temp', 'activity_name',                   'STRING', 1,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_activityType',                'STRING', 'customer_activity_base_temp', 'activity_type',                   'STRING', 'customer_activity_temp', 'activity_type',                   'STRING', 2,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_agentChannelId',              'STRING', 'customer_activity_base_temp', 'agent_channel_id',                'STRING', 'customer_activity_temp', 'agent_channel_id',                'STRING', 3,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_agentId',                     'STRING', 'customer_activity_base_temp', 'agent_id',                        'STRING', 'customer_activity_temp', 'agent_id',                        'STRING', 4,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_agentName',                   'STRING', 'customer_activity_base_temp', 'agent_name',                      'STRING', 'customer_activity_temp', 'agent_name',                      'STRING', 5,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_agentPhoneNumber',            'STRING', 'customer_activity_base_temp', 'agent_phone_number',              'STRING', 'customer_activity_temp', 'agent_phone_number',              'STRING', 6,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_agentSessionId',              'STRING', 'customer_activity_base_temp', 'agent_session_id',                'STRING', 'customer_activity_temp', 'agent_session_id',                'STRING', 7,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_bnrMode',                     'STRING', 'customer_activity_base_temp', 'bnr_mode',                        'STRING', 'customer_activity_temp', 'bnr_mode',                        'STRING', 8,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_childContactId',              'STRING', 'customer_activity_base_temp', 'child_contact_id',                'STRING', 'customer_activity_temp', 'child_contact_id',                'STRING', 9,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_childContactType',            'STRING', 'customer_activity_base_temp', 'child_contact_type',              'STRING', 'customer_activity_temp', 'child_contact_type',              'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_consultEpId',                 'STRING', 'customer_activity_base_temp', 'consult_entrypoint_id',           'STRING', 'customer_activity_temp', 'consult_entrypoint_id',           'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_consultEpName',               'STRING', 'customer_activity_base_temp', 'consult_entrypoint_name',         'STRING', 'customer_activity_temp', 'consult_entrypoint_name',         'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_contactAssignmentType',       'STRING', 'customer_activity_base_temp', 'contact_assignment_type',         'STRING', 'customer_activity_temp', 'contact_assignment_type',         'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_createdTime',                 'STRING', 'customer_activity_base_temp', 'activity_created_time',           'STRING', 'customer_activity_temp', 'activity_created_time',           'BIGINT', 14, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_destinationAgentChannelId',   'STRING', 'customer_activity_base_temp', 'destination_agent_channel_id',    'STRING', 'customer_activity_temp', 'destination_agent_channel_id',    'STRING', 15, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_destinationAgentId',          'STRING', 'customer_activity_base_temp', 'destination_agent_id',            'STRING', 'customer_activity_temp', 'destination_agent_id',            'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_destinationAgentName',        'STRING', 'customer_activity_base_temp', 'destination_agent_name',          'STRING', 'customer_activity_temp', 'destination_agent_name',          'STRING', 17, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_destinationAgentPhoneNumber', 'STRING', 'customer_activity_base_temp', 'destination_agent_phone_number',  'STRING', 'customer_activity_temp', 'destination_agent_phone_number',  'STRING', 18, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_destinationAgentSessionId',   'STRING', 'customer_activity_base_temp', 'destination_agent_session_id',    'STRING', 'customer_activity_temp', 'destination_agent_session_id',    'STRING', 19, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_destinationAgentTeamId',      'STRING', 'customer_activity_base_temp', 'destination_team_id',             'STRING', 'customer_activity_temp', 'destination_team_id',             'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_destinationAgentTeamName',    'STRING', 'customer_activity_base_temp', 'destination_team_name',           'STRING', 'customer_activity_temp', 'destination_team_name',           'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_destinationQueueId',          'STRING', 'customer_activity_base_temp', 'destination_queue_id',            'STRING', 'customer_activity_temp', 'destination_queue_id',            'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_destinationQueueName',        'STRING', 'customer_activity_base_temp', 'destination_queue_name',          'STRING', 'customer_activity_temp', 'destination_queue_name',          'STRING', 23, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_duration',                    'STRING', 'customer_activity_base_temp', 'activity_duration',               'STRING', 'customer_activity_temp', 'activity_duration',               'BIGINT', 24, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_emailHasAttachments',         'STRING', 'customer_activity_base_temp', 'is_email_with_attachments',       'STRING', 'customer_activity_temp', 'is_email_with_attachments',       'INT',    25, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_endedTime',                   'STRING', 'customer_activity_base_temp', 'activity_ended_time',             'STRING', 'customer_activity_temp', 'activity_ended_time',             'BIGINT', 26, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_entrypointId',                'STRING', 'customer_activity_base_temp', 'entrypoint_id',                   'STRING', 'customer_activity_temp', 'entrypoint_id',                   'STRING', 27, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_entrypointName',              'STRING', 'customer_activity_base_temp', 'entrypoint_name',                 'STRING', 'customer_activity_temp', 'entrypoint_name',                 'STRING', 28, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_eventName',                   'STRING', 'customer_activity_base_temp', 'event_name',                      'STRING', 'customer_activity_temp', 'event_name',                      'STRING', 29, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_id',                          'STRING', 'customer_activity_base_temp', 'activity_id',                     'STRING', 'customer_activity_temp', 'activity_id',                     'STRING', 30, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_isActive',                    'STRING', 'customer_activity_base_temp', 'is_active',                       'STRING', 'customer_activity_temp', 'is_active',                       'INT',    31, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_ivrScriptId',                 'STRING', 'customer_activity_base_temp', 'ivr_script_id',                   'STRING', 'customer_activity_temp', 'ivr_script_id',                   'STRING', 32, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_ivrScriptName',               'STRING', 'customer_activity_base_temp', 'ivr_script_name',                 'STRING', 'customer_activity_temp', 'ivr_script_name',                 'STRING', 33, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_ivrScriptTagId',              'STRING', 'customer_activity_base_temp', 'ivr_script_tag_id',               'STRING', 'customer_activity_temp', 'ivr_script_tag_id',               'STRING', 34, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_ivrScriptTagName',            'STRING', 'customer_activity_base_temp', 'ivr_script_tag_name',             'STRING', 'customer_activity_temp', 'ivr_script_tag_name',             'STRING', 35, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_lastActivityTime',            'STRING', 'customer_activity_base_temp', 'last_activity_time',              'STRING', 'customer_activity_temp', 'last_activity_time',              'BIGINT', 36, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_nextState',                   'STRING', 'customer_activity_base_temp', 'next_state',                      'STRING', 'customer_activity_temp', 'next_state',                      'STRING', 37, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_previousState',               'STRING', 'customer_activity_base_temp', 'previous_state',                  'STRING', 'customer_activity_temp', 'previous_state',                  'STRING', 38, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_queueId',                     'STRING', 'customer_activity_base_temp', 'queue_id',                        'STRING', 'customer_activity_temp', 'queue_id',                        'STRING', 39, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_queueName',                   'STRING', 'customer_activity_base_temp', 'queue_name',                      'STRING', 'customer_activity_temp', 'queue_name',                      'STRING', 40, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_siteId',                      'STRING', 'customer_activity_base_temp', 'site_id',                         'STRING', 'customer_activity_temp', 'site_id',                         'STRING', 41, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_siteName',                    'STRING', 'customer_activity_base_temp', 'site_name',                       'STRING', 'customer_activity_temp', 'site_name',                       'STRING', 42, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_skillsAssignedIn',            'STRING', 'customer_activity_base_temp', 'skills_assigned_in',              'STRING', 'customer_activity_temp', 'skills_assigned_in',              'STRING', 43, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_teamId',                      'STRING', 'customer_activity_base_temp', 'team_id',                         'STRING', 'customer_activity_temp', 'team_id',                         'STRING', 44, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_teamName',                    'STRING', 'customer_activity_base_temp', 'team_name',                       'STRING', 'customer_activity_temp', 'team_name',                       'STRING', 45, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_terminationReason',           'STRING', 'customer_activity_base_temp', 'termination_reason',              'STRING', 'customer_activity_temp', 'termination_reason',              'STRING', 46, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'activities_nodes_transferType',                'STRING', 'customer_activity_base_temp', 'transfer_type',                   'STRING', 'customer_activity_temp', 'transfer_type',                   'STRING', 47, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'car_id',                                       'STRING', 'customer_activity_base_temp', 'car_id',                          'STRING', 'customer_activity_temp', 'car_id',                          'STRING', 48, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'channelSubType',                               'STRING', 'customer_activity_base_temp', 'sub_channel_type',                'STRING', 'customer_activity_temp', 'sub_channel_type',                'STRING', 49, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'channelType',                                  'STRING', 'customer_activity_base_temp', 'channel_type',                    'STRING', 'customer_activity_temp', 'channel_type',                    'STRING', 50, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'chat_type',                                    'STRING', 'customer_activity_base_temp', 'chat_type',                       'STRING', 'customer_activity_temp', 'chat_type',                       'STRING', 51, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'destination',                                  'STRING', 'customer_activity_base_temp', 'destination',                     'STRING', 'customer_activity_temp', 'destination',                     'STRING', 52, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'emailBccList',                                 'STRING', 'customer_activity_base_temp', 'email_bcc_list',                  'STRING', 'customer_activity_temp', 'email_bcc_list',                  'STRING', 53, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'emailCcList',                                  'STRING', 'customer_activity_base_temp', 'email_cc_list',                   'STRING', 'customer_activity_temp', 'email_cc_list',                   'STRING', 54, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'emailReplyTo',                                 'STRING', 'customer_activity_base_temp', 'email_reply_to',                  'STRING', 'customer_activity_temp', 'email_reply_to',                  'STRING', 55, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'emailToList',                                  'STRING', 'customer_activity_base_temp', 'email_to_list',                   'STRING', 'customer_activity_temp', 'email_to_list',                   'STRING', 56, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'id',                                           'STRING', 'customer_activity_base_temp', 'customer_session_id',             'STRING', 'customer_activity_temp', 'customer_session_id',             'STRING', 57, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'id',                                           'STRING', 'customer_activity_base_temp', 'id',                              'STRING', 'customer_activity_temp', 'id',                              'STRING', 58, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'isEmailSent',                                  'STRING', 'customer_activity_base_temp', 'is_email_sent',                   'STRING', 'customer_activity_temp', 'is_email_sent',                   'INT',    59, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'isOutdial',                                    'STRING', 'customer_activity_base_temp', 'is_outdial',                      'STRING', 'customer_activity_temp', 'is_outdial',                      'INT',    60, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'matchedSkillsProfile',                         'STRING', 'customer_activity_base_temp', 'matched_skills_profile',          'STRING', 'customer_activity_temp', 'matched_skills_profile',          'STRING', 61, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'origin',                                       'STRING', 'customer_activity_base_temp', 'origin',                          'STRING', 'customer_activity_temp', 'origin',                          'STRING', 62, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'personal_call_back_agent_name',                'STRING', 'customer_activity_base_temp', 'personal_call_back_agent_name',   'STRING', 'customer_activity_temp', 'personal_call_back_agent_name',   'STRING', 63, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'preferredAgentName',                           'STRING', 'customer_activity_base_temp', 'preferred_agent_name',            'STRING', 'customer_activity_temp', 'preferred_agent_name',            'STRING', 64, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'routingType',                                  'STRING', 'customer_activity_base_temp', 'routing_type',                    'STRING', 'customer_activity_temp', 'routing_type',                    'STRING', 65, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'N/A',                                         'STRING', 'customer_activity_base_temp', 'ingestion_date',                  'STRING', 'customer_activity_temp', 'ingestion_date',                  'DATE',   66, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'N/A',                                         'STRING', 'customer_activity_base_temp', 'data_timestamp',                  'STRING', 'customer_activity_temp', 'data_timestamp',                  'BIGINT', 67, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'N/A',                                         'STRING', 'customer_activity_base_temp', 'source_system',                   'STRING', 'customer_activity_temp', 'source_system',                   'STRING', 68, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'N/A',                                         'STRING', 'customer_activity_base_temp', 'ingestion_run_id',                'STRING', 'customer_activity_temp', 'ingestion_run_id',                'STRING', 69, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'N/A',                                         'STRING', 'customer_activity_base_temp', 'ingestion_timestamp',             'STRING', 'customer_activity_temp', 'ingestion_timestamp',             'BIGINT', 70, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_activity', 'N/A',                                         'STRING', 'customer_activity_base_temp', 'src_busn_asst',                   'STRING', 'customer_activity_temp', 'src_busn_asst',                   'STRING', 71, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [W05] customer_session — 207 data fields + 4 context  [part 1 of 3: ordinals 1-90]
 INSERT INTO schema_config
-    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+    (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ('Webex', 'customer_session', 'customer_session_base', 'id',                                'id',                                 'STRING',   1, 1, 1, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'channelType',                       'channel_type',                       'STRING',   2, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'channelSubType',                    'channel_sub_type',                   'STRING',   3, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'direction',                         'direction',                          'STRING',   4, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'origin',                            'origin',                             'STRING',   5, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'destination',                       'destination',                        'STRING',   6, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'status',                            'status',                             'STRING',   7, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'createdTime',                       'created_time',                       'BIGINT',   8, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'endedTime',                         'ended_time',                         'BIGINT',   9, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastActivityTime',                  'last_activity_time',                 'BIGINT',  10, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'totalDuration',                     'total_duration',                     'INT',     11, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isActive',                          'is_active',                          'BOOLEAN', 12, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isOutdial',                         'is_outdial',                         'BOOLEAN', 13, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isCallback',                        'is_callback',                        'BOOLEAN', 14, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isCampaign',                        'is_campaign',                        'BOOLEAN', 15, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isBarged',                          'is_barged',                          'BOOLEAN', 16, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isMonitored',                       'is_monitored',                       'BOOLEAN', 17, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isContactHandled',                  'is_contact_handled',                 'BOOLEAN', 18, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isContactOffered',                  'is_contact_offered',                 'BOOLEAN', 19, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isContactEscalatedToQueue',         'is_contact_escalated_to_queue',      'BOOLEAN', 20, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isOptOutOfQueue',                   'is_opt_out_of_queue',                'BOOLEAN', 21, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isHandledByPreferredAgent',         'is_handled_by_preferred_agent',      'BOOLEAN', 22, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isWithInServiceLevel',              'is_with_in_service_level',           'BOOLEAN', 23, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isEmailSent',                       'is_email_sent',                      'BOOLEAN', 24, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isRecordingDeleted',                'is_recording_deleted',               'BOOLEAN', 25, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isRealtimeTranscriptionEnabled',    'is_realtime_transcription_enabled',  'BOOLEAN', 26, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isTranscriptionAvailable',          'is_transcription_available',         'BOOLEAN', 27, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'isSuggestedResponseRequested',      'is_suggested_response_requested',    'BOOLEAN', 28, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'captureRequested',                  'capture_requested',                  'BOOLEAN', 29, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'customer.email',                    'customer_email',                     'STRING',  30, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'customer.name',                      'customer_name',                      'STRING',  31, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'customer.phoneNumber',              'customer_phone_number',              'STRING',  32, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastAgent.id',                      'last_agent_id',                      'STRING',  33, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastAgent.name',                    'last_agent_name',                    'STRING',  34, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastAgent.channelId',               'last_agent_channel_id',              'STRING',  35, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastAgent.phoneNumber',             'last_agent_phone_number',            'STRING',  36, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastAgent.sessionId',               'last_agent_session_id',              'STRING',  37, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastAgent.signInId',                'last_agent_sign_in_id',              'STRING',  38, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastEntryPoint.id',                 'last_entry_point_id',                'STRING',  39, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastEntryPoint.name',               'last_entry_point_name',              'STRING',  40, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastQueue.id',                      'last_queue_id',                      'STRING',  41, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastQueue.name',                    'last_queue_name',                    'STRING',  42, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastQueue.duration',                'last_queue_duration',                'INT',     43, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastSite.id',                       'last_site_id',                       'STRING',  44, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastSite.name',                     'last_site_name',                     'STRING',  45, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastTeam.id',                       'last_team_id',                       'STRING',  46, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastTeam.name',                     'last_team_name',                     'STRING',  47, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'previousQueue.id',                  'previous_queue_id',                  'STRING',  48, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'previousQueue.name',                'previous_queue_name',                'STRING',  49, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'callbackData.callbackAgentName',    'callback_agent_name',                'STRING',  50, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'callbackData.callbackConnectTime',  'callback_connect_time',              'BIGINT',  51, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'callbackData.callbackNumber',       'callback_number',                    'STRING',  52, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'callbackData.callbackOrigin',       'callback_origin',                    'STRING',  53, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'callbackData.callbackQueueName',    'callback_queue_name',                'STRING',  54, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'callbackData.callbackRequestTime',  'callback_request_time',              'BIGINT',  55, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'callbackData.callbackRetryCount',   'callback_retry_count',               'INT',     56, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'callbackData.callbackStatus',       'callback_status',                    'STRING',  57, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'callbackData.callbackTeamName',     'callback_team_name',                 'STRING',  58, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'callbackData.callbackType',         'callback_type',                      'STRING',  59, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'channelMetaData.chat',              'channel_meta_chat',                  'STRING',  60, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'channelMetaData.email',             'channel_meta_email',                 'STRING',  61, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'channelMetaData.inBoundTranscript', 'channel_meta_inbound_transcript',    'STRING',  62, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'channelMetaData.outBoundTranscript','channel_meta_outbound_transcript',   'STRING',  63, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'feedback.comment',                  'feedback_comment',                   'STRING',  64, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'feedback.questionsAnswered',        'feedback_questions_answered',        'INT',     65, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'feedback.questionsPresented',       'feedback_questions_presented',       'INT',     66, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'feedback.surveyCompleted',          'feedback_survey_completed',          'BOOLEAN', 67, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'feedback.surveyOptIn',              'feedback_survey_opt_in',             'STRING',  68, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'feedback.type',                     'feedback_type',                      'STRING',  69, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'matchedSkills.$0.name',             'matched_skill_name',                 'STRING',  70, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'matchedSkills.$0.intVal',           'matched_skill_value',                'INT',     71, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'requiredSkills.$0.operand',         'required_skill_operand',             'STRING',  72, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'requiredSkills.$0.name',            'required_skill_name',                'STRING',  73, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'requiredSkills.$0.intVal',          'required_skill_value',               'INT',     74, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'firstQueueId',                      'first_queue_id',                     'STRING',  75, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'firstQueueName',                    'first_queue_name',                   'STRING',  76, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'contactHandleType',                 'contact_handle_type',                'STRING',  77, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'contactPriority',                   'contact_priority',                   'INT',     78, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'contactReason',                     'contact_reason',                     'STRING',  79, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'contactDriver',                     'contact_driver',                     'STRING',  80, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'routingType',                       'routing_type',                       'STRING',  81, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'skillsAssignedIn',                  'skills_assigned_in',                 'STRING',  82, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'matchedSkillsProfile',              'matched_skills_profile',             'STRING',  83, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'connectedCount',                    'connected_count',                    'INT',     84, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'connectedDuration',                 'connected_duration',                 'INT',     85, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'holdCount',                         'hold_count',                         'INT',     86, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'holdDuration',                      'hold_duration',                      'INT',     87, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'wrapupDuration',                    'wrapup_duration',                    'INT',     88, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'queueCount',                        'queue_count',                        'INT',     89, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'queueDuration',                     'queue_duration',                     'INT',     90, 1, 0, 1, GETUTCDATE());
+  ('Webex', 'customer_session', 'abandonedSlCount',                      'STRING',     'customer_session_base_temp', 'abandoned_sl_count',                      'STRING',     'customer_session_temp', 'abandoned_sl_count',                      'INT',     1,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'abandonedType',                         'STRING',  'customer_session_base_temp', 'abandoned_type',                          'STRING',  'customer_session_temp', 'abandoned_type',                          'STRING',  2,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'agentHangupCount',                      'STRING',     'customer_session_base_temp', 'agent_hangup_count',                      'STRING',     'customer_session_temp', 'agent_hangup_count',                      'INT',     3,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'agentToAgentTransferCount',             'STRING',     'customer_session_base_temp', 'agent_to_agent_transfer_count',           'STRING',     'customer_session_temp', 'agent_to_agent_transfer_count',           'INT',     4,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'agentToDnTransferCount',                'STRING',     'customer_session_base_temp', 'agent_to_dn_transfer_count',              'STRING',     'customer_session_temp', 'agent_to_dn_transfer_count',              'INT',     5,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'agentToEntrypointTransferCount',        'STRING',     'customer_session_base_temp', 'agent_to_entrypoint_transfer_count',      'STRING',     'customer_session_temp', 'agent_to_entrypoint_transfer_count',      'INT',     6,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'agentToQueueTransferCount',             'STRING',     'customer_session_base_temp', 'agent_to_queue_transfer_count',           'STRING',     'customer_session_temp', 'agent_to_queue_transfer_count',           'INT',     7,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'agentTransferedInCount',                'STRING',     'customer_session_base_temp', 'agent_transferred_in_count',              'STRING',     'customer_session_temp', 'agent_transferred_in_count',              'INT',     8,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'autoCsat',                              'STRING',  'customer_session_base_temp', 'auto_csat',                               'STRING',  'customer_session_temp', 'auto_csat',                               'STRING',  9,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'bargedInCount',                         'STRING',     'customer_session_base_temp', 'barged_in_count',                         'STRING',     'customer_session_temp', 'barged_in_count',                         'INT',     10, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'bargedInDuration',                      'STRING',  'customer_session_base_temp', 'barged_in_duration',                      'STRING',  'customer_session_temp', 'barged_in_duration',                      'BIGINT',  11, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'bargedInFailedCount',                   'STRING',     'customer_session_base_temp', 'barged_in_failed_count',                  'STRING',     'customer_session_temp', 'barged_in_failed_count',                  'INT',     12, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'blindTransferCount',                    'STRING',     'customer_session_base_temp', 'blind_transfer_count',                    'STRING',     'customer_session_temp', 'blind_transfer_count',                    'INT',     13, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'botName',                               'STRING',  'customer_session_base_temp', 'bot_name',                                'STRING',  'customer_session_temp', 'bot_name',                                'STRING',  14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'callbackData_callbackAgentName',        'STRING',  'customer_session_base_temp', 'callback_agent_name',                     'STRING',  'customer_session_temp', 'callback_agent_name',                     'STRING',  15, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'callbackData_callbackConnectTime',      'STRING',  'customer_session_base_temp', 'callback_connect_time',                   'STRING',  'customer_session_temp', 'callback_connect_time',                   'BIGINT',  16, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'callbackData_callbackNumber',           'STRING',  'customer_session_base_temp', 'callback_number',                         'STRING',  'customer_session_temp', 'callback_number',                         'STRING',  17, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'callbackData_callbackOrigin',           'STRING',  'customer_session_base_temp', 'callback_origin',                         'STRING',  'customer_session_temp', 'callback_origin',                         'STRING',  18, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'callbackData_callbackQueueName',        'STRING',  'customer_session_base_temp', 'callback_queue_name',                     'STRING',  'customer_session_temp', 'callback_queue_name',                     'STRING',  19, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'callbackData_callbackRequestTime',      'STRING',  'customer_session_base_temp', 'callback_request_time',                   'STRING',  'customer_session_temp', 'callback_request_time',                   'BIGINT',  20, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'callbackData_callbackRetryCount',       'STRING',     'customer_session_base_temp', 'callback_retry_count',                    'STRING',     'customer_session_temp', 'callback_retry_count',                    'INT',     21, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'callbackData_callbackStatus',           'STRING',  'customer_session_base_temp', 'callback_status',                         'STRING',  'customer_session_temp', 'callback_status',                         'STRING',  22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'callbackData_callbackTeamName',         'STRING',  'customer_session_base_temp', 'callback_team_name',                      'STRING',  'customer_session_temp', 'callback_team_name',                      'STRING',  23, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'callbackData_callbackType',             'STRING',  'customer_session_base_temp', 'callback_type',                           'STRING',  'customer_session_temp', 'callback_type',                           'STRING',  24, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'callCompletedCount',                    'STRING',     'customer_session_base_temp', 'call_completed_count',                    'STRING',     'customer_session_temp', 'call_completed_count',                    'INT',     25, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'campaignId',                            'STRING',  'customer_session_base_temp', 'campaign_id',                             'STRING',  'customer_session_temp', 'campaign_id',                             'STRING',  26, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'campaignName',                          'STRING',  'customer_session_base_temp', 'campaign_name',                           'STRING',  'customer_session_temp', 'campaign_name',                           'STRING',  27, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'campaignStatus',                        'STRING',  'customer_session_base_temp', 'campaign_status',                         'STRING',  'customer_session_temp', 'campaign_status',                         'STRING',  28, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'captureRequested',                      'STRING', 'customer_session_base_temp', 'is_capture_requested',                    'STRING',     'customer_session_temp', 'is_capture_requested',                    'INT',     29, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'chainedInToEPCount',                    'STRING',     'customer_session_base_temp', 'chained_in_to_entrypoint_count',          'STRING',     'customer_session_temp', 'chained_in_to_entrypoint_count',          'INT',     30, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'chainedInToQueueCount',                 'STRING',     'customer_session_base_temp', 'chained_in_to_queue_count',               'STRING',     'customer_session_temp', 'chained_in_to_queue_count',               'INT',     31, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'channel_meta_chat',                     'STRING',  'customer_session_base_temp', 'channel_meta_chat',                       'STRING',  'customer_session_temp', 'channel_meta_chat',                       'STRING',  32, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'channel_meta_email',                    'STRING',  'customer_session_base_temp', 'channel_meta_email',                      'STRING',  'customer_session_temp', 'channel_meta_email',                      'STRING',  33, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'channelMetaData_chat_chatReason',       'STRING',  'customer_session_base_temp', 'chat_reason',                             'STRING',  'customer_session_temp', 'chat_reason',                             'STRING',  34, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'channelMetaData_email_metadata',        'STRING',  'customer_session_base_temp', 'email_metadata',                          'STRING',  'customer_session_temp', 'email_metadata',                          'STRING',  35, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'channelMetaData_email_subject',         'STRING',  'customer_session_base_temp', 'email_subject',                           'STRING',  'customer_session_temp', 'email_subject',                           'STRING',  36, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'channelMetaData_inBoundTranscript',     'STRING',  'customer_session_base_temp', 'inbound_transcript',                      'STRING',  'customer_session_temp', 'inbound_transcript',                      'STRING',  37, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'channelMetaData_outBoundTranscript',    'STRING',  'customer_session_base_temp', 'outbound_transcript',                     'STRING',  'customer_session_temp', 'outbound_transcript',                     'STRING',  38, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'channelSubType',                        'STRING',  'customer_session_base_temp', 'sub_channel_type',                        'STRING',  'customer_session_temp', 'sub_channel_type',                        'STRING',  39, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'channelType',                           'STRING',  'customer_session_base_temp', 'channel_type',                            'STRING',  'customer_session_temp', 'channel_type',                            'STRING',  40, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'chat_type',                             'STRING',  'customer_session_base_temp', 'chat_type',                               'STRING',  'customer_session_temp', 'chat_type',                               'STRING',  41, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'conferenceCount',                       'STRING',     'customer_session_base_temp', 'conference_count',                        'STRING',     'customer_session_temp', 'conference_count',                        'INT',     42, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'conferenceDuration',                    'STRING',  'customer_session_base_temp', 'conference_duration',                     'STRING',  'customer_session_temp', 'conference_duration',                     'BIGINT',  43, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'connectedCount',                        'STRING',     'customer_session_base_temp', 'connected_count',                         'STRING',     'customer_session_temp', 'connected_count',                         'INT',     44, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'connectedDuration',                     'STRING',  'customer_session_base_temp', 'connected_duration',                      'STRING',  'customer_session_temp', 'connected_duration',                      'BIGINT',  45, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'consultCount',                          'STRING',     'customer_session_base_temp', 'consult_count',                           'STRING',     'customer_session_temp', 'consult_count',                           'INT',     46, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'consultDuration',                       'STRING',  'customer_session_base_temp', 'consult_duration',                        'STRING',  'customer_session_temp', 'consult_duration',                        'BIGINT',  47, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'consultToEPCount',                      'STRING',     'customer_session_base_temp', 'consult_to_entrypoint_count',             'STRING',     'customer_session_temp', 'consult_to_entrypoint_count',             'INT',     48, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'consultToEPDuration',                   'STRING',  'customer_session_base_temp', 'consult_to_entrypoint_duration',          'STRING',  'customer_session_temp', 'consult_to_entrypoint_duration',          'BIGINT',  49, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'consultToQueueCount',                   'STRING',     'customer_session_base_temp', 'consult_to_queue_count',                  'STRING',     'customer_session_temp', 'consult_to_queue_count',                  'INT',     50, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'consultToQueueDuration',                'STRING',  'customer_session_base_temp', 'consult_to_queue_duration',               'STRING',  'customer_session_temp', 'consult_to_queue_duration',               'BIGINT',  51, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'contactDriver',                         'STRING',  'customer_session_base_temp', 'contact_driver',                          'STRING',  'customer_session_temp', 'contact_driver',                          'STRING',  52, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'contactHandleType',                     'STRING',  'customer_session_base_temp', 'contact_handle_type',                     'STRING',  'customer_session_temp', 'contact_handle_type',                     'STRING',  53, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'contactPriority',                       'STRING',     'customer_session_base_temp', 'contact_priority',                        'STRING',     'customer_session_temp', 'contact_priority',                        'INT',     54, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'contactReason',                         'STRING',  'customer_session_base_temp', 'contact_reason',                          'STRING',  'customer_session_temp', 'contact_reason',                          'STRING',  55, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'cpaStatus',                             'STRING',  'customer_session_base_temp', 'cpa_status',                              'STRING',  'customer_session_temp', 'cpa_status',                              'STRING',  56, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'createdTime',                           'STRING',  'customer_session_base_temp', 'session_created_time',                    'STRING',  'customer_session_temp', 'session_created_time',                    'BIGINT',  57, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'cross_talk_count',                      'STRING',     'customer_session_base_temp', 'cross_talk_count',                        'STRING',     'customer_session_temp', 'cross_talk_count',                        'INT',     58, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'cross_talk_time',                       'STRING',  'customer_session_base_temp', 'cross_talk_time',                         'STRING',  'customer_session_temp', 'cross_talk_time',                         'BIGINT',  59, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'csatScore',                             'STRING',     'customer_session_base_temp', 'csat_score',                              'STRING',     'customer_session_temp', 'csat_score',                              'INT',     60, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'customer_email',                        'STRING',  'customer_session_base_temp', 'customer_email',                          'STRING',  'customer_session_temp', 'customer_email',                          'STRING',  61, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'customer_name',                         'STRING',  'customer_session_base_temp', 'customer_name',                           'STRING',  'customer_session_temp', 'customer_name',                           'STRING',  62, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'customer_phoneNumber',                  'STRING',  'customer_session_base_temp', 'customer_phone_number',                   'STRING',  'customer_session_temp', 'customer_phone_number',                   'STRING',  63, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'customer_sentiment_score',              'STRING',  'customer_session_base_temp', 'customer_sentiment_score',                'STRING',  'customer_session_temp', 'customer_sentiment_score',                'STRING',  64, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'dead_air_count',                        'STRING',     'customer_session_base_temp', 'dead_air_count',                          'STRING',     'customer_session_temp', 'dead_air_count',                          'INT',     65, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'dead_air_time',                         'STRING',  'customer_session_base_temp', 'dead_air_time',                           'STRING',  'customer_session_temp', 'dead_air_time',                           'BIGINT',  66, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'destination',                           'STRING',  'customer_session_base_temp', 'destination_endpoint',                    'STRING',  'customer_session_temp', 'destination_endpoint',                    'STRING',  67, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'direction',                             'STRING',  'customer_session_base_temp', 'customer_session_direction',              'STRING',  'customer_session_temp', 'customer_session_direction',              'STRING',  68, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'emailBccList',                          'STRING',  'customer_session_base_temp', 'email_bcc_list',                          'STRING',  'customer_session_temp', 'email_bcc_list',                          'STRING',  69, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'emailBody',                             'STRING',  'customer_session_base_temp', 'email_body',                              'STRING',  'customer_session_temp', 'email_body',                              'STRING',  70, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'emailCcList',                           'STRING',  'customer_session_base_temp', 'email_cc_list',                           'STRING',  'customer_session_temp', 'email_cc_list',                           'STRING',  71, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'emailContent',                          'STRING',  'customer_session_base_temp', 'email_content',                           'STRING',  'customer_session_temp', 'email_content',                           'STRING',  72, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'emailContentType',                      'STRING',  'customer_session_base_temp', 'email_content_type',                      'STRING',  'customer_session_temp', 'email_content_type',                      'STRING',  73, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'emailDate',                             'STRING',  'customer_session_base_temp', 'email_date',                              'STRING',  'customer_session_temp', 'email_date',                              'BIGINT',  74, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'emailFullMessage',                      'STRING',  'customer_session_base_temp', 'email_full_message',                      'STRING',  'customer_session_temp', 'email_full_message',                      'STRING',  75, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'emailHasAttachments',                   'STRING', 'customer_session_base_temp', 'is_email_with_attachments',               'STRING',     'customer_session_temp', 'is_email_with_attachments',               'INT',     76, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'emailMessageId',                        'STRING',  'customer_session_base_temp', 'email_message_id',                        'STRING',  'customer_session_temp', 'email_message_id',                        'STRING',  77, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'emailRef',                              'STRING',  'customer_session_base_temp', 'email_ref',                               'STRING',  'customer_session_temp', 'email_ref',                               'STRING',  78, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'emailReplyBody',                        'STRING',  'customer_session_base_temp', 'email_reply_body',                        'STRING',  'customer_session_temp', 'email_reply_body',                        'STRING',  79, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'emailReplyContentType',                 'STRING',  'customer_session_base_temp', 'email_reply_content_type',                'STRING',  'customer_session_temp', 'email_reply_content_type',                'STRING',  80, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'emailReplyTo',                          'STRING',  'customer_session_base_temp', 'email_reply_to',                          'STRING',  'customer_session_temp', 'email_reply_to',                          'STRING',  81, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'emailToList',                           'STRING',  'customer_session_base_temp', 'email_to_list',                           'STRING',  'customer_session_temp', 'email_to_list',                           'STRING',  82, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'endedTime',                             'STRING',  'customer_session_base_temp', 'session_ended_time',                      'STRING',  'customer_session_temp', 'session_ended_time',                      'BIGINT',  83, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'epTransferToEPCount',                   'STRING',     'customer_session_base_temp', 'entrypoint_to_entrypoint_transfer_count', 'STRING',     'customer_session_temp', 'entrypoint_to_entrypoint_transfer_count', 'INT',     84, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'eval_score',                            'STRING',  'customer_session_base_temp', 'eval_score',                              'STRING',  'customer_session_temp', 'eval_score',                              'STRING',  85, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'eval_score_type',                       'STRING',  'customer_session_base_temp', 'eval_score_type',                         'STRING',  'customer_session_temp', 'eval_score_type',                         'STRING',  86, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'eval_sections_failure_count',           'STRING',     'customer_session_base_temp', 'eval_sections_failure_count',             'STRING',     'customer_session_temp', 'eval_sections_failure_count',             'INT',     87, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'eval_status',                           'STRING',  'customer_session_base_temp', 'eval_status',                             'STRING',  'customer_session_temp', 'eval_status',                             'STRING',  88, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'feedback_comment',                      'STRING',  'customer_session_base_temp', 'feedback_comment',                        'STRING',  'customer_session_temp', 'feedback_comment',                        'STRING',  89, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'feedback_questionsAnswered',             'STRING',     'customer_session_base_temp', 'feedback_questions_answered',             'STRING',     'customer_session_temp', 'feedback_questions_answered',             'INT',     90, 1, 0, 0, '0',            1, GETUTCDATE());
 
 -- [W05] customer_session — 207 data fields + 4 context  [part 2 of 3: ordinals 91-180]
 INSERT INTO schema_config
-    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+    (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ('Webex', 'customer_session', 'customer_session_base', 'ringingDuration',                   'ringing_duration',                   'INT',     91, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'selfserviceCount',                  'selfservice_count',                  'INT',     92, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'selfserviceDuration',               'selfservice_duration',               'INT',     93, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'consultCount',                      'consult_count',                      'INT',     94, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'consultDuration',                   'consult_duration',                   'INT',     95, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'consultToEPCount',                  'consult_to_ep_count',                'INT',     96, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'consultToEPDuration',               'consult_to_ep_duration',             'INT',     97, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'consultToQueueCount',               'consult_to_queue_count',             'INT',     98, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'consultToQueueDuration',            'consult_to_queue_duration',          'INT',     99, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'conferenceCount',                   'conference_count',                   'INT',    100, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'conferenceDuration',                'conference_duration',                'INT',    101, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'blindTransferCount',                'blind_transfer_count',               'INT',    102, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'transferCount',                     'transfer_count',                     'INT',    103, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'transferErrorCount',                'transfer_error_count',               'INT',    104, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'transferEpDN',                      'transfer_ep_dn',                     'STRING', 105, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'transferInToEPCount',               'transfer_in_to_ep_count',            'INT',    106, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'agentToDnTransferCount',            'agent_to_dn_transfer_count',         'INT',    107, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'agentToQueueTransferCount',         'agent_to_queue_transfer_count',      'INT',    108, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'agentToEntrypointTransferCount',    'agent_to_entrypoint_transfer_count', 'INT',    109, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'agentTransferedInCount',            'agent_transfered_in_count',          'INT',    110, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'agentToAgentTransferCount',         'agent_to_agent_transfer_count',      'STRING', 111, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'queueTransferToEPCount',            'queue_transfer_to_ep_count',         'INT',    112, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'queueTransferToQueueCount',         'queue_transfer_to_queue_count',      'INT',    113, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'epTransferToEPCount',               'ep_transfer_to_ep_count',            'INT',    114, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'chainedInToEPCount',                'chained_in_to_ep_count',             'INT',    115, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'chainedInToQueueCount',             'chained_in_to_queue_count',          'INT',    116, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'outdialConsultCount',               'outdial_consult_count',              'INT',    117, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'outdialConsultToEPCount',           'outdial_consult_to_ep_count',        'INT',    118, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'outdialConsultToEPDuration',        'outdial_consult_to_ep_duration',     'INT',    119, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'outdialConsultToQueueCount',        'outdial_consult_to_queue_count',     'INT',    120, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'outdialConsultToQueueDuration',     'outdial_consult_to_queue_duration',  'INT',    121, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'overflowCount',                     'overflow_count',                     'INT',    122, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'bargedInCount',                     'barged_in_count',                    'INT',    123, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'bargedInDuration',                  'barged_in_duration',                 'INT',    124, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'bargedInFailedCount',               'barged_in_failed_count',             'INT',    125, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'fullMonitoringCount',               'full_monitoring_count',              'INT',    126, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'silentMonitoringCount',             'silent_monitoring_count',            'INT',    127, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'midcallMonitoringCount',            'midcall_monitoring_count',           'INT',    128, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'totalMonitoringCount',              'total_monitoring_count',             'INT',    129, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'monitoringTimestamp',               'monitoring_timestamp',               'BIGINT', 130, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'monitorFullName',                   'monitor_full_name',                  'STRING', 131, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'pausedCount',                       'paused_count',                       'INT',    132, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'pausedDuration',                    'paused_duration',                    'INT',    133, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'resumedCount',                      'resumed_count',                      'INT',    134, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'deadAirCount',                      'dead_air_count',                     'INT',    135, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'deadAirTime',                       'dead_air_time',                      'INT',    136, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'crossTalkCount',                    'cross_talk_count',                   'INT',    137, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'crossTalkTime',                     'cross_talk_time',                    'INT',    138, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'totalBnrDuration',                  'total_bnr_duration',                 'INT',    139, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'shortInIVRCount',                   'short_in_ivr_count',                 'INT',    140, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'shortInQueueCount',                 'short_in_queue_count',               'INT',    141, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'midCallSummaryCount',               'mid_call_summary_count',             'INT',    142, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'postCallSummaryCount',              'post_call_summary_count',            'INT',    143, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'postCallConsultDuration',           'post_call_consult_duration',         'INT',    144, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'postCallDuration',                  'post_call_duration',                 'INT',    145, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'recordingCount',                    'recording_count',                    'INT',    146, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'recordingErrorCount',               'recording_error_count',              'INT',    147, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'recordingFileSize',                 'recording_file_size',                'INT',    148, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'recordingLocation',                 'recording_location',                 'STRING', 149, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'recordingStereoBlobId',             'recording_stereo_blob_id',           'STRING', 150, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'vaRecordingAvailable',              'va_recording_available',             'BOOLEAN',151, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'vaTranscriptionAvailable',          'va_transcription_available',         'STRING', 152, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'csatScore',                         'csat_score',                         'INT',    153, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'autoCsat',                          'auto_csat',                          'STRING', 154, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'customerSentimentScore',            'customer_sentiment_score',           'STRING', 155, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'evalScore',                         'eval_score',                         'STRING', 156, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'evalScoreType',                     'eval_score_type',                    'STRING', 157, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'evalSectionsFailureCount',          'eval_sections_failure_count',        'INT',    158, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'evalStatus',                        'eval_status',                        'STRING', 159, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'overallEvalScore',                  'overall_eval_score',                 'STRING', 160, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'wordRatioCount',                    'word_ratio_count',                   'INT',    161, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'wordRatioScore',                    'word_ratio_score',                   'STRING', 162, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'suddenDisconnectCount',             'sudden_disconnect_count',            'INT',    163, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'terminatingEnd',                    'terminating_end',                    'STRING', 164, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'terminationReason',                 'termination_reason',                 'STRING', 165, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'terminationType',                   'termination_type',                   'STRING', 166, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'flowActivityName',                  'flow_activity_name',                 'STRING', 167, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'flowActivitySequence',              'flow_activity_sequence',             'STRING', 168, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'ivrScriptId',                       'ivr_script_id',                      'STRING', 169, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'ivrScriptName',                     'ivr_script_name',                    'STRING', 170, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'ivrScriptTagId',                    'ivr_script_tag_id',                  'STRING', 171, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'ivrScriptTagName',                  'ivr_script_tag_name',                'STRING', 172, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'ivrEndedCount',                     'ivr_ended_count',                    'INT',    173, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'campaignId',                        'campaign_id',                        'STRING', 174, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'campaignName',                      'campaign_name',                      'STRING', 175, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'campaignStatus',                    'campaign_status',                    'STRING', 176, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'cpaStatus',                         'cpa_status',                         'STRING', 177, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'botName',                           'bot_name',                           'STRING', 178, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'chatType',                          'chat_type',                          'STRING', 179, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'outdialType',                       'outdial_type',                       'STRING', 180, 1, 0, 1, GETUTCDATE());
+  ('Webex', 'customer_session', 'feedback_questionsPresented',           'STRING',     'customer_session_base_temp', 'feedback_questions_presented',            'STRING',     'customer_session_temp', 'feedback_questions_presented',            'INT',     91,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'feedback_surveyCompleted',              'STRING', 'customer_session_base_temp', 'is_feedback_survey_completed',            'STRING',     'customer_session_temp', 'is_feedback_survey_completed',            'INT',     92,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'feedback_surveyOptIn',                  'STRING',  'customer_session_base_temp', 'feedback_survey_opt_in',                  'STRING',  'customer_session_temp', 'feedback_survey_opt_in',                  'STRING',  93,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'feedback_type',                         'STRING',  'customer_session_base_temp', 'feedback_survey_type',                    'STRING',  'customer_session_temp', 'feedback_survey_type',                    'STRING',  94,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'firstQueueId',                          'STRING',  'customer_session_base_temp', 'first_queue_id',                          'STRING',  'customer_session_temp', 'first_queue_id',                          'STRING',  95,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'firstQueueName',                        'STRING',  'customer_session_base_temp', 'first_queue_name',                        'STRING',  'customer_session_temp', 'first_queue_name',                        'STRING',  96,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'flowActivityName',                      'STRING',  'customer_session_base_temp', 'flow_activity_name',                      'STRING',  'customer_session_temp', 'flow_activity_name',                      'STRING',  97,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'flowActivitySequence',                  'STRING',  'customer_session_base_temp', 'flow_activity_sequence',                  'STRING',  'customer_session_temp', 'flow_activity_sequence',                  'STRING',  98,  1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'fullMonitoringCount',                   'STRING',     'customer_session_base_temp', 'full_monitoring_count',                   'STRING',     'customer_session_temp', 'full_monitoring_count',                   'INT',     99,  1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'globalVariables',                       'STRING',    'customer_session_base_temp', 'global_variables_json',                   'STRING',  'customer_session_temp', 'global_variables_json',                   'STRING',  100, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'globalVariables_json_booleanValue',     'STRING', 'customer_session_base_temp', 'global_variable_boolean_value',           'STRING',     'customer_session_temp', 'global_variable_boolean_value',           'INT',     101, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'globalVariables_json_dataType',         'STRING',  'customer_session_base_temp', 'global_variable_data_type',               'STRING',  'customer_session_temp', 'global_variable_data_type',               'STRING',  102, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'globalVariables_json_doubleValue',      'STRING',   'customer_session_base_temp', 'global_variable_double_value',            'STRING', 'customer_session_temp', 'global_variable_double_value',            'DECIMAL', 103, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'globalVariables_json_integerValue',     'STRING',     'customer_session_base_temp', 'global_variable_integer_value',           'STRING',     'customer_session_temp', 'global_variable_integer_value',           'INT',     104, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'globalVariables_json_longValue',        'STRING',  'customer_session_base_temp', 'global_variable_long_value',              'STRING',  'customer_session_temp', 'global_variable_long_value',              'BIGINT',  105, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'globalVariables_json_name',             'STRING',  'customer_session_base_temp', 'global_variable_name',                    'STRING',  'customer_session_temp', 'global_variable_name',                    'STRING',  106, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'globalVariables_json_stringValue',      'STRING',  'customer_session_base_temp', 'global_variable_string_value',            'STRING',  'customer_session_temp', 'global_variable_string_value',            'STRING',  107, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'globalVariables_json_value',            'STRING',  'customer_session_base_temp', 'global_variable_raw_value',               'STRING',  'customer_session_temp', 'global_variable_raw_value',               'STRING',  108, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'holdCount',                             'STRING',     'customer_session_base_temp', 'hold_count',                              'STRING',     'customer_session_temp', 'hold_count',                              'INT',     109, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'holdDuration',                          'STRING',  'customer_session_base_temp', 'hold_duration',                           'STRING',  'customer_session_temp', 'hold_duration',                           'BIGINT',  110, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'id',                                    'STRING',  'customer_session_base_temp', 'customer_session_id',                     'STRING',  'customer_session_temp', 'customer_session_id',                     'STRING',  111, 1, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'is_realtime_transcription_enabled',     'STRING', 'customer_session_base_temp', 'is_realtime_transcription_enabled',       'STRING',     'customer_session_temp', 'is_realtime_transcription_enabled',       'INT',     112, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'is_suggested_response_requested',       'STRING', 'customer_session_base_temp', 'is_suggested_response_requested',         'STRING',     'customer_session_temp', 'is_suggested_response_requested',         'INT',     113, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isActive',                              'STRING', 'customer_session_base_temp', 'is_active',                               'STRING',     'customer_session_temp', 'is_active',                               'INT',     114, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isBarged',                              'STRING', 'customer_session_base_temp', 'is_barged',                               'STRING',     'customer_session_temp', 'is_barged',                               'INT',     115, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isCallback',                            'STRING', 'customer_session_base_temp', 'is_callback',                             'STRING',     'customer_session_temp', 'is_callback',                             'INT',     116, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isCampaign',                            'STRING', 'customer_session_base_temp', 'is_campaign',                             'STRING',     'customer_session_temp', 'is_campaign',                             'INT',     117, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isContactEscalatedToQueue',             'STRING', 'customer_session_base_temp', 'is_contact_escalated_to_queue',           'STRING',     'customer_session_temp', 'is_contact_escalated_to_queue',           'INT',     118, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isContactHandled',                      'STRING', 'customer_session_base_temp', 'is_contact_handled',                      'STRING',     'customer_session_temp', 'is_contact_handled',                      'INT',     119, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isContactOffered',                      'STRING', 'customer_session_base_temp', 'is_contact_offered',                      'STRING',     'customer_session_temp', 'is_contact_offered',                      'INT',     120, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isEmailSent',                           'STRING', 'customer_session_base_temp', 'is_email_sent',                           'STRING',     'customer_session_temp', 'is_email_sent',                           'INT',     121, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isHandledByPreferredAgent',             'STRING', 'customer_session_base_temp', 'is_handled_by_preferred_agent',           'STRING',     'customer_session_temp', 'is_handled_by_preferred_agent',           'INT',     122, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isMonitored',                           'STRING', 'customer_session_base_temp', 'is_monitored',                            'STRING',     'customer_session_temp', 'is_monitored',                            'INT',     123, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isOptOutOfQueue',                       'STRING', 'customer_session_base_temp', 'is_opt_out_of_queue',                     'STRING',     'customer_session_temp', 'is_opt_out_of_queue',                     'INT',     124, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isOutdial',                             'STRING', 'customer_session_base_temp', 'is_outdial',                              'STRING',     'customer_session_temp', 'is_outdial',                              'INT',     125, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isRecordingDeleted',                    'STRING', 'customer_session_base_temp', 'is_recording_deleted',                    'STRING',     'customer_session_temp', 'is_recording_deleted',                    'INT',     126, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isTranscriptionAvailable',              'STRING', 'customer_session_base_temp', 'is_transcription_available',              'STRING',     'customer_session_temp', 'is_transcription_available',              'INT',     127, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'isWithInServiceLevel',                  'STRING', 'customer_session_base_temp', 'is_within_service_level',                 'STRING',     'customer_session_temp', 'is_within_service_level',                 'INT',     128, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'ivrEndedCount',                         'STRING',     'customer_session_base_temp', 'ivr_ended_count',                         'STRING',     'customer_session_temp', 'ivr_ended_count',                         'INT',     129, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'ivrScriptId',                           'STRING',  'customer_session_base_temp', 'ivr_script_id',                           'STRING',  'customer_session_temp', 'ivr_script_id',                           'STRING',  130, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'ivrScriptName',                         'STRING',  'customer_session_base_temp', 'ivr_script_name',                         'STRING',  'customer_session_temp', 'ivr_script_name',                         'STRING',  131, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'ivrScriptTagId',                        'STRING',  'customer_session_base_temp', 'ivr_script_tag_id',                       'STRING',  'customer_session_temp', 'ivr_script_tag_id',                       'STRING',  132, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'ivrScriptTagName',                      'STRING',  'customer_session_base_temp', 'ivr_script_tag_name',                     'STRING',  'customer_session_temp', 'ivr_script_tag_name',                     'STRING',  133, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastActivityTime',                      'STRING',  'customer_session_base_temp', 'last_activity_time',                      'STRING',  'customer_session_temp', 'last_activity_time',                      'BIGINT',  134, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastAgent_channelId',                   'STRING',  'customer_session_base_temp', 'last_agent_channel_id',                   'STRING',  'customer_session_temp', 'last_agent_channel_id',                   'STRING',  135, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastAgent_id',                          'STRING',  'customer_session_base_temp', 'last_agent_id',                           'STRING',  'customer_session_temp', 'last_agent_id',                           'STRING',  136, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastAgent_name',                        'STRING',  'customer_session_base_temp', 'last_agent_name',                         'STRING',  'customer_session_temp', 'last_agent_name',                         'STRING',  137, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastAgent_phoneNumber',                 'STRING',  'customer_session_base_temp', 'last_agent_phone_number',                 'STRING',  'customer_session_temp', 'last_agent_phone_number',                 'STRING',  138, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastAgent_sessionId',                   'STRING',  'customer_session_base_temp', 'last_agent_session_id',                   'STRING',  'customer_session_temp', 'last_agent_session_id',                   'STRING',  139, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastAgent_signInId',                    'STRING',  'customer_session_base_temp', 'last_agent_sign_in_id',                   'STRING',  'customer_session_temp', 'last_agent_sign_in_id',                   'STRING',  140, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastEntryPoint_id',                     'STRING',  'customer_session_base_temp', 'last_entrypoint_id',                      'STRING',  'customer_session_temp', 'last_entrypoint_id',                      'STRING',  141, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastEntryPoint_name',                   'STRING',  'customer_session_base_temp', 'last_entrypoint_name',                    'STRING',  'customer_session_temp', 'last_entrypoint_name',                    'STRING',  142, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastQueue_duration',                    'STRING',  'customer_session_base_temp', 'last_queue_duration',                     'STRING',  'customer_session_temp', 'last_queue_duration',                     'BIGINT',  143, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastQueue_id',                          'STRING',  'customer_session_base_temp', 'last_queue_id',                           'STRING',  'customer_session_temp', 'last_queue_id',                           'STRING',  144, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastQueue_name',                        'STRING',  'customer_session_base_temp', 'last_queue_name',                         'STRING',  'customer_session_temp', 'last_queue_name',                         'STRING',  145, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastSite_id',                           'STRING',  'customer_session_base_temp', 'last_site_id',                            'STRING',  'customer_session_temp', 'last_site_id',                            'STRING',  146, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastSite_name',                         'STRING',  'customer_session_base_temp', 'last_site_name',                          'STRING',  'customer_session_temp', 'last_site_name',                          'STRING',  147, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastTeam_id',                           'STRING',  'customer_session_base_temp', 'last_team_id',                            'STRING',  'customer_session_temp', 'last_team_id',                            'STRING',  148, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastTeam_name',                         'STRING',  'customer_session_base_temp', 'last_team_name',                          'STRING',  'customer_session_temp', 'last_team_name',                          'STRING',  149, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastWrapUpCodeId',                      'STRING',  'customer_session_base_temp', 'last_wrapup_code_id',                     'STRING',  'customer_session_temp', 'last_wrapup_code_id',                     'STRING',  150, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'lastWrapupCodeName',                    'STRING',  'customer_session_base_temp', 'last_wrapup_code_name',                   'STRING',  'customer_session_temp', 'last_wrapup_code_name',                   'STRING',  151, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'manualAssignCount',                     'STRING',     'customer_session_base_temp', 'manual_assign_count',                     'STRING',     'customer_session_temp', 'manual_assign_count',                     'INT',     152, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'matchedSkills',                         'STRING',    'customer_session_base_temp', 'matched_skills_json',                     'STRING',  'customer_session_temp', 'matched_skills_json',                     'STRING',  153, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'matchedSkills_json_booleanValue',       'STRING', 'customer_session_base_temp', 'matched_skill_boolean_value',             'STRING',     'customer_session_temp', 'matched_skill_boolean_value',             'INT',     154, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'matchedSkills_json_proficiencyLevel',   'STRING',     'customer_session_base_temp', 'matched_skill_proficiency_level',         'STRING',     'customer_session_temp', 'matched_skill_proficiency_level',         'INT',     155, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'matchedSkills_json_skillId',            'STRING',  'customer_session_base_temp', 'matched_skill_id',                        'STRING',  'customer_session_temp', 'matched_skill_id',                        'STRING',  156, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'matchedSkills_json_skillName',          'STRING',  'customer_session_base_temp', 'matched_skill_name',                      'STRING',  'customer_session_temp', 'matched_skill_name',                      'STRING',  157, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'matchedSkills_json_skillType',          'STRING',  'customer_session_base_temp', 'matched_skill_type',                      'STRING',  'customer_session_temp', 'matched_skill_type',                      'STRING',  158, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'matchedSkills_json_value',              'STRING',  'customer_session_base_temp', 'matched_skill_value',                     'STRING',  'customer_session_temp', 'matched_skill_value',                     'STRING',  159, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'matchedSkillsProfile',                  'STRING',  'customer_session_base_temp', 'matched_skills_profile',                  'STRING',  'customer_session_temp', 'matched_skills_profile',                  'STRING',  160, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'mid_call_summary_count',                'STRING',     'customer_session_base_temp', 'mid_call_summary_count',                  'STRING',     'customer_session_temp', 'mid_call_summary_count',                  'INT',     161, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'midcallMonitoringCount',                'STRING',     'customer_session_base_temp', 'midcall_monitoring_count',                'STRING',     'customer_session_temp', 'midcall_monitoring_count',                'INT',     162, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'monitorFullName',                       'STRING',  'customer_session_base_temp', 'monitor_full_name',                       'STRING',  'customer_session_temp', 'monitor_full_name',                       'STRING',  163, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'monitoringTimestamp',                   'STRING',  'customer_session_base_temp', 'monitoring_timestamp',                    'STRING',  'customer_session_temp', 'monitoring_timestamp',                    'BIGINT',  164, 1, 0, 0, '3000-01-01',   1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'origin',                                'STRING',  'customer_session_base_temp', 'origin',                                  'STRING',  'customer_session_temp', 'origin',                                  'STRING',  165, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'outdialConsultCount',                   'STRING',     'customer_session_base_temp', 'outdial_consult_count',                   'STRING',     'customer_session_temp', 'outdial_consult_count',                   'INT',     166, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'outdialConsultToEPCount',               'STRING',     'customer_session_base_temp', 'outdial_consult_to_entrypoint_count',     'STRING',     'customer_session_temp', 'outdial_consult_to_entrypoint_count',     'INT',     167, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'outdialConsultToEPDuration',            'STRING',  'customer_session_base_temp', 'outdial_consult_to_entrypoint_duration',  'STRING',  'customer_session_temp', 'outdial_consult_to_entrypoint_duration',  'BIGINT',  168, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'outdialConsultToQueueCount',            'STRING',     'customer_session_base_temp', 'outdial_consult_to_queue_count',          'STRING',     'customer_session_temp', 'outdial_consult_to_queue_count',          'INT',     169, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'outdialConsultToQueueDuration',         'STRING',  'customer_session_base_temp', 'outdial_consult_to_entrypoint_duration',  'STRING',  'customer_session_temp', 'outdial_consult_to_entrypoint_duration',  'BIGINT',  170, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'outdialType',                           'STRING',  'customer_session_base_temp', 'outdial_type',                            'STRING',  'customer_session_temp', 'outdial_type',                            'STRING',  171, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'overall_eval_score',                    'STRING',  'customer_session_base_temp', 'overall_eval_score',                      'STRING',  'customer_session_temp', 'overall_eval_score',                      'STRING',  172, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'overflowCount',                         'STRING',     'customer_session_base_temp', 'overflow_count',                          'STRING',     'customer_session_temp', 'overflow_count',                          'INT',     173, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'pausedCount',                           'STRING',     'customer_session_base_temp', 'paused_count',                            'STRING',     'customer_session_temp', 'paused_count',                            'INT',     174, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'pausedDuration',                        'STRING',  'customer_session_base_temp', 'paused_duration',                         'STRING',  'customer_session_temp', 'paused_duration',                         'BIGINT',  175, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'personal_call_back_agent_name',         'STRING',  'customer_session_base_temp', 'personal_call_back_agent_name',           'STRING',  'customer_session_temp', 'personal_call_back_agent_name',           'STRING',  176, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'post_call_consult_duration',            'STRING',  'customer_session_base_temp', 'post_call_consult_duration',              'STRING',  'customer_session_temp', 'post_call_consult_duration',              'BIGINT',  177, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'post_call_summary_count',               'STRING',     'customer_session_base_temp', 'post_call_summary_count',                 'STRING',     'customer_session_temp', 'post_call_summary_count',                 'INT',     178, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'postCallDuration',                      'STRING',  'customer_session_base_temp', 'post_call_duration',                      'STRING',  'customer_session_temp', 'post_call_duration',                      'BIGINT',  179, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'preferredAgentName',                    'STRING',  'customer_session_base_temp', 'preferred_agent_name',                    'STRING',  'customer_session_temp', 'preferred_agent_name',                    'STRING',  180, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [W05] customer_session — 207 data fields + 4 context  [part 3 of 3: ordinals 181-211]
 INSERT INTO schema_config
-    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
+    (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ('Webex', 'customer_session', 'customer_session_base', 'agentHangupCount',                  'agent_hangup_count',                 'INT',    181, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'callCompletedCount',                'call_completed_count',               'INT',    182, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastWrapUpCodeId',                  'last_wrap_up_code_id',               'STRING', 183, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'lastWrapupCodeName',                'last_wrapup_code_name',              'STRING', 184, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'manualAssignCount',                 'manual_assign_count',                'INT',    185, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'previousAgentId',                   'previous_agent_id',                  'STRING', 186, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'previousAgentName',                 'previous_agent_name',                'STRING', 187, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'previousAgentSessionId',            'previous_agent_session_id',          'STRING', 188, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'preferredAgentName',                'preferred_agent_name',               'STRING', 189, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'preferredAgentSystemId',            'preferred_agent_system_id',          'STRING', 190, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'personalCallBackAgentName',         'personal_call_back_agent_name',      'STRING', 191, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'emailHasAttachments',               'email_has_attachments',              'BOOLEAN',192, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'emailDate',                         'email_date',                         'INT',    193, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'emailBccList',                      'email_bcc_list',                     'STRING', 194, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'emailCcList',                       'email_cc_list',                      'STRING', 195, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'emailReplyTo',                      'email_reply_to',                     'STRING', 196, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'emailToList',                       'email_to_list',                      'STRING', 197, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'emailMessageId',                    'email_message_id',                   'STRING', 198, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'emailRef',                          'email_ref',                          'STRING', 199, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'emailBody',                         'email_body',                         'STRING', 200, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'emailFullMessage',                  'email_full_message',                 'STRING', 201, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'emailReplyBody',                    'email_reply_body',                   'STRING', 202, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'emailContent',                      'email_content',                      'STRING', 203, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'emailContentType',                  'email_content_type',                 'STRING', 204, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'emailReplyContentType',             'email_reply_content_type',           'STRING', 205, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'topicName',                         'topic_name',                         'STRING', 206, 1, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'globalVariables',                   'global_variables_json',              'STRING', 207, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'N/A',                               'start_date',                         'STRING', 208, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'N/A',                               'end_date',                           'STRING', 209, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'N/A',                               'record_type',                        'STRING', 210, 0, 0, 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'customer_session_base', 'N/A',                               'source',                             'STRING', 211, 0, 0, 1, GETUTCDATE());
+  ('Webex', 'customer_session', 'preferredAgentSystemId',                'STRING',  'customer_session_base_temp', 'preferred_agent_id',                      'STRING',  'customer_session_temp', 'preferred_agent_id',                      'STRING',  181, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'previousAgentId',                       'STRING',  'customer_session_base_temp', 'previous_agent_id',                       'STRING',  'customer_session_temp', 'previous_agent_id',                       'STRING',  182, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'previousAgentName',                     'STRING',  'customer_session_base_temp', 'previous_agent_name',                     'STRING',  'customer_session_temp', 'previous_agent_name',                     'STRING',  183, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'previousAgentSessionId',                'STRING',  'customer_session_base_temp', 'previous_agent_session_id',               'STRING',  'customer_session_temp', 'previous_agent_session_id',               'STRING',  184, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'previousQueue_id',                      'STRING',  'customer_session_base_temp', 'previous_queue_id',                       'STRING',  'customer_session_temp', 'previous_queue_id',                       'STRING',  185, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'previousQueue_name',                    'STRING',  'customer_session_base_temp', 'previous_queue_name',                     'STRING',  'customer_session_temp', 'previous_queue_name',                     'STRING',  186, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'queueCount',                            'STRING',     'customer_session_base_temp', 'queue_count',                             'STRING',     'customer_session_temp', 'queue_count',                             'INT',     187, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'queueDuration',                         'STRING',  'customer_session_base_temp', 'queue_duration',                          'STRING',  'customer_session_temp', 'queue_duration',                          'BIGINT',  188, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'queueTransferToEPCount',                'STRING',     'customer_session_base_temp', 'queue_to_entrypoint_transfer_count',      'STRING',     'customer_session_temp', 'queue_to_entrypoint_transfer_count',      'INT',     189, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'queueTransferToQueueCount',             'STRING',     'customer_session_base_temp', 'queue_to_queue_transfer_count',           'STRING',     'customer_session_temp', 'queue_to_queue_transfer_count',           'INT',     190, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'recordingCount',                        'STRING',     'customer_session_base_temp', 'recording_count',                         'STRING',     'customer_session_temp', 'recording_count',                         'INT',     191, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'recordingErrorCount',                   'STRING',     'customer_session_base_temp', 'recording_error_count',                   'STRING',     'customer_session_temp', 'recording_error_count',                   'INT',     192, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'recordingFileSize',                     'STRING',  'customer_session_base_temp', 'recording_file_size_bytes',               'STRING',  'customer_session_temp', 'recording_file_size_bytes',               'BIGINT',  193, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'recordingLocation',                     'STRING',  'customer_session_base_temp', 'recording_location',                      'STRING',  'customer_session_temp', 'recording_location',                      'STRING',  194, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'recordingStereoBlobId',                 'STRING',  'customer_session_base_temp', 'recording_stereo_blob_id',                'STRING',  'customer_session_temp', 'recording_stereo_blob_id',                'STRING',  195, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'required_skill_operand',                'STRING',  'customer_session_base_temp', 'required_skill_operand',                  'STRING',  'customer_session_temp', 'required_skill_operand',                  'STRING',  196, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'requiredSkills',                        'STRING',    'customer_session_base_temp', 'required_skills_json',                    'STRING',  'customer_session_temp', 'required_skills_json',                    'STRING',  197, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'requiredSkills_json_booleanValue',      'STRING', 'customer_session_base_temp', 'required_skill_boolean_value',            'STRING',     'customer_session_temp', 'required_skill_boolean_value',            'INT',     198, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'requiredSkills_json_matchCondition',    'STRING',  'customer_session_base_temp', 'required_skill_match_condition',          'STRING',  'customer_session_temp', 'required_skill_match_condition',          'STRING',  199, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'requiredSkills_json_proficiencyLevel',  'STRING',     'customer_session_base_temp', 'required_skill_proficiency_level',        'STRING',     'customer_session_temp', 'required_skill_proficiency_level',        'INT',     200, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'requiredSkills_json_skillId',           'STRING',  'customer_session_base_temp', 'required_skill_id',                       'STRING',  'customer_session_temp', 'required_skill_id',                       'STRING',  201, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'requiredSkills_json_skillName',         'STRING',  'customer_session_base_temp', 'required_skill_name',                     'STRING',  'customer_session_temp', 'required_skill_name',                     'STRING',  202, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'requiredSkills_json_skillType',         'STRING',  'customer_session_base_temp', 'required_skill_type',                     'STRING',  'customer_session_temp', 'required_skill_type',                     'STRING',  203, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'requiredSkills_json_value',             'STRING',  'customer_session_base_temp', 'required_skill_value',                    'STRING',  'customer_session_temp', 'required_skill_value',                    'STRING',  204, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'resumedCount',                          'STRING',     'customer_session_base_temp', 'resumed_count',                           'STRING',     'customer_session_temp', 'resumed_count',                           'INT',     205, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'ringingDuration',                       'STRING',  'customer_session_base_temp', 'ringing_duration',                        'STRING',  'customer_session_temp', 'ringing_duration',                        'BIGINT',  206, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'routingType',                           'STRING',  'customer_session_base_temp', 'routing_type',                            'STRING',  'customer_session_temp', 'routing_type',                            'STRING',  207, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'selfserviceCount',                      'STRING',     'customer_session_base_temp', 'selfservice_count',                       'STRING',     'customer_session_temp', 'selfservice_count',                       'INT',     208, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'selfserviceDuration',                   'STRING',  'customer_session_base_temp', 'selfservice_duration',                    'STRING',  'customer_session_temp', 'selfservice_duration',                    'BIGINT',  209, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'shortInIVRCount',                       'STRING',     'customer_session_base_temp', 'short_in_ivr_count',                      'STRING',     'customer_session_temp', 'short_in_ivr_count',                      'INT',     210, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'shortInQueueCount',                     'STRING',     'customer_session_base_temp', 'short_in_queue_count',                    'STRING',     'customer_session_temp', 'short_in_queue_count',                    'INT',     211, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'silentMonitoringCount',                 'STRING',     'customer_session_base_temp', 'silent_monitoring_count',                 'STRING',     'customer_session_temp', 'silent_monitoring_count',                 'INT',     212, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'skillsAssignedIn',                      'STRING',  'customer_session_base_temp', 'skills_assigned_in',                      'STRING',  'customer_session_temp', 'skills_assigned_in',                      'STRING',  213, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'status',                                'STRING',  'customer_session_base_temp', 'contact_status',                          'STRING',  'customer_session_temp', 'contact_status',                          'STRING',  214, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'suddenDisconnectCount',                 'STRING',     'customer_session_base_temp', 'sudden_disconnect_count',                 'STRING',     'customer_session_temp', 'sudden_disconnect_count',                 'INT',     215, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'terminatingEnd',                        'STRING',  'customer_session_base_temp', 'terminating_end',                         'STRING',  'customer_session_temp', 'terminating_end',                         'STRING',  216, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'terminationReason',                     'STRING',  'customer_session_base_temp', 'termination_reason',                      'STRING',  'customer_session_temp', 'termination_reason',                      'STRING',  217, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'terminationType',                       'STRING',  'customer_session_base_temp', 'termination_type',                        'STRING',  'customer_session_temp', 'termination_type',                        'STRING',  218, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'topicName',                             'STRING',  'customer_session_base_temp', 'topic_name',                              'STRING',  'customer_session_temp', 'topic_name',                              'STRING',  219, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'totalBnrDuration',                      'STRING',  'customer_session_base_temp', 'total_bnr_duration',                      'STRING',  'customer_session_temp', 'total_bnr_duration',                      'BIGINT',  220, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'totalDuration',                         'STRING',  'customer_session_base_temp', 'total_session_duration',                  'STRING',  'customer_session_temp', 'total_session_duration',                  'BIGINT',  221, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'totalMonitoringCount',                  'STRING',     'customer_session_base_temp', 'total_monitoring_count',                  'STRING',     'customer_session_temp', 'total_monitoring_count',                  'INT',     222, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'transferCount',                         'STRING',     'customer_session_base_temp', 'transfer_count',                          'STRING',     'customer_session_temp', 'transfer_count',                          'INT',     223, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'transferEpDN',                          'STRING',  'customer_session_base_temp', 'transfer_entrypoint_dn',                  'STRING',  'customer_session_temp', 'transfer_entrypoint_dn',                  'STRING',  224, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'transferErrorCount',                    'STRING',     'customer_session_base_temp', 'transfer_error_count',                    'STRING',     'customer_session_temp', 'transfer_error_count',                    'INT',     225, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'transferInToEPCount',                   'STRING',     'customer_session_base_temp', 'transfer_in_to_entrypoint_count',         'STRING',     'customer_session_temp', 'transfer_in_to_entrypoint_count',         'INT',     226, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'va_transcription_available',            'STRING',  'customer_session_base_temp', 'va_transcription_available',              'STRING',  'customer_session_temp', 'va_transcription_available',              'STRING',  227, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'vaRecordingAvailable',                  'STRING', 'customer_session_base_temp', 'is_va_recording_available',               'STRING',     'customer_session_temp', 'is_va_recording_available',               'INT',     228, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'word_ratio_count',                      'STRING',     'customer_session_base_temp', 'word_ratio_count',                        'STRING',     'customer_session_temp', 'word_ratio_count',                        'INT',     229, 1, 0, 0, '0',            1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'word_ratio_score',                      'STRING',  'customer_session_base_temp', 'word_ratio_score',                        'STRING',  'customer_session_temp', 'word_ratio_score',                        'STRING',  230, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'wrapupDuration',                        'STRING',  'customer_session_base_temp', 'wrapup_duration',                         'STRING',  'customer_session_temp', 'wrapup_duration',                         'BIGINT',  231, 1, 0, 0, '0',            1, GETUTCDATE());
 
 -- Total Webex: 485 rows (agent_activity 17 + agent_session 117 + call_leg 121 + customer_activity 19 + customer_session 211)
-
-
--- ============================================================
--- Salesforce source — schema_config seed data
--- source_name = 'Salesforce'  (IDs auto-assigned by IDENTITY)
--- source_column_name = field path within each SOQL record (PascalCase),
---   or attributes.<key> for the SObject metadata envelope.
--- context fields (start_date/end_date/record_type/source) use 'N/A'.
--- include_in_md5hash: 1 for data scalars, 0 for metadata + context fields.
--- Mirrors fabric/workspaces/eq-hub/schemas/salesforce/*.json.
--- ============================================================
-
-SET IDENTITY_INSERT dbo.schema_config OFF;
-GO
-
--- [SF01] account — 2 data fields + 2 metadata + 4 context
-INSERT INTO schema_config
-    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  ('Salesforce', 'account', 'account_base', 'attributes.type', 'attributes_type', 'STRING', 1, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'account', 'account_base', 'attributes.url',  'attributes_url',  'STRING', 2, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'account', 'account_base', 'Id',              'id',              'STRING', 3, 1, 1, 1, GETUTCDATE()),
-  ('Salesforce', 'account', 'account_base', 'Name',            'name',            'STRING', 4, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'account', 'account_base', 'N/A',             'start_date',      'STRING', 5, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'account', 'account_base', 'N/A',             'end_date',        'STRING', 6, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'account', 'account_base', 'N/A',             'record_type',     'STRING', 7, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'account', 'account_base', 'N/A',             'source',          'STRING', 8, 0, 0, 1, GETUTCDATE());
-
--- [SF02] campaign — 9 data fields + 2 metadata + 4 context
-INSERT INTO schema_config
-    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  ('Salesforce', 'campaign', 'campaign_base', 'attributes.type', 'attributes_type',     'STRING',  1, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'campaign', 'campaign_base', 'attributes.url',  'attributes_url',      'STRING',  2, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'campaign', 'campaign_base', 'Id',              'id',                  'STRING',  3, 1, 1, 1, GETUTCDATE()),
-  ('Salesforce', 'campaign', 'campaign_base', 'Name',            'name',                'STRING',  4, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'campaign', 'campaign_base', 'Status',          'status',              'STRING',  5, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'campaign', 'campaign_base', 'StartDate',       'campaign_start_date', 'STRING',  6, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'campaign', 'campaign_base', 'EndDate',         'campaign_end_date',   'STRING',  7, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'campaign', 'campaign_base', 'Type',            'type',                'STRING',  8, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'campaign', 'campaign_base', 'IsActive',        'is_active',           'BOOLEAN', 9, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'campaign', 'campaign_base', 'Description',     'description',         'STRING', 10, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'campaign', 'campaign_base', 'OwnerId',         'owner_id',            'STRING', 11, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'campaign', 'campaign_base', 'N/A',             'start_date',          'STRING', 12, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'campaign', 'campaign_base', 'N/A',             'end_date',            'STRING', 13, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'campaign', 'campaign_base', 'N/A',             'record_type',         'STRING', 14, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'campaign', 'campaign_base', 'N/A',             'source',              'STRING', 15, 0, 0, 1, GETUTCDATE());
-
--- [SF03] task — 9 data fields + 2 metadata + 4 context
-INSERT INTO schema_config
-    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  ('Salesforce', 'task', 'task_base', 'attributes.type', 'attributes_type', 'STRING',  1, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'task', 'task_base', 'attributes.url',  'attributes_url',  'STRING',  2, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'task', 'task_base', 'Id',              'id',              'STRING',  3, 1, 1, 1, GETUTCDATE()),
-  ('Salesforce', 'task', 'task_base', 'Subject',         'subject',         'STRING',  4, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'task', 'task_base', 'Status',          'status',          'STRING',  5, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'task', 'task_base', 'Priority',        'priority',        'STRING',  6, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'task', 'task_base', 'ActivityDate',    'activity_date',   'STRING',  7, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'task', 'task_base', 'Description',     'description',     'STRING',  8, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'task', 'task_base', 'OwnerId',         'owner_id',        'STRING',  9, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'task', 'task_base', 'WhoId',           'who_id',          'STRING', 10, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'task', 'task_base', 'WhatId',          'what_id',         'STRING', 11, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'task', 'task_base', 'N/A',             'start_date',      'STRING', 12, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'task', 'task_base', 'N/A',             'end_date',        'STRING', 13, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'task', 'task_base', 'N/A',             'record_type',     'STRING', 14, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'task', 'task_base', 'N/A',             'source',          'STRING', 15, 0, 0, 1, GETUTCDATE());
-
--- [SF04] event — 9 data fields + 2 metadata + 4 context
-INSERT INTO schema_config
-    (source_name, source_table_name, target_table_name, source_column_name, target_column_name,
-     target_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_active, created_at)
-VALUES
-  ('Salesforce', 'event', 'event_base', 'attributes.type', 'attributes_type', 'STRING',  1, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'event', 'event_base', 'attributes.url',  'attributes_url',  'STRING',  2, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'event', 'event_base', 'Id',              'id',              'STRING',  3, 1, 1, 1, GETUTCDATE()),
-  ('Salesforce', 'event', 'event_base', 'Subject',         'subject',         'STRING',  4, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'event', 'event_base', 'StartDateTime',   'start_date_time', 'STRING',  5, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'event', 'event_base', 'EndDateTime',     'end_date_time',   'STRING',  6, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'event', 'event_base', 'Location',        'location',        'STRING',  7, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'event', 'event_base', 'Description',     'description',     'STRING',  8, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'event', 'event_base', 'OwnerId',         'owner_id',        'STRING',  9, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'event', 'event_base', 'WhoId',           'who_id',          'STRING', 10, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'event', 'event_base', 'WhatId',          'what_id',         'STRING', 11, 1, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'event', 'event_base', 'N/A',             'start_date',      'STRING', 12, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'event', 'event_base', 'N/A',             'end_date',        'STRING', 13, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'event', 'event_base', 'N/A',             'record_type',     'STRING', 14, 0, 0, 1, GETUTCDATE()),
-  ('Salesforce', 'event', 'event_base', 'N/A',             'source',          'STRING', 15, 0, 0, 1, GETUTCDATE());
-
--- Total Salesforce: 53 rows (account 8 + campaign 15 + task 15 + event 15)
-GO
