@@ -1,0 +1,30 @@
+{
+  "table_name": "crm_companies",
+  "description": "HubSpot CRM companies — GET /crm/objects/2025-09/companies. One row per company; top-level and properties.* fields fully flattened.",
+  "source_path": "results",
+  "has_pagination": true,
+  "context_fields": [],
+  "fields": [
+    {"column": "id", "source": "id", "type": "string"},
+    {"column": "created_at", "source": "createdAt", "type": "string"},
+    {"column": "updated_at", "source": "updatedAt", "type": "string"},
+    {"column": "archived", "source": "archived", "type": "boolean"},
+    {"column": "url", "source": "url", "type": "string"},
+    {"column": "agent_id_c", "source": "properties.agent_id__c", "type": "string"},
+    {"column": "agent_number", "source": "properties.agent_number", "type": "string"},
+    {"column": "agent_type_c", "source": "properties.agent_type__c", "type": "string"},
+    {"column": "aggregation_c", "source": "properties.aggregation__c", "type": "string"},
+    {"column": "createdate", "source": "properties.createdate", "type": "string"},
+    {"column": "hs_lastmodifieddate", "source": "properties.hs_lastmodifieddate", "type": "string"},
+    {"column": "hs_object_id", "source": "properties.hs_object_id", "type": "string"},
+    {"column": "name", "source": "properties.name", "type": "string"},
+    {"column": "parent_imo_agent", "source": "properties.parent_imo_agent", "type": "string"},
+    {"column": "parent_imo_agent_id_annuity_c", "source": "properties.parent_imo_agent_id_annuity__c", "type": "string"},
+    {"column": "parent_imo_agent_id_life_c", "source": "properties.parent_imo_agent_id_life__c", "type": "string"},
+    {"column": "primary_contact_email_c", "source": "properties.primary_contact_email__c", "type": "string"},
+    {"column": "salesforce_id", "source": "properties.salesforce_id", "type": "string"},
+    {"column": "salesforceaccountid", "source": "properties.salesforceaccountid", "type": "string"},
+    {"column": "salesforcedeleted", "source": "properties.salesforcedeleted", "type": "string"},
+    {"column": "salesforcelastsynctime", "source": "properties.salesforcelastsynctime", "type": "string"}
+  ]
+}

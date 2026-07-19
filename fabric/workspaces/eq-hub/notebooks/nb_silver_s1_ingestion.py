@@ -487,42 +487,46 @@ except Exception as _exc:
 
 print(f"\n[MLV] Refreshing/creating silver_s2 materialized lake view(s) for '{p_target_table}'")
 
-_MLV_LH      = "lh_silver"
-_MLV_SCHEMA  = "silver_s2"
-_MLV_SRC_REF = qualified_target   # lh_silver.silver_s1.<table>
+if not spark.catalog.tableExists(qualified_target):
+    # No silver table to build a view over — happens when the load skipped
+    # (0 source rows on a first-ever run). Nothing to refresh.
+    print(f"  SKIP: '{qualified_target}' does not exist (no data loaded) — MLV refresh skipped.")
+else:
+    _MLV_LH      = "lh_silver"
+    _MLV_SCHEMA  = "silver_s2"
+    _MLV_SRC_REF = qualified_target   # lh_silver.silver_s1.<table>
 
-# Audit columns excluded from the view SELECT (matches nb_silver_s2_views_ddl)
-_MLV_AUDIT_COLS = {
-    "ingestion_date", "data_timestamp", "source_system",
-    "ingestion_run_id", "ingestion_timestamp",
-}
-_mlv_cols     = [c for c in spark.table(qualified_target).columns]
-_mlv_col_list = ",\n               ".join(_mlv_cols)
+    # Audit columns excluded from the view SELECT (matches nb_silver_s2_views_ddl)
+    _MLV_AUDIT_COLS = {
+        "ingestion_date", "data_timestamp", "source_system",
+        "ingestion_run_id", "ingestion_timestamp",
+    }
+    _mlv_cols     = [c for c in spark.table(qualified_target).columns]
+    _mlv_col_list = ",\n               ".join(_mlv_cols)
 
-# ensure_mlv_and_refresh is injected by # The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
-# %run nb_utils — refreshes the MLV if
-# it exists, otherwise creates it. Returns 'refreshed' or 'created'.
-_mlv_targets = (
-    [
-        (f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}_current", "WHERE is_current = 1"),
-        (f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}_history", ""),
-    ]
-    if is_scd2
-    else [(f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}", "")]
-)
+    # ensure_mlv_and_refresh is injected by %run nb_utils — refreshes the MLV if
+    # it exists, otherwise creates it. Returns 'refreshed' or 'created'.
+    _mlv_targets = (
+        [
+            (f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}_current", "WHERE is_current = 1"),
+            (f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}_history", ""),
+        ]
+        if is_scd2
+        else [(f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}", "")]
+    )
 
-try:
-    for _mlv_name, _mlv_where in _mlv_targets:
-        _mlv_status = ensure_mlv_and_refresh(  # noqa: F821  # type: ignore[name-defined]
-            spark        = spark,
-            view_name    = _mlv_name,
-            source_ref   = _MLV_SRC_REF,
-            col_list     = _mlv_col_list,
-            where_clause = _mlv_where,
-        )
-        print(f"  {_mlv_status.upper():<9} {_mlv_name}")
-except Exception as _mlv_exc:
-    # Non-fatal: silver_s1 load already succeeded. Replace with `raise` to
-    # make a stale/failed MLV fail the pipeline activity instead.
-    print(f"  WARNING: MLV refresh/create failed for '{p_target_table}': {_mlv_exc}")
+    try:
+        for _mlv_name, _mlv_where in _mlv_targets:
+            _mlv_status = ensure_mlv_and_refresh(  # noqa: F821  # type: ignore[name-defined]
+                spark        = spark,
+                view_name    = _mlv_name,
+                source_ref   = _MLV_SRC_REF,
+                col_list     = _mlv_col_list,
+                where_clause = _mlv_where,
+            )
+            print(f"  {_mlv_status.upper():<9} {_mlv_name}")
+    except Exception as _mlv_exc:
+        # Non-fatal: silver_s1 load already succeeded. Replace with `raise` to
+        # make a stale/failed MLV fail the pipeline activity instead.
+        print(f"  WARNING: MLV refresh/create failed for '{p_target_table}': {_mlv_exc}")
 

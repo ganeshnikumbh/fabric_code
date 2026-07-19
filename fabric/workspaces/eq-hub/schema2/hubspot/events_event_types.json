@@ -1,0 +1,11 @@
+{
+  "table_name": "events_event_types",
+  "description": "HubSpot event types — GET /events/v3/events/event-types",
+  "source_path": "eventTypes",
+  "has_pagination": false,
+  "is_string_array": true,
+  "context_fields": [],
+  "fields": [
+    {"column": "event_type", "source": "__item__", "type": "string"}
+  ]
+}
