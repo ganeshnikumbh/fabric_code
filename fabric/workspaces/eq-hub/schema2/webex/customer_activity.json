@@ -5,7 +5,7 @@
   "array_explode_path": "activities.nodes",
   "context_fields": ["start_date", "end_date", "record_type", "source"],
   "fields": [
-    {"column": "id", "source": "__parent__.id", "type": "string"},
+    {"column": "car_id", "source": "__parent__.id", "type": "string"},
     {"column": "car_channel_type", "source": "__parent__.channelType", "type": "string"},
     {"column": "car_channel_sub_type", "source": "__parent__.channelSubType", "type": "string"},
     {"column": "car_destination", "source": "__parent__.destination", "type": "string"},
