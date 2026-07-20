@@ -27,13 +27,7 @@ VALUES
   ('HubSpot', 'marketing_events', 'appInfo_id', 'STRING', 'marketing_events_base_temp', 'id', 'STRING', 'marketing_events_temp', 'app_info_id', 'STRING', 18, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('HubSpot', 'marketing_events', 'appInfo_name', 'STRING', 'marketing_events_base_temp', 'name', 'STRING', 'marketing_events_temp', 'app_info_name', 'STRING', 19, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('HubSpot', 'marketing_events', 'created_at', 'STRING', 'marketing_events_base_temp', 'created_timestamp', 'STRING', 'marketing_events_temp', 'created_timestamp', 'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'marketing_events', 'updated_at', 'STRING', 'marketing_events_base_temp', 'updated_timestamp', 'STRING', 'marketing_events_temp', 'updated_timestamp', 'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'marketing_events', 'N/A', 'STRING', 'marketing_events_base_temp', 'ingestion_date', 'STRING', 'marketing_events_temp', 'ingestion_date', 'DATE', 22, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'marketing_events', 'N/A', 'STRING', 'marketing_events_base_temp', 'data_timestamp', 'STRING', 'marketing_events_temp', 'data_timestamp', 'BIGINT', 23, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'marketing_events', 'N/A', 'STRING', 'marketing_events_base_temp', 'source_system', 'STRING', 'marketing_events_temp', 'source_system', 'STRING', 24, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'marketing_events', 'N/A', 'STRING', 'marketing_events_base_temp', 'ingestion_run_id', 'STRING', 'marketing_events_temp', 'ingestion_run_id', 'STRING', 25, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'marketing_events', 'N/A', 'STRING', 'marketing_events_base_temp', 'ingestion_timestamp', 'STRING', 'marketing_events_temp', 'ingestion_timestamp', 'BIGINT', 26, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'marketing_events', 'N/A', 'STRING', 'marketing_events_base_temp', 'src_busn_asst', 'STRING', 'marketing_events_temp', 'src_busn_asst', 'STRING', 27, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
+  ('HubSpot', 'marketing_events', 'updated_at', 'STRING', 'marketing_events_base_temp', 'updated_timestamp', 'STRING', 'marketing_events_temp', 'updated_timestamp', 'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [marketing_emails]  (28 transformed / 48 kept)
 INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
@@ -107,24 +101,12 @@ VALUES
   ('HubSpot', 'marketing_emails', 'to_json_contactIds', 'STRING', 'marketing_emails_base_temp', 'to_contact_ids_json', 'STRING', 'marketing_emails_temp', 'to_contact_ids_json', 'STRING', 67, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('HubSpot', 'marketing_emails', 'to_json_contactIlsLists', 'STRING', 'marketing_emails_base_temp', 'to_contact_ils_lists_json', 'STRING', 'marketing_emails_temp', 'to_contact_ils_lists_json', 'STRING', 68, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('HubSpot', 'marketing_emails', 'to_json_contactLists', 'STRING', 'marketing_emails_base_temp', 'to_contact_lists_json', 'STRING', 'marketing_emails_temp', 'to_contact_lists_json', 'STRING', 69, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'marketing_emails', 'to_json_limitSendFrequency', 'STRING', 'marketing_emails_base_temp', 'is_limit_send_frequency', 'STRING', 'marketing_emails_temp', 'is_limit_send_frequency', 'INT', 70, 1, 0, 0, '0', 1, GETUTCDATE()),
-  ('HubSpot', 'marketing_emails', 'N/A', 'STRING', 'marketing_emails_base_temp', 'ingestion_date', 'STRING', 'marketing_emails_temp', 'ingestion_date', 'DATE', 71, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'marketing_emails', 'N/A', 'STRING', 'marketing_emails_base_temp', 'data_timestamp', 'STRING', 'marketing_emails_temp', 'data_timestamp', 'BIGINT', 72, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'marketing_emails', 'N/A', 'STRING', 'marketing_emails_base_temp', 'source_system', 'STRING', 'marketing_emails_temp', 'source_system', 'STRING', 73, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'marketing_emails', 'N/A', 'STRING', 'marketing_emails_base_temp', 'ingestion_run_id', 'STRING', 'marketing_emails_temp', 'ingestion_run_id', 'STRING', 74, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'marketing_emails', 'N/A', 'STRING', 'marketing_emails_base_temp', 'ingestion_timestamp', 'STRING', 'marketing_emails_temp', 'ingestion_timestamp', 'BIGINT', 75, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'marketing_emails', 'N/A', 'STRING', 'marketing_emails_base_temp', 'src_busn_asst', 'STRING', 'marketing_emails_temp', 'src_busn_asst', 'STRING', 76, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
+  ('HubSpot', 'marketing_emails', 'to_json_limitSendFrequency', 'STRING', 'marketing_emails_base_temp', 'is_limit_send_frequency', 'STRING', 'marketing_emails_temp', 'is_limit_send_frequency', 'INT', 70, 1, 0, 0, '0', 1, GETUTCDATE());
 
 -- [event_types]  (no JSON file)
 INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ('HubSpot', 'event_types', 'event_type', 'STRING', 'event_types_base_temp', 'event_type_code', 'STRING', 'event_types_temp', 'event_type_code', 'STRING', 1, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'event_types', 'N/A', 'STRING', 'event_types_base_temp', 'ingestion_date', 'STRING', 'event_types_temp', 'ingestion_date', 'DATE', 2, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'event_types', 'N/A', 'STRING', 'event_types_base_temp', 'data_timestamp', 'STRING', 'event_types_temp', 'data_timestamp', 'BIGINT', 3, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'event_types', 'N/A', 'STRING', 'event_types_base_temp', 'source_system', 'STRING', 'event_types_temp', 'source_system', 'STRING', 4, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'event_types', 'N/A', 'STRING', 'event_types_base_temp', 'ingestion_run_id', 'STRING', 'event_types_temp', 'ingestion_run_id', 'STRING', 5, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'event_types', 'N/A', 'STRING', 'event_types_base_temp', 'ingestion_timestamp', 'STRING', 'event_types_temp', 'ingestion_timestamp', 'BIGINT', 6, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'event_types', 'N/A', 'STRING', 'event_types_base_temp', 'src_busn_asst', 'STRING', 'event_types_temp', 'src_busn_asst', 'STRING', 7, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
+  ('HubSpot', 'event_types', 'event_type', 'STRING', 'event_types_base_temp', 'event_type_code', 'STRING', 'event_types_temp', 'event_type_code', 'STRING', 1, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 -- [crm_contacts]  (24 transformed / 0 kept)
 INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
@@ -170,14 +152,7 @@ VALUES
   ('HubSpot', 'crm_companies', 'properties_json_hs_lastmodifieddate', 'STRING', 'crm_companies_base_temp', 'updated_timestamp', 'STRING', 'crm_companies_temp', 'updated_timestamp', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('HubSpot', 'crm_companies', 'properties_json_hs_object_id', 'STRING', 'crm_companies_base_temp', 'company_id', 'STRING', 'crm_companies_temp', 'company_id', 'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('HubSpot', 'crm_companies', 'properties_json_name', 'STRING', 'crm_companies_base_temp', 'company_name', 'STRING', 'crm_companies_temp', 'company_name', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'crm_companies', 'object_type', 'STRING', 'crm_companies_base_temp', 'object_type', 'STRING', 'crm_companies_temp', 'object_type', 'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'crm_companies', 'N/A', 'STRING', 'crm_companies_base_temp', 'ingestion_date', 'STRING', 'crm_companies_temp', 'ingestion_date', 'DATE', 15, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'crm_companies', 'N/A', 'STRING', 'crm_companies_base_temp', 'data_timestamp', 'STRING', 'crm_companies_temp', 'data_timestamp', 'BIGINT', 16, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'crm_companies', 'N/A', 'STRING', 'crm_companies_base_temp', 'source_system', 'STRING', 'crm_companies_temp', 'source_system', 'STRING', 17, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'crm_companies', 'N/A', 'STRING', 'crm_companies_base_temp', 'ingestion_run_id', 'STRING', 'crm_companies_temp', 'ingestion_run_id', 'STRING', 18, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'crm_companies', 'N/A', 'STRING', 'crm_companies_base_temp', 'ingestion_timestamp', 'STRING', 'crm_companies_temp', 'ingestion_timestamp', 'BIGINT', 19, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'crm_companies', 'N/A', 'STRING', 'crm_companies_base_temp', 'src_busn_asst', 'STRING', 'crm_companies_temp', 'src_busn_asst', 'STRING', 20, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
-
+  ('HubSpot', 'crm_companies', 'object_type', 'STRING', 'crm_companies_base_temp', 'object_type', 'STRING', 'crm_companies_temp', 'object_type', 'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 -- [crm_owners]  (11 transformed / 0 kept)
 INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES

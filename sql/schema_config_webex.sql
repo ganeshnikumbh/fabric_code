@@ -38,14 +38,7 @@ VALUES
   ('Webex', 'agent_activity', 'siteName', 'STRING', 'agent_activity_base_temp', 'site_name', 'STRING', 'agent_activity_temp', 'site_name', 'STRING', 29, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('Webex', 'agent_activity', 'teamId', 'STRING', 'agent_activity_base_temp', 'team_id', 'STRING', 'agent_activity_temp', 'team_id', 'STRING', 30, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('Webex', 'agent_activity', 'teamName', 'STRING', 'agent_activity_base_temp', 'team_name', 'STRING', 'agent_activity_temp', 'team_name', 'STRING', 31, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'userLoginId', 'STRING', 'agent_activity_base_temp', 'user_login_id', 'STRING', 'agent_activity_temp', 'user_login_id', 'STRING', 32, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'N/A', 'STRING', 'agent_activity_base_temp', 'ingestion_date', 'STRING', 'agent_activity_temp', 'ingestion_date', 'DATE', 33, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'N/A', 'STRING', 'agent_activity_base_temp', 'data_timestamp', 'STRING', 'agent_activity_temp', 'data_timestamp', 'BIGINT', 34, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'N/A', 'STRING', 'agent_activity_base_temp', 'source_system', 'STRING', 'agent_activity_temp', 'source_system', 'STRING', 35, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'N/A', 'STRING', 'agent_activity_base_temp', 'ingestion_run_id', 'STRING', 'agent_activity_temp', 'ingestion_run_id', 'STRING', 36, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'N/A', 'STRING', 'agent_activity_base_temp', 'ingestion_timestamp', 'STRING', 'agent_activity_temp', 'ingestion_timestamp', 'BIGINT', 37, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'agent_activity', 'N/A', 'STRING', 'agent_activity_base_temp', 'src_busn_asst', 'STRING', 'agent_activity_temp', 'src_busn_asst', 'STRING', 38, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
-
+  ('Webex', 'agent_activity', 'userLoginId', 'STRING', 'agent_activity_base_temp', 'user_login_id', 'STRING', 'agent_activity_temp', 'user_login_id', 'STRING', 32, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 -- [agent_session]  (17 transformed / 107 kept)
 INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
@@ -166,14 +159,7 @@ VALUES
   ('Webex', 'agent_session', 'state', 'STRING', 'agent_session_base_temp', 'current_agent_state', 'STRING', 'agent_session_temp', 'current_agent_state', 'STRING', 115, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('Webex', 'agent_session', 'teamId', 'STRING', 'agent_session_base_temp', 'team_id', 'STRING', 'agent_session_temp', 'team_id', 'STRING', 116, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('Webex', 'agent_session', 'teamName', 'STRING', 'agent_session_base_temp', 'team_name', 'STRING', 'agent_session_temp', 'team_name', 'STRING', 117, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'userLoginId', 'STRING', 'agent_session_base_temp', 'user_login_id', 'STRING', 'agent_session_temp', 'user_login_id', 'STRING', 118, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'N/A', 'STRING', 'agent_session_base_temp', 'ingestion_date', 'STRING', 'agent_session_temp', 'ingestion_date', 'DATE', 119, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'N/A', 'STRING', 'agent_session_base_temp', 'data_timestamp', 'STRING', 'agent_session_temp', 'data_timestamp', 'BIGINT', 120, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'N/A', 'STRING', 'agent_session_base_temp', 'source_system', 'STRING', 'agent_session_temp', 'source_system', 'STRING', 121, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'N/A', 'STRING', 'agent_session_base_temp', 'ingestion_run_id', 'STRING', 'agent_session_temp', 'ingestion_run_id', 'STRING', 122, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'N/A', 'STRING', 'agent_session_base_temp', 'ingestion_timestamp', 'STRING', 'agent_session_temp', 'ingestion_timestamp', 'BIGINT', 123, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'agent_session', 'N/A', 'STRING', 'agent_session_base_temp', 'src_busn_asst', 'STRING', 'agent_session_temp', 'src_busn_asst', 'STRING', 124, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
-
+  ('Webex', 'agent_session', 'userLoginId', 'STRING', 'agent_session_base_temp', 'user_login_id', 'STRING', 'agent_session_temp', 'user_login_id', 'STRING', 118, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 -- [call_leg]  (92 transformed / 54 kept)
 INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
@@ -316,14 +302,7 @@ VALUES
   ('Webex', 'call_leg', 'transferCount', 'STRING', 'call_leg_base_temp', 'transfer_count', 'STRING', 'call_leg_temp', 'transfer_count', 'INT', 137, 1, 0, 0, '0', 1, GETUTCDATE()),
   ('Webex', 'call_leg', 'transferEpDN', 'STRING', 'call_leg_base_temp', 'call_leg_sla', 'STRING', 'call_leg_temp', 'call_leg_sla', 'STRING', 138, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('Webex', 'call_leg', 'transferErrorCount', 'STRING', 'call_leg_base_temp', 'transfer_error_count', 'STRING', 'call_leg_temp', 'transfer_error_count', 'INT', 139, 1, 0, 0, '0', 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'wrapupDuration', 'STRING', 'call_leg_base_temp', 'wrapup_duration', 'STRING', 'call_leg_temp', 'wrapup_duration', 'BIGINT', 140, 1, 0, 0, '0', 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'N/A', 'STRING', 'call_leg_base_temp', 'ingestion_date', 'STRING', 'call_leg_temp', 'ingestion_date', 'DATE', 141, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'N/A', 'STRING', 'call_leg_base_temp', 'data_timestamp', 'STRING', 'call_leg_temp', 'data_timestamp', 'BIGINT', 142, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'N/A', 'STRING', 'call_leg_base_temp', 'source_system', 'STRING', 'call_leg_temp', 'source_system', 'STRING', 143, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'N/A', 'STRING', 'call_leg_base_temp', 'ingestion_run_id', 'STRING', 'call_leg_temp', 'ingestion_run_id', 'STRING', 144, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'N/A', 'STRING', 'call_leg_base_temp', 'ingestion_timestamp', 'STRING', 'call_leg_temp', 'ingestion_timestamp', 'BIGINT', 145, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'N/A', 'STRING', 'call_leg_base_temp', 'src_busn_asst', 'STRING', 'call_leg_temp', 'src_busn_asst', 'STRING', 146, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
-
+  ('Webex', 'call_leg', 'wrapupDuration', 'STRING', 'call_leg_base_temp', 'wrapup_duration', 'STRING', 'call_leg_temp', 'wrapup_duration', 'BIGINT', 140, 1, 0, 0, '0', 1, GETUTCDATE());
 -- [customer_activity]  (42 transformed / 29 kept)
 INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
@@ -391,14 +370,7 @@ VALUES
   ('Webex', 'customer_activity', 'origin', 'STRING', 'customer_activity_base_temp', 'origin', 'STRING', 'customer_activity_temp', 'origin', 'STRING', 62, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('Webex', 'customer_activity', 'personalCallBackAgentName', 'STRING', 'customer_activity_base_temp', 'personal_call_back_agent_name', 'STRING', 'customer_activity_temp', 'personal_call_back_agent_name', 'STRING', 63, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('Webex', 'customer_activity', 'preferredAgentName', 'STRING', 'customer_activity_base_temp', 'preferred_agent_name', 'STRING', 'customer_activity_temp', 'preferred_agent_name', 'STRING', 64, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'routingType', 'STRING', 'customer_activity_base_temp', 'routing_type', 'STRING', 'customer_activity_temp', 'routing_type', 'STRING', 65, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'N/A', 'STRING', 'customer_activity_base_temp', 'ingestion_date', 'STRING', 'customer_activity_temp', 'ingestion_date', 'DATE', 66, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'N/A', 'STRING', 'customer_activity_base_temp', 'data_timestamp', 'STRING', 'customer_activity_temp', 'data_timestamp', 'BIGINT', 67, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'N/A', 'STRING', 'customer_activity_base_temp', 'source_system', 'STRING', 'customer_activity_temp', 'source_system', 'STRING', 68, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'N/A', 'STRING', 'customer_activity_base_temp', 'ingestion_run_id', 'STRING', 'customer_activity_temp', 'ingestion_run_id', 'STRING', 69, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'N/A', 'STRING', 'customer_activity_base_temp', 'ingestion_timestamp', 'STRING', 'customer_activity_temp', 'ingestion_timestamp', 'BIGINT', 70, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('Webex', 'customer_activity', 'N/A', 'STRING', 'customer_activity_base_temp', 'src_busn_asst', 'STRING', 'customer_activity_temp', 'src_busn_asst', 'STRING', 71, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
-
+  ('Webex', 'customer_activity', 'routingType', 'STRING', 'customer_activity_base_temp', 'routing_type', 'STRING', 'customer_activity_temp', 'routing_type', 'STRING', 65, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 -- [customer_session]  (174 transformed / 57 kept)
 INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
