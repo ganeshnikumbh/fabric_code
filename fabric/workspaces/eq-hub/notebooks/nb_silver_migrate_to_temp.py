@@ -45,6 +45,15 @@ from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 
 spark = SparkSession.builder.appName("nb_silver_migrate_to_temp").getOrCreate()
+# Legacy (pre-Gregorian) date/timestamp handling for old Parquet files:
+#   read  LEGACY    — interpret legacy-calendar values written by older writers
+#   write CORRECTED — persist in the Proleptic Gregorian calendar
+# int96 covers the older INT96 timestamp encoding, which raises the same
+# rebase error separately from the datetime one.
+spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
+spark.conf.set("spark.sql.parquet.datetimeRebaseModeInRead", "LEGACY")
+spark.conf.set("spark.sql.parquet.int96RebaseModeInWrite", "CORRECTED")
+spark.conf.set("spark.sql.parquet.int96RebaseModeInRead", "LEGACY")
 
 _notebook_start = time.time()
 
@@ -168,8 +177,23 @@ validate_silver_load(migrated_df, mappings, qualified_target, "MIGRATION")  # no
 
 print(f"\n[4/5] (Re)creating {qualified_target}")
 
-spark.sql(f"DROP TABLE IF EXISTS {qualified_target}")
-print(f"  Dropped (if existed) : {qualified_target}")
+# Always start fresh. A previous run may have failed mid-write and left a
+# partially-written table behind, so drop it and verify the drop actually took
+# effect before recreating — otherwise stale rows could survive into this load.
+_target_existed = spark.catalog.tableExists(qualified_target)
+try:
+    spark.sql(f"DROP TABLE IF EXISTS {qualified_target}")
+except Exception as _drop_exc:
+    raise RuntimeError(
+        f"Could not drop '{qualified_target}' left over from a previous run. "
+        f"Drop it manually and re-run.\n{_drop_exc}"
+    )
+if spark.catalog.tableExists(qualified_target):
+    raise RuntimeError(
+        f"'{qualified_target}' still exists after DROP — cannot guarantee a fresh load."
+    )
+print(f"  Dropped : {qualified_target} "
+      f"({'existed — recreated fresh' if _target_existed else 'did not exist'})")
 
 # Partition the _temp table by ingestion_date to match fresh silver ingestion
 # (non-SCD2 tables are ingestion_date-partitioned). Skip if the migrated frame
