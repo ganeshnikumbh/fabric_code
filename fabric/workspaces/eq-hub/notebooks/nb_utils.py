@@ -653,6 +653,38 @@ def silver_type_default(cast_type: str) -> str:
     return "NOT_PROVIDED"
 
 
+# Accepted textual forms for boolean values arriving from JSON / Parquet / strings.
+_BOOL_TRUE_TOKENS  = ("true",  "t", "yes", "y", "1")
+_BOOL_FALSE_TOKENS = ("false", "f", "no",  "n", "0")
+
+
+def boolean_to_int_expr(col):
+    """Map a boolean (or boolean-like string) column to a 1/0 INT flag.
+
+    Needed because a direct string cast loses the value: a BooleanType column
+    rendered as the string 'true' cannot be cast to INT (Spark returns NULL),
+    which would silently turn every TRUE into the column default (0). This
+    handles both real BooleanType columns and their textual representations
+    ('true'/'false', 't'/'f', 'yes'/'no', '1'/'0'), case-insensitively.
+
+    Parameters
+    ----------
+    col : Column expression holding the boolean / boolean-like value.
+
+    Returns
+    -------
+    Column  INT — 1 for true-ish, 0 for false-ish, NULL for anything else
+            (callers coalesce NULL to the schema_config default).
+    """
+    _s = F.lower(F.trim(col.cast("string")))
+    return (
+        F.when(_s.isin(*_BOOL_TRUE_TOKENS),  F.lit(1))
+         .when(_s.isin(*_BOOL_FALSE_TOKENS), F.lit(0))
+         .otherwise(F.lit(None))
+         .cast("int")
+    )
+
+
 def cast_and_default_silver_columns(df: DataFrame, mappings: list) -> DataFrame:
     """Cast bronze columns to their silver_data_type and guarantee non-null values.
 
@@ -703,17 +735,34 @@ def cast_and_default_silver_columns(df: DataFrame, mappings: list) -> DataFrame:
             df = df.withColumn(silver_col, F.lit(default_str).cast(cast_type))
             continue
 
-        _src_str = F.col(src_col).cast("string")
-        cleaned = F.when(
-            F.col(src_col).isNull()
-            | (F.trim(_src_str) == "")
-            | _src_str.rlike(_SILVER_SPECIAL_RE),
-            F.lit(default_str)
-        ).otherwise(_src_str)
+        # Boolean bronze -> integer silver needs a dedicated path: casting the
+        # string 'true' to INT yields NULL, which would silently collapse every
+        # TRUE to the default. Detect via schema_config bronze_data_type or the
+        # actual DataFrame type, then map to a 1/0 flag.
+        _bronze_type = (row["bronze_data_type"] or "").strip().upper()
+        _src_is_bool = (
+            _bronze_type in ("BOOLEAN", "BIT", "BOOL")
+            or isinstance(df.schema[src_col].dataType, BooleanType)
+        )
 
-        # Cast to the silver type; coalesce guards against real values that
-        # cannot be cast (they too fall back to the default) so output is non-null.
-        typed = F.coalesce(cleaned.cast(cast_type), F.lit(default_str).cast(cast_type))
+        if _src_is_bool and cast_type in ("int", "bigint"):
+            typed = F.coalesce(
+                boolean_to_int_expr(F.col(src_col)),
+                F.lit(default_str).cast(cast_type),
+            )
+        else:
+            _src_str = F.col(src_col).cast("string")
+            cleaned = F.when(
+                F.col(src_col).isNull()
+                | (F.trim(_src_str) == "")
+                | _src_str.rlike(_SILVER_SPECIAL_RE),
+                F.lit(default_str)
+            ).otherwise(_src_str)
+
+            # Cast to the silver type; coalesce guards against real values that
+            # cannot be cast (they too fall back to the default) so output is non-null.
+            typed = F.coalesce(cleaned.cast(cast_type), F.lit(default_str).cast(cast_type))
+
         df = df.withColumn(silver_col, typed)
 
         if bronze_col and bronze_col != silver_col and bronze_col in df.columns:

@@ -1,0 +1,376 @@
+
+========================================================================================
+HubSpot
+========================================================================================
+
+### crm_calls  —  NO JSON FILE  (9 rows, ALL unmatched)
+      landing=id                                     bronze=id                                 silver=id
+      landing=createdAt                              bronze=created_at                         silver=created_at
+      landing=updatedAt                              bronze=updated_at                         silver=updated_at
+      landing=archived                               bronze=archived                           silver=archived
+      landing=archivedAt                             bronze=archived_at                        silver=archived_at
+      landing=objectWriteTraceId                     bronze=object_write_trace_id              silver=object_write_trace_id
+      landing=url                                    bronze=url                                silver=url
+      landing=properties                             bronze=properties                         silver=properties_json
+      landing=N/A                                    bronze=N/A                                silver=object_type
+
+### crm_companies  —  9/14 rows have NO matching JSON column
+      landing=archived_at                            bronze=archived_at                        silver=archived_timestamp                 silver_type=STRING
+      landing=object_write_trace_id                  bronze=object_write_trace_id              silver=write_trace_id                     silver_type=STRING
+      landing=properties_json                        bronze=properties_json                    silver=properties_json                    silver_type=STRING
+      landing=properties_json_createdate             bronze=properties_json_createdate         silver=created_timestamp                  silver_type=STRING
+      landing=properties_json_domain                 bronze=properties_json_domain             silver=company_domain                     silver_type=STRING
+      landing=properties_json_hs_lastmodifieddate    bronze=properties_json_hs_lastmodifieddate silver=updated_timestamp                  silver_type=STRING
+      landing=properties_json_hs_object_id           bronze=properties_json_hs_object_id       silver=company_id                         silver_type=STRING
+      landing=properties_json_name                   bronze=properties_json_name               silver=company_name                       silver_type=STRING
+      landing=object_type                            bronze=object_type                        silver=object_type                        silver_type=STRING
+
+### crm_deals  —  NO JSON FILE  (9 rows, ALL unmatched)
+      landing=id                                     bronze=id                                 silver=id
+      landing=createdAt                              bronze=created_at                         silver=created_at
+      landing=updatedAt                              bronze=updated_at                         silver=updated_at
+      landing=archived                               bronze=archived                           silver=archived
+      landing=archivedAt                             bronze=archived_at                        silver=archived_at
+      landing=objectWriteTraceId                     bronze=object_write_trace_id              silver=object_write_trace_id
+      landing=url                                    bronze=url                                silver=url
+      landing=properties                             bronze=properties                         silver=properties_json
+      landing=N/A                                    bronze=N/A                                silver=object_type
+
+### crm_line_items  —  NO JSON FILE  (9 rows, ALL unmatched)
+      landing=id                                     bronze=id                                 silver=id
+      landing=createdAt                              bronze=created_at                         silver=created_at
+      landing=updatedAt                              bronze=updated_at                         silver=updated_at
+      landing=archived                               bronze=archived                           silver=archived
+      landing=archivedAt                             bronze=archived_at                        silver=archived_at
+      landing=objectWriteTraceId                     bronze=object_write_trace_id              silver=object_write_trace_id
+      landing=url                                    bronze=url                                silver=url
+      landing=properties                             bronze=properties                         silver=properties_json
+      landing=N/A                                    bronze=N/A                                silver=object_type
+
+### crm_meetings  —  NO JSON FILE  (9 rows, ALL unmatched)
+      landing=id                                     bronze=id                                 silver=id
+      landing=createdAt                              bronze=created_at                         silver=created_at
+      landing=updatedAt                              bronze=updated_at                         silver=updated_at
+      landing=archived                               bronze=archived                           silver=archived
+      landing=archivedAt                             bronze=archived_at                        silver=archived_at
+      landing=objectWriteTraceId                     bronze=object_write_trace_id              silver=object_write_trace_id
+      landing=url                                    bronze=url                                silver=url
+      landing=properties                             bronze=properties                         silver=properties_json
+      landing=N/A                                    bronze=N/A                                silver=object_type
+
+### crm_notes  —  NO JSON FILE  (9 rows, ALL unmatched)
+      landing=id                                     bronze=id                                 silver=id
+      landing=createdAt                              bronze=created_at                         silver=created_at
+      landing=updatedAt                              bronze=updated_at                         silver=updated_at
+      landing=archived                               bronze=archived                           silver=archived
+      landing=archivedAt                             bronze=archived_at                        silver=archived_at
+      landing=objectWriteTraceId                     bronze=object_write_trace_id              silver=object_write_trace_id
+      landing=url                                    bronze=url                                silver=url
+      landing=properties                             bronze=properties                         silver=properties_json
+      landing=N/A                                    bronze=N/A                                silver=object_type
+
+### crm_products  —  NO JSON FILE  (9 rows, ALL unmatched)
+      landing=id                                     bronze=id                                 silver=id
+      landing=createdAt                              bronze=created_at                         silver=created_at
+      landing=updatedAt                              bronze=updated_at                         silver=updated_at
+      landing=archived                               bronze=archived                           silver=archived
+      landing=archivedAt                             bronze=archived_at                        silver=archived_at
+      landing=objectWriteTraceId                     bronze=object_write_trace_id              silver=object_write_trace_id
+      landing=url                                    bronze=url                                silver=url
+      landing=properties                             bronze=properties                         silver=properties_json
+      landing=N/A                                    bronze=N/A                                silver=object_type
+
+### crm_quotes  —  NO JSON FILE  (9 rows, ALL unmatched)
+      landing=id                                     bronze=id                                 silver=id
+      landing=createdAt                              bronze=created_at                         silver=created_at
+      landing=updatedAt                              bronze=updated_at                         silver=updated_at
+      landing=archived                               bronze=archived                           silver=archived
+      landing=archivedAt                             bronze=archived_at                        silver=archived_at
+      landing=objectWriteTraceId                     bronze=object_write_trace_id              silver=object_write_trace_id
+      landing=url                                    bronze=url                                silver=url
+      landing=properties                             bronze=properties                         silver=properties_json
+      landing=N/A                                    bronze=N/A                                silver=object_type
+
+### crm_tasks  —  NO JSON FILE  (9 rows, ALL unmatched)
+      landing=id                                     bronze=id                                 silver=id
+      landing=createdAt                              bronze=created_at                         silver=created_at
+      landing=updatedAt                              bronze=updated_at                         silver=updated_at
+      landing=archived                               bronze=archived                           silver=archived
+      landing=archivedAt                             bronze=archived_at                        silver=archived_at
+      landing=objectWriteTraceId                     bronze=object_write_trace_id              silver=object_write_trace_id
+      landing=url                                    bronze=url                                silver=url
+      landing=properties                             bronze=properties                         silver=properties_json
+      landing=N/A                                    bronze=N/A                                silver=object_type
+
+### crm_tickets  —  NO JSON FILE  (9 rows, ALL unmatched)
+      landing=id                                     bronze=id                                 silver=id
+      landing=createdAt                              bronze=created_at                         silver=created_at
+      landing=updatedAt                              bronze=updated_at                         silver=updated_at
+      landing=archived                               bronze=archived                           silver=archived
+      landing=archivedAt                             bronze=archived_at                        silver=archived_at
+      landing=objectWriteTraceId                     bronze=object_write_trace_id              silver=object_write_trace_id
+      landing=url                                    bronze=url                                silver=url
+      landing=properties                             bronze=properties                         silver=properties_json
+      landing=N/A                                    bronze=N/A                                silver=object_type
+
+### event_types  —  NO JSON FILE  (1 rows, ALL unmatched)
+      landing=event_type                             bronze=event_type_code                    silver=event_type_code
+
+### marketing_emails  —  17/70 rows have NO matching JSON column
+      landing=content_jsonlatePath                   bronze=content_jsonlate_path              silver=contentlate_path                   silver_type=STRING
+      landing=content_json_widgets                   bronze=content_json_widgets               silver=content_widgets_json               silver_type=STRING
+      landing=content_json_flexAreas                 bronze=content_json_flex_areas            silver=content_flex_areas_json            silver_type=STRING
+      landing=content_json_styleSettings             bronze=content_json_style_settings        silver=content_style_settings_json        silver_type=STRING
+      landing=testing_json_abSampleSizeDefault       bronze=testing_json_ab_sample_size_default silver=ab_sample_size_default             silver_type=STRING
+      landing=testing_json_abSamplingDefault         bronze=testing_json_ab_sampling_default   silver=ab_sampling_default                silver_type=STRING
+      landing=testing_json_abStatus                  bronze=testing_json_ab_status             silver=ab_status                          silver_type=STRING
+      landing=testing_json_abSuccessMetric           bronze=testing_json_ab_success_metric     silver=ab_success_metric                  silver_type=STRING
+      landing=testing_json_abTestPercentage          bronze=testing_json_ab_test_percentage    silver=ab_test_percentage                 silver_type=INT
+      landing=testing_json_hoursToWait               bronze=testing_json_hours_to_wait         silver=ab_hours_to_wait                   silver_type=INT
+      landing=testing_json_isAbVariation             bronze=testing_json_is_ab_variation       silver=is_ab_variation                    silver_type=INT
+      landing=testing_json_testId                    bronze=testing_json_test_id               silver=ab_test_id                         silver_type=STRING
+      landing=to_json_suppressGraymail               bronze=to_json_suppress_graymail          silver=is_suppress_graymail               silver_type=INT
+      landing=to_json_contactIds                     bronze=to_json_contact_ids                silver=to_contact_ids_json                silver_type=STRING
+      landing=to_json_contactIlsLists                bronze=to_json_contact_ils_lists          silver=to_contact_ils_lists_json          silver_type=STRING
+      landing=to_json_contactLists                   bronze=to_json_contact_lists              silver=to_contact_lists_json              silver_type=STRING
+      landing=to_json_limitSendFrequency             bronze=to_json_limit_send_frequency       silver=is_limit_send_frequency            silver_type=INT
+
+========================================================================================
+Webex
+========================================================================================
+
+### agent_activity  —  9/32 rows have NO matching JSON column
+      landing=channelInfo_activities_nodes_changedById bronze=changed_by_supervisor_id           silver=changed_by_supervisor_id           silver_type=STRING
+      landing=channelInfo_activities_nodes_changedByName bronze=changed_by_supervisor_name         silver=changed_by_supervisor_name         silver_type=STRING
+      landing=channelInfo_activities_nodes_duration  bronze=activity_duration                  silver=activity_duration                  silver_type=BIGINT
+      landing=channelInfo_activities_nodes_endTime   bronze=activity_end_time                  silver=activity_end_time                  silver_type=TIMESTAMP
+      landing=channelInfo_activities_nodes_id        bronze=activity_id                        silver=activity_id                        silver_type=STRING
+      landing=channelInfo_activities_nodes_startTime bronze=activity_start_time                silver=activity_start_time                silver_type=TIMESTAMP
+      landing=channelInfo_activities_nodes_state     bronze=activity_state                     silver=activity_state                     silver_type=STRING
+      landing=channelInfo_agentPhoneNumber           bronze=agent_phone_number                 silver=agent_phone_number                 silver_type=STRING
+      landing=channelInfo_subChannelType             bronze=sub_channel_type                   silver=sub_channel_type                   silver_type=STRING
+
+### agent_session  —  96/112 rows have NO matching JSON column
+      landing=agentSignOutReason                     bronze=agent_signout_reason               silver=agent_signout_reason               silver_type=STRING
+      landing=channelInfo_agentPhoneNumber           bronze=agent_phone_number                 silver=agent_phone_number                 silver_type=STRING
+      landing=channelInfo_agentToAgentTransferCount  bronze=agent_to_agent_transfer_count      silver=agent_to_agent_transfer_count      silver_type=INT
+      landing=channelInfo_agentTransferToQueueRequestCount bronze=agent_transfer_to_queue_request_count silver=agent_transfer_to_queue_request_count silver_type=INT
+      landing=channelInfo_availableCount             bronze=available_count                    silver=available_count                    silver_type=INT
+      landing=channelInfo_availableDuration          bronze=available_duration                 silver=available_duration                 silver_type=BIGINT
+      landing=channelInfo_blindTransferCount         bronze=blind_transfer_count               silver=blind_transfer_count               silver_type=INT
+      landing=channelInfo_callBackCount              bronze=call_back_count                    silver=call_back_count                    silver_type=INT
+      landing=channelInfo_conferenceCount            bronze=conference_count                   silver=conference_count                   silver_type=INT
+      landing=channelInfo_conferenceDuration         bronze=conference_duration                silver=conference_duration                silver_type=BIGINT
+      landing=channelInfo_conferenceTransferInCount  bronze=conference_transfer_in_count       silver=conference_transfer_in_count       silver_type=INT
+      landing=channelInfo_connectedCount             bronze=connected_count                    silver=connected_count                    silver_type=INT
+      landing=channelInfo_connectedDuration          bronze=connected_duration                 silver=connected_duration                 silver_type=BIGINT
+      landing=channelInfo_consultAnswerCount         bronze=consult_answer_count               silver=consult_answer_count               silver_type=INT
+      landing=channelInfo_consultAnswerDuration      bronze=consult_answer_duration            silver=consult_answer_duration            silver_type=BIGINT
+      landing=channelInfo_consultCount               bronze=consult_count                      silver=consult_count                      silver_type=INT
+      landing=channelInfo_consultDuration            bronze=consult_duration                   silver=consult_duration                   silver_type=BIGINT
+      landing=channelInfo_consultRequestCount        bronze=consult_request_count              silver=consult_request_count              silver_type=INT
+      landing=channelInfo_consultRequestDuration     bronze=consult_request_duration           silver=consult_request_duration           silver_type=BIGINT
+      landing=channelInfo_consultToEpAnsweredCount   bronze=consult_to_ep_answered_count       silver=consult_to_ep_answered_count       silver_type=INT
+      landing=channelInfo_consultToEpAnsweredDuration bronze=consult_to_ep_answered_duration    silver=consult_to_ep_answered_duration    silver_type=BIGINT
+      landing=channelInfo_consultToEpRequestedCount  bronze=consult_to_ep_requested_count      silver=consult_to_ep_requested_count      silver_type=INT
+      landing=channelInfo_consultToEpRequestedDuration bronze=consult_to_ep_requested_duration   silver=consult_to_ep_requested_duration   silver_type=BIGINT
+      landing=channelInfo_consultToQueueAnswerCount  bronze=consult_to_queue_answer_count      silver=consult_to_queue_answer_count      silver_type=INT
+      landing=channelInfo_consultToQueueAnswerDuration bronze=consult_to_queue_answer_duration   silver=consult_to_queue_answer_duration   silver_type=BIGINT
+      landing=channelInfo_consultToQueueCount        bronze=consult_to_queue_count             silver=consult_to_queue_count             silver_type=INT
+      landing=channelInfo_consultToQueueDuration     bronze=consult_to_queue_duration          silver=consult_to_queue_duration          silver_type=BIGINT
+      landing=channelInfo_consultToQueueRequestCount bronze=consult_to_queue_request_count     silver=consult_to_queue_request_count     silver_type=INT
+      landing=channelInfo_consultToQueueRequestDuration bronze=consult_to_queue_request_duration  silver=consult_to_queue_request_duration  silver_type=BIGINT
+      landing=channelInfo_consultTransferInCount     bronze=consult_transfer_in_count          silver=consult_transfer_in_count          silver_type=INT
+      landing=channelInfo_currentState               bronze=current_state                      silver=current_state                      silver_type=STRING
+      landing=channelInfo_disconnectedCount          bronze=disconnected_count                 silver=disconnected_count                 silver_type=INT
+      landing=channelInfo_disconnectedHoldCallsCount bronze=disconnected_hold_calls_count      silver=disconnected_hold_calls_count      silver_type=INT
+      landing=channelInfo_holdCount                  bronze=hold_count                         silver=hold_count                         silver_type=INT
+      landing=channelInfo_holdDuration               bronze=hold_duration                      silver=hold_duration                      silver_type=BIGINT
+      landing=channelInfo_idleCodeName               bronze=idle_code_name                     silver=idle_code_name                     silver_type=STRING
+      landing=channelInfo_idleCount                  bronze=idle_count                         silver=idle_count                         silver_type=INT
+      landing=channelInfo_idleDuration               bronze=idle_duration                      silver=idle_duration                      silver_type=BIGINT
+      landing=channelInfo_lastActivityTime           bronze=last_activity_time                 silver=last_activity_time                 silver_type=BIGINT
+      landing=channelInfo_manualAssignCount          bronze=manual_assign_count                silver=manual_assign_count                silver_type=INT
+      landing=channelInfo_notRespondedCount          bronze=not_responded_count                silver=not_responded_count                silver_type=INT
+      landing=channelInfo_notRespondedDuration       bronze=not_responded_duration             silver=not_responded_duration             silver_type=BIGINT
+      landing=channelInfo_outdialAgentToAgentTransferCount bronze=outdial_agent_to_agent_transfer_count silver=outdial_agent_to_agent_transfer_count silver_type=INT
+      landing=channelInfo_outdialAgentTransferToQueueRequestCount bronze=outdial_agent_transfer_to_queue_request_count silver=outdial_agent_transfer_to_queue_request_count silver_type=INT
+      landing=channelInfo_outdialBlindTransferCount  bronze=outdial_blind_transfer_count       silver=outdial_blind_transfer_count       silver_type=INT
+      landing=channelInfo_outdialConferenceCount     bronze=outdial_conference_count           silver=outdial_conference_count           silver_type=INT
+      landing=channelInfo_outdialConferenceDuration  bronze=outdial_conference_duration        silver=outdial_conference_duration        silver_type=BIGINT
+      landing=channelInfo_outdialConnectedCount      bronze=outdial_connected_count            silver=outdial_connected_count            silver_type=INT
+      landing=channelInfo_outdialConnectedDuration   bronze=outdial_connected_duration         silver=outdial_connected_duration         silver_type=BIGINT
+      landing=channelInfo_outdialConsultAnswerCount  bronze=outdial_consult_answer_count       silver=outdial_consult_answer_count       silver_type=INT
+      landing=channelInfo_outdialConsultAnswerDuration bronze=outdial_consult_answer_duration    silver=outdial_consult_answer_duration    silver_type=BIGINT
+      landing=channelInfo_outdialConsultCount        bronze=outdial_consult_count              silver=outdial_consult_count              silver_type=INT
+      landing=channelInfo_outdialConsultDuration     bronze=outdial_consult_duration           silver=outdial_consult_duration           silver_type=BIGINT
+      landing=channelInfo_outdialConsultRequestCount bronze=outdial_consult_request_count      silver=outdial_consult_request_count      silver_type=INT
+      landing=channelInfo_outdialConsultRequestDuration bronze=outdial_consult_request_duration   silver=outdial_consult_request_duration   silver_type=BIGINT
+      landing=channelInfo_outdialConsultToEpAnsweredCount bronze=outdial_consult_to_ep_answered_count silver=outdial_consult_to_ep_answered_count silver_type=INT
+      landing=channelInfo_outdialConsultToEpAnsweredDuration bronze=outdial_consult_to_ep_answered_duration silver=outdial_consult_to_ep_answered_duration silver_type=BIGINT
+      landing=channelInfo_outdialConsultToEpRequestedCount bronze=outdial_consult_to_ep_requested_count silver=outdial_consult_to_ep_requested_count silver_type=INT
+      landing=channelInfo_outdialConsultToEpRequestedDuration bronze=outdial_consult_to_ep_requested_duration silver=outdial_consult_to_ep_requested_duration silver_type=BIGINT
+      landing=channelInfo_outdialConsultToQueueAnswerCount bronze=outdial_consult_to_queue_answer_count silver=outdial_consult_to_queue_answer_count silver_type=INT
+      landing=channelInfo_outdialConsultToQueueAnswerDuration bronze=outdial_consult_to_ep_requested_duration silver=outdial_consult_to_ep_requested_duration silver_type=BIGINT
+      landing=channelInfo_outdialConsultToQueueRequestCount bronze=outdial_consult_to_queue_request_count silver=outdial_consult_to_queue_request_count silver_type=INT
+      landing=channelInfo_outdialConsultToQueueRequestDuration bronze=outdial_consult_to_queue_request_duration silver=outdial_consult_to_queue_request_duration silver_type=BIGINT
+      landing=channelInfo_outdialConsultTransferDuration bronze=outdial_consult_transfer_duration  silver=outdial_consult_transfer_duration  silver_type=BIGINT
+      landing=channelInfo_outdialCount               bronze=outdial_count                      silver=outdial_count                      silver_type=INT
+      landing=channelInfo_outdialHoldCount           bronze=outdial_hold_count                 silver=outdial_hold_count                 silver_type=INT
+      landing=channelInfo_outdialHoldDuration        bronze=outdial_hold_duration              silver=outdial_hold_duration              silver_type=BIGINT
+      landing=channelInfo_outdialNotRespondedCount   bronze=outdial_not_responded_count        silver=outdial_not_responded_count        silver_type=INT
+      landing=channelInfo_outdialNotRespondedDuration bronze=outdial_not_responded_duration     silver=outdial_not_responded_duration     silver_type=BIGINT
+      landing=channelInfo_outdialPostCallAssistanceCount bronze=outdial_post_call_assistance_count silver=outdial_post_call_assistance_count silver_type=INT
+      landing=channelInfo_outdialPostCallAssistanceDuration bronze=outdial_post_call_assistance_duration silver=outdial_post_call_assistance_duration silver_type=BIGINT
+      landing=channelInfo_outdialPostCallCount       bronze=outdial_post_call_count            silver=outdial_post_call_count            silver_type=INT
+      landing=channelInfo_outdialPostCallDuration    bronze=outdial_post_call_duration         silver=outdial_post_call_duration         silver_type=BIGINT
+      landing=channelInfo_outdialRingingCount        bronze=outdial_ringing_count              silver=outdial_ringing_count              silver_type=INT
+      landing=channelInfo_outdialRingingDuration     bronze=outdial_ringing_duration           silver=outdial_ringing_duration           silver_type=BIGINT
+      landing=channelInfo_outdialTransferCount       bronze=outdial_transfer_count             silver=outdial_transfer_count             silver_type=INT
+      landing=channelInfo_outdialWrapupCount         bronze=outdial_wrapup_count               silver=outdial_wrapup_count               silver_type=INT
+      landing=channelInfo_outdialWrapupDuration      bronze=outdial_wrapup_duration            silver=outdial_wrapup_duration            silver_type=BIGINT
+      landing=channelInfo_postCallAssistanceCount    bronze=post_call_assistance_count         silver=post_call_assistance_count         silver_type=INT
+      landing=channelInfo_postCallAssistanceDuration bronze=post_call_assistance_duration      silver=post_call_assistance_duration      silver_type=BIGINT
+      landing=channelInfo_postCallCount              bronze=post_call_count                    silver=post_call_count                    silver_type=INT
+      landing=channelInfo_postCallDuration           bronze=post_call_duration                 silver=post_call_duration                 silver_type=BIGINT
+      landing=channelInfo_reservationCount           bronze=reservation_count                  silver=reservation_count                  silver_type=INT
+      landing=channelInfo_ringingCount               bronze=ringing_count                      silver=ringing_count                      silver_type=INT
+      landing=channelInfo_ringingDuration            bronze=ringing_duration                   silver=ringing_duration                   silver_type=BIGINT
+      landing=channelInfo_subChannelType             bronze=sub_channel_type                   silver=sub_channel_type                   silver_type=STRING
+      landing=channelInfo_totalDuration              bronze=total_duration_seconds             silver=total_duration_seconds             silver_type=BIGINT
+      landing=channelInfo_totalReservationTime       bronze=total_reservation_time             silver=total_reservation_time             silver_type=BIGINT
+      landing=channelInfo_transferCount              bronze=transfer_count                     silver=transfer_count                     silver_type=INT
+      landing=channelInfo_wrapupCount                bronze=wrapup_count                       silver=wrapup_count                       silver_type=INT
+      landing=channelInfo_wrapupDuration             bronze=wrapup_duration                    silver=wrapup_duration                    silver_type=BIGINT
+      landing=endTime                                bronze=session_end_time                   silver=session_end_time                   silver_type=BIGINT
+      landing=multiMediaProfileType                  bronze=multimedia_profile_type            silver=multimedia_profile_type            silver_type=STRING
+      landing=skillsProfile                          bronze=skills_profile_name                silver=skills_profile_name                silver_type=STRING
+      landing=startTime                              bronze=session_start_time                 silver=session_start_time                 silver_type=BIGINT
+      landing=state                                  bronze=current_agent_state                silver=current_agent_state                silver_type=STRING
+
+### call_leg  —  41/133 rows have NO matching JSON column
+      landing=agentTransferedInCount                 bronze=agent_transferred_in_count         silver=agent_transferred_in_count         silver_type=INT
+      landing=channelSubType                         bronze=sub_channel_type                   silver=sub_channel_type                   silver_type=STRING
+      landing=consultEpId                            bronze=consult_entrypoint_id              silver=consult_entrypoint_id              silver_type=STRING
+      landing=consultEpName                          bronze=consult_entrypoint_name            silver=consult_entrypoint_name            silver_type=STRING
+      landing=consultToEPCount                       bronze=consult_to_entrypoint_count        silver=consult_to_entrypoint_count        silver_type=INT
+      landing=consultToEPDuration                    bronze=consult_to_entrypoint_duration     silver=consult_to_entrypoint_duration     silver_type=BIGINT
+      landing=consultToEpErrorCount                  bronze=consult_to_entrypoint_error_count  silver=consult_to_entrypoint_error_count  silver_type=INT
+      landing=createdTime                            bronze=call_leg_created_time              silver=call_leg_created_time              silver_type=BIGINT
+      landing=destination                            bronze=call_leg_destination               silver=call_leg_destination               silver_type=STRING
+      landing=direction                              bronze=call_leg_direction                 silver=call_leg_direction                 silver_type=STRING
+      landing=endedTime                              bronze=call_ended_time                    silver=call_ended_time                    silver_type=BIGINT
+      landing=entryPoint_id                          bronze=entrypoint_id                      silver=entrypoint_id                      silver_type=STRING
+      landing=entryPoint_name                        bronze=entrypoint_name                    silver=entrypoint_name                    silver_type=STRING
+      landing=id                                     bronze=call_leg_id                        silver=call_leg_id                        silver_type=STRING
+      landing=matchedSkills                          bronze=matched_skills_json                silver=matched_skills_json                silver_type=STRING
+      landing=matchedSkills_json_booleanValue        bronze=matched_skill_boolean_value        silver=matched_skill_boolean_value        silver_type=INT
+      landing=matchedSkills_json_proficiencyLevel    bronze=matched_skill_proficiency_level    silver=matched_skill_proficiency_level    silver_type=INT
+      landing=matchedSkills_json_skillId             bronze=matched_skill_id                   silver=matched_skill_id                   silver_type=STRING
+      landing=matchedSkills_json_skillName           bronze=matched_skill_name                 silver=matched_skill_name                 silver_type=STRING
+      landing=matchedSkills_json_skillType           bronze=matched_skill_type                 silver=matched_skill_type                 silver_type=STRING
+      landing=matchedSkills_json_value               bronze=matched_skill_value                silver=matched_skill_value                silver_type=STRING
+      landing=nextDestination_agent_channelId        bronze=next_destination_agent_channel_id  silver=next_destination_agent_channel_id  silver_type=STRING
+      landing=nextDestination_agent_id               bronze=next_destination_agent_id          silver=next_destination_agent_id          silver_type=STRING
+      landing=nextDestination_agent_name             bronze=next_destination_agent_name        silver=next_destination_agent_name        silver_type=STRING
+      landing=nextDestination_agent_phoneNumber      bronze=next_destination_agent_phone_number silver=next_destination_agent_phone_number silver_type=STRING
+      landing=nextDestination_agent_sessionId        bronze=next_destination_agent_session_id  silver=next_destination_agent_session_id  silver_type=STRING
+      landing=nextDestination_agent_signInId         bronze=next_destination_user_login_id     silver=next_destination_user_login_id     silver_type=STRING
+      landing=nextDestination_queue_id               bronze=next_destination_queue_id          silver=next_destination_queue_id          silver_type=STRING
+      landing=nextDestination_queue_name             bronze=next_destination_queue_name        silver=next_destination_queue_name        silver_type=STRING
+      landing=nextDestination_team_id                bronze=next_destination_team_id           silver=next_destination_team_id           silver_type=STRING
+      landing=nextDestination_team_name              bronze=next_destination_team_name         silver=next_destination_team_name         silver_type=STRING
+      landing=origin                                 bronze=call_leg_origin                    silver=call_leg_origin                    silver_type=STRING
+      landing=outdialConsultToEPCount                bronze=outdial_consult_to_entrypoint_count silver=outdial_consult_to_entrypoint_count silver_type=INT
+      landing=outdialConsultToEPDuration             bronze=outdial_consult_to_entrypoint_duration silver=outdial_consult_to_entrypoint_duration silver_type=BIGINT
+      landing=owner_signInId                         bronze=user_login_id                      silver=user_login_id                      silver_type=STRING
+      landing=preferredAgentSystemId                 bronze=preferred_agent_id                 silver=preferred_agent_id                 silver_type=STRING
+      landing=requiredSkills                         bronze=required_skills_json               silver=required_skills_json               silver_type=STRING
+      landing=slaValue                               bronze=call_leg_sla                       silver=call_leg_sla                       silver_type=INT
+      landing=status                                 bronze=call_leg_status                    silver=call_leg_status                    silver_type=STRING
+      landing=taskId                                 bronze=call_leg_task_id                   silver=call_leg_task_id                   silver_type=STRING
+      landing=transferEpDN                           bronze=call_leg_sla                       silver=call_leg_sla                       silver_type=STRING
+
+### customer_activity  —  23/65 rows have NO matching JSON column
+      landing=activities_nodes_consultEpId           bronze=consult_entrypoint_id              silver=consult_entrypoint_id              silver_type=STRING
+      landing=activities_nodes_consultEpName         bronze=consult_entrypoint_name            silver=consult_entrypoint_name            silver_type=STRING
+      landing=activities_nodes_createdTime           bronze=activity_created_time              silver=activity_created_time              silver_type=TIMESTAMP
+      landing=activities_nodes_destinationAgentTeamId bronze=destination_team_id                silver=destination_team_id                silver_type=STRING
+      landing=activities_nodes_destinationAgentTeamName bronze=destination_team_name              silver=destination_team_name              silver_type=STRING
+      landing=activities_nodes_duration              bronze=activity_duration                  silver=activity_duration                  silver_type=BIGINT
+      landing=activities_nodes_emailHasAttachments   bronze=is_email_with_attachments          silver=is_email_with_attachments          silver_type=INT
+      landing=activities_nodes_endedTime             bronze=activity_ended_time                silver=activity_ended_time                silver_type=TIMESTAMP
+      landing=activities_nodes_id                    bronze=activity_id                        silver=activity_id                        silver_type=STRING
+      landing=channelSubType                         bronze=sub_channel_type                   silver=sub_channel_type                   silver_type=STRING
+      landing=channelType                            bronze=channel_type                       silver=channel_type                       silver_type=STRING
+      landing=destination                            bronze=destination                        silver=destination                        silver_type=STRING
+      landing=emailBccList                           bronze=email_bcc_list                     silver=email_bcc_list                     silver_type=STRING
+      landing=emailCcList                            bronze=email_cc_list                      silver=email_cc_list                      silver_type=STRING
+      landing=emailReplyTo                           bronze=email_reply_to                     silver=email_reply_to                     silver_type=STRING
+      landing=emailToList                            bronze=email_to_list                      silver=email_to_list                      silver_type=STRING
+      landing=id                                     bronze=customer_session_id                silver=customer_session_id                silver_type=STRING
+      landing=isEmailSent                            bronze=is_email_sent                      silver=is_email_sent                      silver_type=INT
+      landing=isOutdial                              bronze=is_outdial                         silver=is_outdial                         silver_type=INT
+      landing=matchedSkillsProfile                   bronze=matched_skills_profile             silver=matched_skills_profile             silver_type=STRING
+      landing=origin                                 bronze=origin                             silver=origin                             silver_type=STRING
+      landing=preferredAgentName                     bronze=preferred_agent_name               silver=preferred_agent_name               silver_type=STRING
+      landing=routingType                            bronze=routing_type                       silver=routing_type                       silver_type=STRING
+
+### customer_session  —  57/231 rows have NO matching JSON column
+      landing=abandonedSlCount                       bronze=abandoned_sl_count                 silver=abandoned_sl_count                 silver_type=INT
+      landing=abandonedType                          bronze=abandoned_type                     silver=abandoned_type                     silver_type=STRING
+      landing=agentTransferedInCount                 bronze=agent_transferred_in_count         silver=agent_transferred_in_count         silver_type=INT
+      landing=captureRequested                       bronze=is_capture_requested               silver=is_capture_requested               silver_type=INT
+      landing=chainedInToEPCount                     bronze=chained_in_to_entrypoint_count     silver=chained_in_to_entrypoint_count     silver_type=INT
+      landing=channelMetaData_chat_chatReason        bronze=chat_reason                        silver=chat_reason                        silver_type=STRING
+      landing=channelMetaData_email_metadata         bronze=email_metadata                     silver=email_metadata                     silver_type=STRING
+      landing=channelMetaData_email_subject          bronze=email_subject                      silver=email_subject                      silver_type=STRING
+      landing=channelMetaData_inBoundTranscript      bronze=inbound_transcript                 silver=inbound_transcript                 silver_type=STRING
+      landing=channelMetaData_outBoundTranscript     bronze=outbound_transcript                silver=outbound_transcript                silver_type=STRING
+      landing=channelSubType                         bronze=sub_channel_type                   silver=sub_channel_type                   silver_type=STRING
+      landing=consultToEPCount                       bronze=consult_to_entrypoint_count        silver=consult_to_entrypoint_count        silver_type=INT
+      landing=consultToEPDuration                    bronze=consult_to_entrypoint_duration     silver=consult_to_entrypoint_duration     silver_type=BIGINT
+      landing=createdTime                            bronze=session_created_time               silver=session_created_time               silver_type=BIGINT
+      landing=destination                            bronze=destination_endpoint               silver=destination_endpoint               silver_type=STRING
+      landing=direction                              bronze=customer_session_direction         silver=customer_session_direction         silver_type=STRING
+      landing=emailHasAttachments                    bronze=is_email_with_attachments          silver=is_email_with_attachments          silver_type=INT
+      landing=endedTime                              bronze=session_ended_time                 silver=session_ended_time                 silver_type=BIGINT
+      landing=epTransferToEPCount                    bronze=entrypoint_to_entrypoint_transfer_count silver=entrypoint_to_entrypoint_transfer_count silver_type=INT
+      landing=feedback_surveyCompleted               bronze=is_feedback_survey_completed       silver=is_feedback_survey_completed       silver_type=INT
+      landing=feedback_type                          bronze=feedback_survey_type               silver=feedback_survey_type               silver_type=STRING
+      landing=globalVariables_json_booleanValue      bronze=global_variable_boolean_value      silver=global_variable_boolean_value      silver_type=INT
+      landing=globalVariables_json_dataType          bronze=global_variable_data_type          silver=global_variable_data_type          silver_type=STRING
+      landing=globalVariables_json_doubleValue       bronze=global_variable_double_value       silver=global_variable_double_value       silver_type=DECIMAL
+      landing=globalVariables_json_integerValue      bronze=global_variable_integer_value      silver=global_variable_integer_value      silver_type=INT
+      landing=globalVariables_json_longValue         bronze=global_variable_long_value         silver=global_variable_long_value         silver_type=BIGINT
+      landing=globalVariables_json_name              bronze=global_variable_name               silver=global_variable_name               silver_type=STRING
+      landing=globalVariables_json_stringValue       bronze=global_variable_string_value       silver=global_variable_string_value       silver_type=STRING
+      landing=globalVariables_json_value             bronze=global_variable_raw_value          silver=global_variable_raw_value          silver_type=STRING
+      landing=id                                     bronze=customer_session_id                silver=customer_session_id                silver_type=STRING
+      landing=isWithInServiceLevel                   bronze=is_within_service_level            silver=is_within_service_level            silver_type=INT
+      landing=lastEntryPoint_id                      bronze=last_entrypoint_id                 silver=last_entrypoint_id                 silver_type=STRING
+      landing=lastEntryPoint_name                    bronze=last_entrypoint_name               silver=last_entrypoint_name               silver_type=STRING
+      landing=lastWrapUpCodeId                       bronze=last_wrapup_code_id                silver=last_wrapup_code_id                silver_type=STRING
+      landing=matchedSkills                          bronze=matched_skills_json                silver=matched_skills_json                silver_type=STRING
+      landing=matchedSkills_json_booleanValue        bronze=matched_skill_boolean_value        silver=matched_skill_boolean_value        silver_type=INT
+      landing=matchedSkills_json_proficiencyLevel    bronze=matched_skill_proficiency_level    silver=matched_skill_proficiency_level    silver_type=INT
+      landing=matchedSkills_json_skillId             bronze=matched_skill_id                   silver=matched_skill_id                   silver_type=STRING
+      landing=matchedSkills_json_skillType           bronze=matched_skill_type                 silver=matched_skill_type                 silver_type=STRING
+      landing=outdialConsultToEPCount                bronze=outdial_consult_to_entrypoint_count silver=outdial_consult_to_entrypoint_count silver_type=INT
+      landing=outdialConsultToEPDuration             bronze=outdial_consult_to_entrypoint_duration silver=outdial_consult_to_entrypoint_duration silver_type=BIGINT
+      landing=outdialConsultToQueueDuration          bronze=outdial_consult_to_entrypoint_duration silver=outdial_consult_to_entrypoint_duration silver_type=BIGINT
+      landing=preferredAgentSystemId                 bronze=preferred_agent_id                 silver=preferred_agent_id                 silver_type=STRING
+      landing=queueTransferToEPCount                 bronze=queue_to_entrypoint_transfer_count silver=queue_to_entrypoint_transfer_count silver_type=INT
+      landing=queueTransferToQueueCount              bronze=queue_to_queue_transfer_count      silver=queue_to_queue_transfer_count      silver_type=INT
+      landing=recordingFileSize                      bronze=recording_file_size_bytes          silver=recording_file_size_bytes          silver_type=BIGINT
+      landing=requiredSkills                         bronze=required_skills_json               silver=required_skills_json               silver_type=STRING
+      landing=requiredSkills_json_booleanValue       bronze=required_skill_boolean_value       silver=required_skill_boolean_value       silver_type=INT
+      landing=requiredSkills_json_matchCondition     bronze=required_skill_match_condition     silver=required_skill_match_condition     silver_type=STRING
+      landing=requiredSkills_json_proficiencyLevel   bronze=required_skill_proficiency_level   silver=required_skill_proficiency_level   silver_type=INT
+      landing=requiredSkills_json_skillId            bronze=required_skill_id                  silver=required_skill_id                  silver_type=STRING
+      landing=requiredSkills_json_skillType          bronze=required_skill_type                silver=required_skill_type                silver_type=STRING
+      landing=status                                 bronze=contact_status                     silver=contact_status                     silver_type=STRING
+      landing=totalDuration                          bronze=total_session_duration             silver=total_session_duration             silver_type=BIGINT
+      landing=transferEpDN                           bronze=transfer_entrypoint_dn             silver=transfer_entrypoint_dn             silver_type=STRING
+      landing=transferInToEPCount                    bronze=transfer_in_to_entrypoint_count    silver=transfer_in_to_entrypoint_count    silver_type=INT
+      landing=vaRecordingAvailable                   bronze=is_va_recording_available          silver=is_va_recording_available          silver_type=INT

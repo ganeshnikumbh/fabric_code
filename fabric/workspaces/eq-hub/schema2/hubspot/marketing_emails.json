@@ -46,17 +46,17 @@
     {"column": "from_custom_reply_to", "source": "from.customReplyTo", "type": "string"},
     {"column": "subscription_id", "source": "subscriptionDetails.subscriptionId", "type": "string"},
     {"column": "subscription_name", "source": "subscriptionDetails.subscriptionName", "type": "string"},
-    {"column": "office_location_id", "source": "subscriptionDetails.officeLocationId", "type": "string"},
-    {"column": "preferences_group_id", "source": "subscriptionDetails.preferencesGroupId", "type": "string"},
-    {"column": "url", "source": "webversion.url", "type": "string"},
+    {"column": "subscription_office_location_id", "source": "subscriptionDetails.officeLocationId", "type": "string"},
+    {"column": "subscription_preferences_group_id", "source": "subscriptionDetails.preferencesGroupId", "type": "string"},
+    {"column": "webversion_url", "source": "webversion.url", "type": "string"},
     {"column": "webversion_enabled", "source": "webversion.enabled", "type": "boolean"},
-    {"column": "content", "source": "content", "type": "json"},
-    {"column": "stats", "source": "stats", "type": "json"},
-    {"column": "testing", "source": "testing", "type": "json"},
-    {"column": "rss_data", "source": "rssData", "type": "json"},
-    {"column": "to", "source": "to", "type": "json"},
-    {"column": "all_email_campaign_ids", "source": "allEmailCampaignIds", "type": "json"},
-    {"column": "teams_with_access", "source": "teamsWithAccess", "type": "json"},
-    {"column": "workflow_names", "source": "workflowNames", "type": "json"}
+    {"column": "content_json", "source": "content", "type": "json"},
+    {"column": "stats_json", "source": "stats", "type": "json"},
+    {"column": "testing_json", "source": "testing", "type": "json"},
+    {"column": "rss_data_json", "source": "rssData", "type": "json"},
+    {"column": "to_json", "source": "to", "type": "json"},
+    {"column": "all_email_campaign_ids_json", "source": "allEmailCampaignIds", "type": "json"},
+    {"column": "teams_with_access_json", "source": "teamsWithAccess", "type": "json"},
+    {"column": "workflow_names_json", "source": "workflowNames", "type": "json"}
   ]
 }

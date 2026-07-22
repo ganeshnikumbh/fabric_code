@@ -1,6 +1,6 @@
 {
   "table_name": "asr",
-  "description": "Webex Agent Session Report — one row per agent session. agentSkills and channelInfo arrays flattened via $0 indexing.",
+  "description": "Webex Agent Session Report — one row per agent session. agentSkills is stored whole as a JSON string in agent_skills_json (an agent can hold 1-12 skills, so $0 indexing would drop most of them). channelInfo is flattened via $0 indexing.",
   "source_path": "result.data",
   "context_fields": ["start_date", "end_date", "record_type", "source"],
   "fields": [
@@ -23,8 +23,7 @@
     {"column": "team_id", "source": "teamId", "type": "string"},
     {"column": "team_name", "source": "teamName", "type": "string"},
     {"column": "user_login_id", "source": "userLoginId", "type": "string"},
-    {"column": "name", "source": "agentSkills.$0.name", "type": "string"},
-    {"column": "int_val", "source": "agentSkills.$0.intVal", "type": "integer"},
+    {"column": "agent_skills_json", "source": "agentSkills", "type": "json"},
     {"column": "channel_agent_phone_number", "source": "channelInfo.$0.agentPhoneNumber", "type": "string"},
     {"column": "channel_id", "source": "channelInfo.$0.channelId", "type": "string"},
     {"column": "channel_type", "source": "channelInfo.$0.channelType", "type": "string"},
