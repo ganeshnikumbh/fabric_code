@@ -130,10 +130,7 @@ VALUES
   ('HubSpot', 'crm_companies', 'object_write_trace_id', 'STRING', 'crm_companies_base', 'object_write_trace_id', 'STRING', 'crm_companies', 'write_trace_id', 'STRING', 6, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('HubSpot', 'crm_companies', 'url', 'STRING', 'crm_companies_base', 'url', 'STRING', 'crm_companies', 'record_url', 'STRING', 7, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('HubSpot', 'crm_companies', 'properties_json', 'STRING', 'crm_companies_base', 'properties_json', 'STRING', 'crm_companies', 'properties_json', 'STRING', 8, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'crm_companies', 'properties_json_createdate', 'STRING', 'crm_companies_base', 'createdate', 'STRING', 'crm_companies', 'created_timestamp', 'TIMESTAMP', 9, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
   ('HubSpot', 'crm_companies', 'properties_json_domain', 'STRING', 'crm_companies_base', 'domain', 'STRING', 'crm_companies', 'company_domain', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'crm_companies', 'properties_json_hs_lastmodifieddate', 'STRING', 'crm_companies_base', 'hs_lastmodifieddate', 'STRING', 'crm_companies', 'updated_timestamp', 'TIMESTAMP', 11, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
-  ('HubSpot', 'crm_companies', 'properties_json_hs_object_id', 'STRING', 'crm_companies_base', 'hs_object_id', 'STRING', 'crm_companies', 'company_id', 'STRING', 12, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('HubSpot', 'crm_companies', 'properties_json_name', 'STRING', 'crm_companies_base', 'name', 'STRING', 'crm_companies', 'company_name', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('HubSpot', 'crm_companies', 'object_type', 'STRING', 'crm_companies_base', 'object_type', 'STRING', 'crm_companies', 'object_type', 'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 -- [crm_owners]  (11 transformed / 0 kept)

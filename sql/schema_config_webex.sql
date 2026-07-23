@@ -281,7 +281,7 @@ VALUES
   ('Webex', 'call_leg', 'terminationReason', 'STRING', 'call_leg_base', 'termination_reason', 'STRING', 'call_leg', 'termination_reason', 'STRING', 135, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('Webex', 'call_leg', 'transferOutCount', 'BIGINT', 'call_leg_base', 'transfer_out_count', 'BIGINT', 'call_leg', 'transfer_out_count', 'INT', 136, 1, 0, 0, '0', 1, GETUTCDATE()),
   ('Webex', 'call_leg', 'transferCount', 'BIGINT', 'call_leg_base', 'transfer_count', 'BIGINT', 'call_leg', 'transfer_count', 'INT', 137, 1, 0, 0, '0', 1, GETUTCDATE()),
-  ('Webex', 'call_leg', 'transferEpDN', 'STRING', 'call_leg_base', 'transfer_ep_dn', 'STRING', 'call_leg', 'call_leg_sla', 'STRING', 138, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('Webex', 'call_leg', 'transferEpDN', 'STRING', 'call_leg_base', 'transfer_ep_dn', 'STRING', 'call_leg', 'transfer_ep_dn', 'STRING', 138, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('Webex', 'call_leg', 'transferErrorCount', 'BIGINT', 'call_leg_base', 'transfer_error_count', 'BIGINT', 'call_leg', 'transfer_error_count', 'INT', 139, 1, 0, 0, '0', 1, GETUTCDATE()),
   ('Webex', 'call_leg', 'wrapupDuration', 'BIGINT', 'call_leg_base', 'wrapup_duration', 'BIGINT', 'call_leg', 'wrapup_duration', 'BIGINT', 140, 1, 0, 0, '0', 1, GETUTCDATE());
 -- [customer_activity]  (42 transformed / 29 kept)
@@ -510,7 +510,7 @@ VALUES
   ('Webex', 'customer_session', 'outdialConsultToEPCount', 'STRING', 'customer_session_base', 'outdial_consult_to_ep_count', 'STRING', 'customer_session', 'outdial_consult_to_entrypoint_count', 'INT', 167, 1, 0, 0, '0', 1, GETUTCDATE()),
   ('Webex', 'customer_session', 'outdialConsultToEPDuration', 'STRING', 'customer_session_base', 'outdial_consult_to_ep_duration', 'STRING', 'customer_session', 'outdial_consult_to_entrypoint_duration', 'BIGINT', 168, 1, 0, 0, '0', 1, GETUTCDATE()),
   ('Webex', 'customer_session', 'outdialConsultToQueueCount', 'BIGINT', 'customer_session_base', 'outdial_consult_to_queue_count', 'BIGINT', 'customer_session', 'outdial_consult_to_queue_count', 'INT', 169, 1, 0, 0, '0', 1, GETUTCDATE()),
-  ('Webex', 'customer_session', 'outdialConsultToQueueDuration', 'STRING', 'customer_session_base', 'outdial_consult_to_queue_duration', 'STRING', 'customer_session', 'outdial_consult_to_entrypoint_duration', 'BIGINT', 170, 1, 0, 0, '0', 1, GETUTCDATE()),
+  ('Webex', 'customer_session', 'outdialConsultToQueueDuration', 'STRING', 'customer_session_base', 'outdial_consult_to_queue_duration', 'STRING', 'customer_session', 'outdial_consult_to_queue_duration', 'BIGINT', 170, 1, 0, 0, '0', 1, GETUTCDATE()),
   ('Webex', 'customer_session', 'outdialType', 'STRING', 'customer_session_base', 'outdial_type', 'STRING', 'customer_session', 'outdial_type', 'STRING', 171, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('Webex', 'customer_session', 'overallEvalScore', 'STRING', 'customer_session_base', 'overall_eval_score', 'STRING', 'customer_session', 'overall_eval_score', 'STRING', 172, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('Webex', 'customer_session', 'overflowCount', 'BIGINT', 'customer_session_base', 'overflow_count', 'BIGINT', 'customer_session', 'overflow_count', 'INT', 173, 1, 0, 0, '0', 1, GETUTCDATE()),
