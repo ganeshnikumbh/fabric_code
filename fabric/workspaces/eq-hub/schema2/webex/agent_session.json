@@ -111,6 +111,8 @@
     {"column": "channel_outdial_consult_to_queue_request_duration", "source": "channelInfo.$0.outdialConsultToQueueRequestDuration", "type": "integer"},
     {"column": "channel_outdial_consult_to_ep_requested_count", "source": "channelInfo.$0.outdialConsultToEpRequestedCount", "type": "integer"},
     {"column": "channel_outdial_consult_to_ep_requested_duration", "source": "channelInfo.$0.outdialConsultToEpRequestedDuration", "type": "integer"},
+    {"column": "channel_outdial_consult_to_queue_answer_count", "source": "channelInfo.$0.outdialConsultToQueueAnswerCount", "type": "integer"},
+    {"column": "channel_outdial_consult_to_queue_answer_duration", "source": "channelInfo.$0.outdialConsultToQueueAnswerDuration", "type": "integer"},
     {"column": "channel_outdial_consult_to_ep_answered_count", "source": "channelInfo.$0.outdialConsultToEpAnsweredCount", "type": "integer"},
     {"column": "channel_outdial_consult_to_ep_answered_duration", "source": "channelInfo.$0.outdialConsultToEpAnsweredDuration", "type": "integer"},
     {"column": "channel_outdial_consult_transfer_duration", "source": "channelInfo.$0.outdialConsultTransferDuration", "type": "integer"},

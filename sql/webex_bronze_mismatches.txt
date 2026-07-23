@@ -1,0 +1,275 @@
+WEBEX bronze_column_name mismatches vs schema2/webex JSON
+(bronze -> should be JSON column; linked via landing == JSON source path)
+
+
+==============================================================================
+agent_activity   (2 mismatches)
+==============================================================================
+  CURRENT bronze                              SHOULD BE (JSON column)
+  ------------------------------------------------------------------------------------
+  agent_phone_number                          channel_agent_phone_number
+  sub_channel_type                            channel_sub_type
+
+==============================================================================
+agent_session   (94 mismatches)
+==============================================================================
+  CURRENT bronze                              SHOULD BE (JSON column)
+  ------------------------------------------------------------------------------------
+  agent_signout_reason                        agent_sign_out_reason
+  agent_phone_number                          channel_agent_phone_number
+  agent_to_agent_transfer_count               channel_agent_to_agent_transfer_count
+  agent_transfer_to_queue_request_count       channel_agent_transfer_to_queue_request_count
+  available_count                             channel_available_count
+  available_duration                          channel_available_duration
+  blind_transfer_count                        channel_blind_transfer_count
+  call_back_count                             channel_call_back_count
+  conference_count                            channel_conference_count
+  conference_duration                         channel_conference_duration
+  conference_transfer_in_count                channel_conference_transfer_in_count
+  connected_count                             channel_connected_count
+  connected_duration                          channel_connected_duration
+  consult_answer_count                        channel_consult_answer_count
+  consult_answer_duration                     channel_consult_answer_duration
+  consult_count                               channel_consult_count
+  consult_duration                            channel_consult_duration
+  consult_request_count                       channel_consult_request_count
+  consult_request_duration                    channel_consult_request_duration
+  consult_to_ep_answered_count                channel_consult_to_ep_answered_count
+  consult_to_ep_answered_duration             channel_consult_to_ep_answered_duration
+  consult_to_ep_requested_count               channel_consult_to_ep_requested_count
+  consult_to_ep_requested_duration            channel_consult_to_ep_requested_duration
+  consult_to_queue_answer_count               channel_consult_to_queue_answer_count
+  consult_to_queue_answer_duration            channel_consult_to_queue_answer_duration
+  consult_to_queue_count                      channel_consult_to_queue_count
+  consult_to_queue_duration                   channel_consult_to_queue_duration
+  consult_to_queue_request_count              channel_consult_to_queue_request_count
+  consult_to_queue_request_duration           channel_consult_to_queue_request_duration
+  consult_transfer_in_count                   channel_consult_transfer_in_count
+  current_state                               channel_current_state
+  disconnected_count                          channel_disconnected_count
+  disconnected_hold_calls_count               channel_disconnected_hold_calls_count
+  hold_count                                  channel_hold_count
+  hold_duration                               channel_hold_duration
+  idle_code_name                              channel_idle_code_name
+  idle_count                                  channel_idle_count
+  idle_duration                               channel_idle_duration
+  last_activity_time                          channel_last_activity_time
+  manual_assign_count                         channel_manual_assign_count
+  not_responded_count                         channel_not_responded_count
+  not_responded_duration                      channel_not_responded_duration
+  outdial_agent_to_agent_transfer_count       channel_outdial_agent_to_agent_transfer_count
+  outdial_agent_transfer_to_queue_request_countchannel_outdial_agent_transfer_to_queue_request_count
+  outdial_blind_transfer_count                channel_outdial_blind_transfer_count
+  outdial_conference_count                    channel_outdial_conference_count
+  outdial_conference_duration                 channel_outdial_conference_duration
+  outdial_connected_count                     channel_outdial_connected_count
+  outdial_connected_duration                  channel_outdial_connected_duration
+  outdial_consult_answer_count                channel_outdial_consult_answer_count
+  outdial_consult_answer_duration             channel_outdial_consult_answer_duration
+  outdial_consult_count                       channel_outdial_consult_count
+  outdial_consult_duration                    channel_outdial_consult_duration
+  outdial_consult_request_count               channel_outdial_consult_request_count
+  outdial_consult_request_duration            channel_outdial_consult_request_duration
+  outdial_consult_to_ep_answered_count        channel_outdial_consult_to_ep_answered_count
+  outdial_consult_to_ep_answered_duration     channel_outdial_consult_to_ep_answered_duration
+  outdial_consult_to_ep_requested_count       channel_outdial_consult_to_ep_requested_count
+  outdial_consult_to_ep_requested_duration    channel_outdial_consult_to_ep_requested_duration
+  outdial_consult_to_queue_request_count      channel_outdial_consult_to_queue_request_count
+  outdial_consult_to_queue_request_duration   channel_outdial_consult_to_queue_request_duration
+  outdial_consult_transfer_duration           channel_outdial_consult_transfer_duration
+  outdial_count                               channel_outdial_count
+  outdial_hold_count                          channel_outdial_hold_count
+  outdial_hold_duration                       channel_outdial_hold_duration
+  outdial_not_responded_count                 channel_outdial_not_responded_count
+  outdial_not_responded_duration              channel_outdial_not_responded_duration
+  outdial_post_call_assistance_count          channel_outdial_post_call_assistance_count
+  outdial_post_call_assistance_duration       channel_outdial_post_call_assistance_duration
+  outdial_post_call_count                     channel_outdial_post_call_count
+  outdial_post_call_duration                  channel_outdial_post_call_duration
+  outdial_ringing_count                       channel_outdial_ringing_count
+  outdial_ringing_duration                    channel_outdial_ringing_duration
+  outdial_transfer_count                      channel_outdial_transfer_count
+  outdial_wrapup_count                        channel_outdial_wrapup_count
+  outdial_wrapup_duration                     channel_outdial_wrapup_duration
+  post_call_assistance_count                  channel_post_call_assistance_count
+  post_call_assistance_duration               channel_post_call_assistance_duration
+  post_call_count                             channel_post_call_count
+  post_call_duration                          channel_post_call_duration
+  reservation_count                           channel_reservation_count
+  ringing_count                               channel_ringing_count
+  ringing_duration                            channel_ringing_duration
+  sub_channel_type                            channel_sub_type
+  total_duration_seconds                      channel_total_duration
+  total_reservation_time                      channel_total_reservation_time
+  transfer_count                              channel_transfer_count
+  wrapup_count                                channel_wrapup_count
+  wrapup_duration                             channel_wrapup_duration
+  session_end_time                            end_time
+  multimedia_profile_type                     multi_media_profile_type
+  skills_profile_name                         skills_profile
+  session_start_time                          start_time
+  current_agent_state                         state
+
+==============================================================================
+call_leg   (25 mismatches)
+==============================================================================
+  CURRENT bronze                              SHOULD BE (JSON column)
+  ------------------------------------------------------------------------------------
+  agent_transferred_in_count                  agent_transfered_in_count
+  sub_channel_type                            channel_sub_type
+  consult_entrypoint_id                       consult_ep_id
+  consult_entrypoint_name                     consult_ep_name
+  consult_to_entrypoint_count                 consult_to_ep_count
+  consult_to_entrypoint_duration              consult_to_ep_duration
+  consult_to_entrypoint_error_count           consult_to_ep_error_count
+  call_leg_created_time                       created_time
+  call_leg_destination                        destination
+  call_leg_direction                          direction
+  call_ended_time                             ended_time
+  entrypoint_id                               entry_point_id
+  entrypoint_name                             entry_point_name
+  call_leg_id                                 id
+  matched_skills_json                         matched_skills
+  call_leg_origin                             origin
+  outdial_consult_to_entrypoint_count         outdial_consult_to_ep_count
+  outdial_consult_to_entrypoint_duration      outdial_consult_to_ep_duration
+  user_login_id                               owner_sign_in_id
+  preferred_agent_id                          preferred_agent_system_id
+  required_skills_json                        required_skills
+  call_leg_sla                                sla_value
+  call_leg_status                             status
+  call_leg_task_id                            task_id
+  call_leg_sla                                transfer_ep_dn
+
+==============================================================================
+customer_activity   (13 mismatches)
+==============================================================================
+  CURRENT bronze                              SHOULD BE (JSON column)
+  ------------------------------------------------------------------------------------
+  sub_channel_type                            car_channel_sub_type
+  channel_type                                car_channel_type
+  destination                                 car_destination
+  email_bcc_list                              car_email_bcc_list
+  email_cc_list                               car_email_cc_list
+  email_reply_to                              car_email_reply_to
+  email_to_list                               car_email_to_list
+  is_email_sent                               car_is_email_sent
+  is_outdial                                  car_is_outdial
+  matched_skills_profile                      car_matched_skills_profile
+  origin                                      car_origin
+  preferred_agent_name                        car_preferred_agent_name
+  routing_type                                car_routing_type
+
+==============================================================================
+customer_session   (33 mismatches)
+==============================================================================
+  CURRENT bronze                              SHOULD BE (JSON column)
+  ------------------------------------------------------------------------------------
+  agent_transferred_in_count                  agent_transfered_in_count
+  is_capture_requested                        capture_requested
+  chained_in_to_entrypoint_count              chained_in_to_ep_count
+  inbound_transcript                          channel_meta_inbound_transcript
+  outbound_transcript                         channel_meta_outbound_transcript
+  sub_channel_type                            channel_sub_type
+  consult_to_entrypoint_count                 consult_to_ep_count
+  consult_to_entrypoint_duration              consult_to_ep_duration
+  session_created_time                        created_time
+  destination_endpoint                        destination
+  customer_session_direction                  direction
+  is_email_with_attachments                   email_has_attachments
+  session_ended_time                          ended_time
+  entrypoint_to_entrypoint_transfer_count     ep_transfer_to_ep_count
+  is_feedback_survey_completed                feedback_survey_completed
+  feedback_survey_type                        feedback_type
+  customer_session_id                         id
+  is_within_service_level                     is_with_in_service_level
+  last_entrypoint_id                          last_entry_point_id
+  last_entrypoint_name                        last_entry_point_name
+  last_wrapup_code_id                         last_wrap_up_code_id
+  outdial_consult_to_entrypoint_count         outdial_consult_to_ep_count
+  outdial_consult_to_entrypoint_duration      outdial_consult_to_ep_duration
+  outdial_consult_to_entrypoint_duration      outdial_consult_to_queue_duration
+  preferred_agent_id                          preferred_agent_system_id
+  queue_to_entrypoint_transfer_count          queue_transfer_to_ep_count
+  queue_to_queue_transfer_count               queue_transfer_to_queue_count
+  recording_file_size_bytes                   recording_file_size
+  contact_status                              status
+  total_session_duration                      total_duration
+  transfer_entrypoint_dn                      transfer_ep_dn
+  transfer_in_to_entrypoint_count             transfer_in_to_ep_count
+  is_va_recording_available                   va_recording_available
+
+
+TOTAL fixable mismatches: 167
+
+
+### Rows with NO matching JSON field (cannot be made same — no such JSON column):
+
+  agent_activity (7):
+     bronze=changed_by_supervisor_id                           (landing=channelInfo_activities_nodes_changedById)
+     bronze=changed_by_supervisor_name                         (landing=channelInfo_activities_nodes_changedByName)
+     bronze=activity_duration                                  (landing=channelInfo_activities_nodes_duration)
+     bronze=activity_end_time                                  (landing=channelInfo_activities_nodes_endTime)
+     bronze=activity_id                                        (landing=channelInfo_activities_nodes_id)
+     bronze=activity_start_time                                (landing=channelInfo_activities_nodes_startTime)
+     bronze=activity_state                                     (landing=channelInfo_activities_nodes_state)
+
+  agent_session (2):
+     bronze=outdial_consult_to_queue_answer_count              (landing=channelInfo_outdialConsultToQueueAnswerCount)
+     bronze=outdial_consult_to_ep_requested_duration           (landing=channelInfo_outdialConsultToQueueAnswerDuration)
+
+  call_leg (16):
+     bronze=matched_skill_boolean_value                        (landing=matchedSkills_json_booleanValue)
+     bronze=matched_skill_proficiency_level                    (landing=matchedSkills_json_proficiencyLevel)
+     bronze=matched_skill_id                                   (landing=matchedSkills_json_skillId)
+     bronze=matched_skill_name                                 (landing=matchedSkills_json_skillName)
+     bronze=matched_skill_type                                 (landing=matchedSkills_json_skillType)
+     bronze=matched_skill_value                                (landing=matchedSkills_json_value)
+     bronze=next_destination_agent_channel_id                  (landing=nextDestination_agent_channelId)
+     bronze=next_destination_agent_id                          (landing=nextDestination_agent_id)
+     bronze=next_destination_agent_name                        (landing=nextDestination_agent_name)
+     bronze=next_destination_agent_phone_number                (landing=nextDestination_agent_phoneNumber)
+     bronze=next_destination_agent_session_id                  (landing=nextDestination_agent_sessionId)
+     bronze=next_destination_user_login_id                     (landing=nextDestination_agent_signInId)
+     bronze=next_destination_queue_id                          (landing=nextDestination_queue_id)
+     bronze=next_destination_queue_name                        (landing=nextDestination_queue_name)
+     bronze=next_destination_team_id                           (landing=nextDestination_team_id)
+     bronze=next_destination_team_name                         (landing=nextDestination_team_name)
+
+  customer_activity (10):
+     bronze=consult_entrypoint_id                              (landing=activities_nodes_consultEpId)
+     bronze=consult_entrypoint_name                            (landing=activities_nodes_consultEpName)
+     bronze=activity_created_time                              (landing=activities_nodes_createdTime)
+     bronze=destination_team_id                                (landing=activities_nodes_destinationAgentTeamId)
+     bronze=destination_team_name                              (landing=activities_nodes_destinationAgentTeamName)
+     bronze=activity_duration                                  (landing=activities_nodes_duration)
+     bronze=is_email_with_attachments                          (landing=activities_nodes_emailHasAttachments)
+     bronze=activity_ended_time                                (landing=activities_nodes_endedTime)
+     bronze=activity_id                                        (landing=activities_nodes_id)
+     bronze=customer_session_id  (conflict: 'car_id' already used) (landing=id)
+
+  customer_session (24):
+     bronze=abandoned_sl_count                                 (landing=abandonedSlCount)
+     bronze=abandoned_type                                     (landing=abandonedType)
+     bronze=chat_reason                                        (landing=channelMetaData_chat_chatReason)
+     bronze=email_metadata                                     (landing=channelMetaData_email_metadata)
+     bronze=email_subject                                      (landing=channelMetaData_email_subject)
+     bronze=global_variable_boolean_value                      (landing=globalVariables_json_booleanValue)
+     bronze=global_variable_data_type                          (landing=globalVariables_json_dataType)
+     bronze=global_variable_double_value                       (landing=globalVariables_json_doubleValue)
+     bronze=global_variable_integer_value                      (landing=globalVariables_json_integerValue)
+     bronze=global_variable_long_value                         (landing=globalVariables_json_longValue)
+     bronze=global_variable_name                               (landing=globalVariables_json_name)
+     bronze=global_variable_string_value                       (landing=globalVariables_json_stringValue)
+     bronze=global_variable_raw_value                          (landing=globalVariables_json_value)
+     bronze=matched_skills_json                                (landing=matchedSkills)
+     bronze=matched_skill_boolean_value                        (landing=matchedSkills_json_booleanValue)
+     bronze=matched_skill_proficiency_level                    (landing=matchedSkills_json_proficiencyLevel)
+     bronze=matched_skill_id                                   (landing=matchedSkills_json_skillId)
+     bronze=matched_skill_type                                 (landing=matchedSkills_json_skillType)
+     bronze=required_skills_json                               (landing=requiredSkills)
+     bronze=required_skill_boolean_value                       (landing=requiredSkills_json_booleanValue)
+     bronze=required_skill_match_condition                     (landing=requiredSkills_json_matchCondition)
+     bronze=required_skill_proficiency_level                   (landing=requiredSkills_json_proficiencyLevel)
+     bronze=required_skill_id                                  (landing=requiredSkills_json_skillId)
+     bronze=required_skill_type                                (landing=requiredSkills_json_skillType)

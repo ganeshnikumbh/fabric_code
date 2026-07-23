@@ -703,6 +703,12 @@ def cast_and_default_silver_columns(df: DataFrame, mappings: list) -> DataFrame:
     When bronze_column_name differs from silver_column_name the bronze column is
     dropped after the silver column is produced.
 
+    If a mapping's source column is absent from the bronze DataFrame (neither the
+    bronze nor the silver name is present), the column is SKIPPED — it is not
+    fabricated from a default. Silver therefore loads only the columns bronze
+    actually provides; the skipped column names are logged. Every column that IS
+    produced is typed per silver_data_type and non-null.
+
     Parameters
     ----------
     df       : Bronze-sourced DataFrame.
@@ -712,8 +718,10 @@ def cast_and_default_silver_columns(df: DataFrame, mappings: list) -> DataFrame:
 
     Returns
     -------
-    DataFrame with every mapped column typed per silver_data_type and non-null.
+    DataFrame with each present mapped column typed per silver_data_type and
+    non-null; mappings with no bronze source are omitted.
     """
+    _skipped_missing = []
     for row in mappings:
         silver_col = row["silver_column_name"]
         bronze_col = row["bronze_column_name"]
@@ -730,9 +738,11 @@ def cast_and_default_silver_columns(df: DataFrame, mappings: list) -> DataFrame:
         # (bronze == silver is the common case in schema_config).
         src_col = bronze_col if (bronze_col and bronze_col in df.columns) else silver_col
         if src_col not in df.columns:
-            # Neither source column present — materialize the silver column from
-            # its default so the output schema is always complete (typed, non-null).
-            df = df.withColumn(silver_col, F.lit(default_str).cast(cast_type))
+            # Bronze has no source column for this mapping — do NOT fabricate it.
+            # Silver only loads what bronze actually provides; the column is left
+            # out entirely (rather than filled with a default that would show up
+            # as NULL whenever the default cannot cast to a non-string type).
+            _skipped_missing.append(silver_col)
             continue
 
         # Boolean bronze -> integer silver needs a dedicated path: casting the
@@ -767,6 +777,12 @@ def cast_and_default_silver_columns(df: DataFrame, mappings: list) -> DataFrame:
 
         if bronze_col and bronze_col != silver_col and bronze_col in df.columns:
             df = df.drop(bronze_col)
+
+    if _skipped_missing:
+        print(
+            f"  Columns not found in bronze — NOT loaded to silver "
+            f"({len(_skipped_missing)}): {', '.join(_skipped_missing)}"
+        )
 
     return df
 

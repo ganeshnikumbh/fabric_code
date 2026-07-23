@@ -120,6 +120,16 @@
     {"column": "ivr_script_tag_name", "source": "ivrScriptTagName", "type": "string"},
     {"column": "last_wrapup_code_name", "source": "lastWrapupCodeName", "type": "string"},
     {"column": "terminating_end", "source": "terminatingEnd", "type": "string"},
-    {"column": "termination_reason", "source": "terminationReason", "type": "string"}
+    {"column": "termination_reason", "source": "terminationReason", "type": "string"},
+    {"column": "next_destination_agent_channel_id", "source": "nextDestination.agent.channelId", "type": "string"},
+    {"column": "next_destination_agent_id", "source": "nextDestination.agent.id", "type": "string"},
+    {"column": "next_destination_agent_name", "source": "nextDestination.agent.name", "type": "string"},
+    {"column": "next_destination_agent_phone_number", "source": "nextDestination.agent.phoneNumber", "type": "string"},
+    {"column": "next_destination_agent_session_id", "source": "nextDestination.agent.sessionId", "type": "string"},
+    {"column": "next_destination_user_login_id", "source": "nextDestination.agent.signInId", "type": "string"},
+    {"column": "next_destination_queue_id", "source": "nextDestination.queue.id", "type": "string"},
+    {"column": "next_destination_queue_name", "source": "nextDestination.queue.name", "type": "string"},
+    {"column": "next_destination_team_id", "source": "nextDestination.team.id", "type": "string"},
+    {"column": "next_destination_team_name", "source": "nextDestination.team.name", "type": "string"}
   ]
 }

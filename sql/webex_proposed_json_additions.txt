@@ -1,0 +1,88 @@
+PROPOSED JSON field additions for STILL-unmatched webex bronze columns
+column = current bronze | source = reconstructed from landing | type from silver
+CONFIDENCE: HIGH=top-level  MED=nested object  LOW=array ($0 index unverified)
+
+
+================================================================================================
+agent_activity  (7)
+================================================================================================
+  CONF column (=bronze)                        source (reconstructed)                      type
+  LOW  changed_by_supervisor_id                channelInfo.activities.nodes.changedById    string
+  LOW  changed_by_supervisor_name              channelInfo.activities.nodes.changedByName  string
+  LOW  activity_duration                       channelInfo.activities.nodes.duration       integer
+  LOW  activity_end_time                       channelInfo.activities.nodes.endTime        string
+  LOW  activity_id                             channelInfo.activities.nodes.id             string
+  LOW  activity_start_time                     channelInfo.activities.nodes.startTime      string
+  LOW  activity_state                          channelInfo.activities.nodes.state          string
+
+================================================================================================
+agent_session  (2)
+================================================================================================
+  CONF column (=bronze)                        source (reconstructed)                      type
+  MED  outdial_consult_to_queue_answer_count   channelInfo.outdialConsultToQueueAnswerCountinteger
+  MED  outdial_consult_to_ep_requested_durationchannelInfo.outdialConsultToQueueAnswerDurationinteger
+
+================================================================================================
+call_leg  (16)
+================================================================================================
+  CONF column (=bronze)                        source (reconstructed)                      type
+  LOW  matched_skill_boolean_value             matchedSkills.$0.booleanValue               integer
+  LOW  matched_skill_proficiency_level         matchedSkills.$0.proficiencyLevel           integer
+  LOW  matched_skill_id                        matchedSkills.$0.skillId                    string
+  LOW  matched_skill_name                      matchedSkills.$0.skillName                  string
+  LOW  matched_skill_type                      matchedSkills.$0.skillType                  string
+  LOW  matched_skill_value                     matchedSkills.$0.value                      string
+  MED  next_destination_agent_channel_id       nextDestination.agent.channelId             string
+  MED  next_destination_agent_id               nextDestination.agent.id                    string
+  MED  next_destination_agent_name             nextDestination.agent.name                  string
+  MED  next_destination_agent_phone_number     nextDestination.agent.phoneNumber           string
+  MED  next_destination_agent_session_id       nextDestination.agent.sessionId             string
+  MED  next_destination_user_login_id          nextDestination.agent.signInId              string
+  MED  next_destination_queue_id               nextDestination.queue.id                    string
+  MED  next_destination_queue_name             nextDestination.queue.name                  string
+  MED  next_destination_team_id                nextDestination.team.id                     string
+  MED  next_destination_team_name              nextDestination.team.name                   string
+
+================================================================================================
+customer_activity  (10)
+================================================================================================
+  CONF column (=bronze)                        source (reconstructed)                      type
+  LOW  consult_entrypoint_id                   activities.nodes.consultEpId                string
+  LOW  consult_entrypoint_name                 activities.nodes.consultEpName              string
+  LOW  activity_created_time                   activities.nodes.createdTime                string
+  LOW  destination_team_id                     activities.nodes.destinationAgentTeamId     string
+  LOW  destination_team_name                   activities.nodes.destinationAgentTeamName   string
+  LOW  activity_duration                       activities.nodes.duration                   integer
+  LOW  is_email_with_attachments               activities.nodes.emailHasAttachments        integer
+  LOW  activity_ended_time                     activities.nodes.endedTime                  string
+  LOW  activity_id                             activities.nodes.id                         string
+  HIGH customer_session_id                     id                                          string
+
+================================================================================================
+customer_session  (24)
+================================================================================================
+  CONF column (=bronze)                        source (reconstructed)                      type
+  HIGH abandoned_sl_count                      abandonedSlCount                            integer
+  HIGH abandoned_type                          abandonedType                               string
+  MED  chat_reason                             channelMetaData.chat.chatReason             string
+  MED  email_metadata                          channelMetaData.email.metadata              string
+  MED  email_subject                           channelMetaData.email.subject               string
+  LOW  global_variable_boolean_value           globalVariables.$0.booleanValue             integer
+  LOW  global_variable_data_type               globalVariables.$0.dataType                 string
+  LOW  global_variable_double_value            globalVariables.$0.doubleValue              string
+  LOW  global_variable_integer_value           globalVariables.$0.integerValue             integer
+  LOW  global_variable_long_value              globalVariables.$0.longValue                integer
+  LOW  global_variable_name                    globalVariables.$0.name                     string
+  LOW  global_variable_string_value            globalVariables.$0.stringValue              string
+  LOW  global_variable_raw_value               globalVariables.$0.value                    string
+  HIGH matched_skills_json                     matchedSkills                               string
+  LOW  matched_skill_boolean_value             matchedSkills.$0.booleanValue               integer
+  LOW  matched_skill_proficiency_level         matchedSkills.$0.proficiencyLevel           integer
+  LOW  matched_skill_id                        matchedSkills.$0.skillId                    string
+  LOW  matched_skill_type                      matchedSkills.$0.skillType                  string
+  HIGH required_skills_json                    requiredSkills                              string
+  LOW  required_skill_boolean_value            requiredSkills.$0.booleanValue              integer
+  LOW  required_skill_match_condition          requiredSkills.$0.matchCondition            string
+  LOW  required_skill_proficiency_level        requiredSkills.$0.proficiencyLevel          integer
+  LOW  required_skill_id                       requiredSkills.$0.skillId                   string
+  LOW  required_skill_type                     requiredSkills.$0.skillType                 string

@@ -210,6 +210,14 @@
     {"column": "email_content_type", "source": "emailContentType", "type": "string"},
     {"column": "email_reply_content_type", "source": "emailReplyContentType", "type": "string"},
     {"column": "topic_name", "source": "topicName", "type": "string"},
-    {"column": "global_variables", "source": "globalVariables", "type": "json"}
+    {"column": "global_variables", "source": "globalVariables", "type": "json"},
+    {"column": "matched_skills_json", "source": "matchedSkills", "type": "json"},
+    {"column": "required_skills_json", "source": "requiredSkills", "type": "json"},
+    {"column": "global_variables_json", "source": "globalVariables", "type": "json"},
+    {"column": "abandoned_sl_count", "source": "abandonedSlCount", "type": "integer"},
+    {"column": "abandoned_type", "source": "abandonedType", "type": "string"},
+    {"column": "chat_reason", "source": "channelMetaData.chat.chatReason", "type": "string"},
+    {"column": "email_metadata", "source": "channelMetaData.email.metadata", "type": "string"},
+    {"column": "email_subject", "source": "channelMetaData.email.subject", "type": "string"}
   ]
 }

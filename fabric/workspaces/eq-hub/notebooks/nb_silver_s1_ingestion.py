@@ -268,6 +268,20 @@ try:
     source_df = cast_and_default_silver_columns(source_df, mappings)  # noqa: F821  # type: ignore[name-defined]
     print(f"  Silver cast + defaults  : {len(mappings)} columns typed & non-null")
 
+    # ── Project to mapped silver columns + system/audit columns only ──────────
+    # Drops any bronze column that has no schema_config mapping (e.g. a column
+    # physically present in bronze but not registered), so it cannot leak into
+    # silver as a stray column. Mapped columns whose bronze source was absent were
+    # already skipped by cast_and_default_silver_columns and simply won't appear.
+    _mapped_silver = [
+        m["silver_column_name"] for m in mappings
+        if m["silver_column_name"] and m["silver_column_name"] in source_df.columns
+    ]
+    _system_cols = [c for c in source_df.columns if c in (_BRONZE_AUDIT_COLS | {"md5_hash"})]
+    _keep_cols   = list(dict.fromkeys(_mapped_silver + _system_cols))
+    source_df    = source_df.select(*_keep_cols)
+    print(f"  Silver projection       : {len(_mapped_silver)} mapped + {len(_system_cols)} system column(s)")
+
     # ── Validate before merge (skip when there is no source data) ─────────────────
     if source_row_count > 0:
         validate_silver_load(source_df, mappings, p_target_table, p_ingestion_date)  # noqa: F821  # type: ignore[name-defined]
