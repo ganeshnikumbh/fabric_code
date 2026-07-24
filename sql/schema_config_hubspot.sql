@@ -132,7 +132,7 @@ VALUES
   ('HubSpot', 'crm_companies', 'properties_json', 'STRING', 'crm_companies_base', 'properties_json', 'STRING', 'crm_companies', 'properties_json', 'STRING', 8, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('HubSpot', 'crm_companies', 'properties_json_domain', 'STRING', 'crm_companies_base', 'domain', 'STRING', 'crm_companies', 'company_domain', 'STRING', 10, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('HubSpot', 'crm_companies', 'properties_json_name', 'STRING', 'crm_companies_base', 'name', 'STRING', 'crm_companies', 'company_name', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'crm_companies', 'object_type', 'STRING', 'crm_companies_base', 'object_type', 'STRING', 'crm_companies', 'object_type', 'STRING', 14, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
+  ('HubSpot', 'crm_companies', 'N/A', 'STRING', 'crm_companies_base', 'N/A', 'STRING', 'crm_companies', 'object_type', 'STRING', 14, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 -- [crm_owners]  (11 transformed / 0 kept)
 INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES

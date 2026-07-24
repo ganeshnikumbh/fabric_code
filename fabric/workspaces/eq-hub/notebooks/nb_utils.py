@@ -811,11 +811,23 @@ def validate_silver_load(df: DataFrame, mappings: list, target_table: str, inges
         _check("CRITICAL", "Row count",                "FAIL", "0 rows — nothing to merge")
 
     # CHECK 2 — column presence
-    missing = [c for c in expected_cols if c not in actual_cols]
+    # A mapped column is legitimately absent when bronze does not provide its
+    # source: cast_and_default_silver_columns skips such columns rather than
+    # fabricating a default (which would otherwise surface as NULL). That skip is
+    # non-fatal for ordinary columns — reported as a WARNING — but a missing
+    # PRIMARY KEY column is always CRITICAL.
+    _pk_cols   = {row["silver_column_name"] for row in mappings
+                  if row["is_primary_key"] in (1, "1", True)}
+    missing    = [c for c in expected_cols if c not in actual_cols]
+    missing_pk = [c for c in missing if c in _pk_cols]
     if not missing:
         _check("CRITICAL", "Column presence",          "PASS", f"all {len(expected_cols)} columns present")
+    elif missing_pk:
+        _check("CRITICAL", "Column presence",          "FAIL",
+               f"{len(missing_pk)} primary-key column(s) missing from bronze: {missing_pk}")
     else:
-        _check("CRITICAL", "Column presence",          "FAIL", f"{len(missing)} missing: {missing}")
+        _check("WARNING",  "Column presence",          "WARN",
+               f"{len(missing)} non-key column(s) not loaded (absent in bronze): {missing}")
 
     # CHECK 3 — data type matches silver_data_type from schema_config
     type_mismatches = []
