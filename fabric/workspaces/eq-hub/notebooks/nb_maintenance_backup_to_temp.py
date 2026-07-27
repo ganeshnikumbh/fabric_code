@@ -23,6 +23,10 @@
 #   - Originals are dropped ONLY when p_drop_originals = True AND every clone in
 #     the run verified (row counts matched). A single clone/verify failure
 #     cancels the entire drop phase — nothing is dropped.
+#   - p_remove_inschema_temp = True additionally drops stray *_temp tables found
+#     INSIDE the real schemas (leftovers from earlier testing). These are NOT
+#     backed up — they are treated as disposable cruft — so the emptied schema is
+#     truly clean for the pipeline. Gated by the same "all clones verified" check.
 #   - Re-runnable: clones use CREATE OR REPLACE; a source that is already gone
 #     (backed up on a prior run) is skipped, not treated as an error.
 #
@@ -61,8 +65,12 @@ _notebook_start = time.time()
 p_schema_map      = "lh_bronze:bronze_eqwarehouse,bronze_hubspot,bronze_webex;lh_silver:silver_s1,silver_s2"
 p_view_schemas    = "silver_s2"   # schemas whose objects are MLVs (special handling)
 p_temp_suffix     = "_temp"       # backup schema suffix
+p_use_deep_clone  = False         # True = try DEEP CLONE first (many Fabric Spark
+                                  # runtimes reject CLONE syntax — default is CTAS)
 p_dry_run         = True          # True = report plan only, no writes
 p_drop_originals  = False         # True = drop originals AFTER all clones verified
+p_remove_inschema_temp = False    # True = also drop stray *_temp tables that live
+                                  # INSIDE the real schemas (NOT backed up)
 
 print("=" * 74)
 print("  nb_maintenance_backup_to_temp — START")
@@ -70,8 +78,10 @@ print("=" * 74)
 print(f"  schema map       : {p_schema_map}")
 print(f"  view (MLV) schemas: {p_view_schemas or '(none)'}")
 print(f"  temp suffix      : {p_temp_suffix}")
+print(f"  method           : {'DEEP CLONE (CTAS fallback)' if p_use_deep_clone else 'CTAS snapshot'}")
 print(f"  dry run          : {p_dry_run}")
 print(f"  drop originals   : {p_drop_originals}")
+print(f"  remove in-schema *{p_temp_suffix}: {p_remove_inschema_temp}")
 print("=" * 74)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -141,17 +151,28 @@ if not _pairs:
 _views = {s.strip().lower() for s in p_view_schemas.split(",") if s.strip()}
 
 # (src_parts, temp_parts, schema_label, table, is_view)
-work = []
+work          = []   # objects to back up: (src_parts, temp_parts, label, table, is_view)
+leftover_temp = []   # stray in-schema *_temp tables: (src_parts, label, table, is_view)
 for lh, sch in _pairs:
     src_parts, rows = _resolve(lh, sch)
     temp_parts      = src_parts[:-1] + [src_parts[-1] + p_temp_suffix]
     is_view         = sch.lower() in _views
-    objs            = [r["tableName"] for r in rows if not r["isTemporary"]]
-    print(f"  {lh}.{sch}: {len(objs)} object(s){'  [MLV schema]' if is_view else ''}")
+    # Split real objects from leftover *_temp tables living INSIDE a real schema
+    # (from earlier testing). The latter are never backed up (backups of backups)
+    # and can optionally be removed in the drop phase to leave a clean schema.
+    _all_objs = [r["tableName"] for r in rows if not r["isTemporary"]]
+    objs      = [t for t in _all_objs if not t.lower().endswith(p_temp_suffix.lower())]
+    temp_objs = [t for t in _all_objs if t.lower().endswith(p_temp_suffix.lower())]
+    print(f"  {lh}.{sch}: {len(objs)} object(s)"
+          f"{f' (+{len(temp_objs)} *{p_temp_suffix} in-schema)' if temp_objs else ''}"
+          f"{'  [MLV schema]' if is_view else ''}")
     for t in objs:
         work.append((src_parts, temp_parts, sch, t, is_view))
+    for t in temp_objs:
+        leftover_temp.append((src_parts, sch, t, is_view))
 
-print(f"\nTotal objects to back up: {len(work)}\n")
+print(f"\nTotal objects to back up: {len(work)}"
+      f"  |  leftover in-schema *{p_temp_suffix} tables: {len(leftover_temp)}\n")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SECTION 3 — Phase 1: clone every object into its *_temp schema and verify
@@ -188,28 +209,29 @@ for src_parts, temp_parts, label, table, is_view in work:
         print(f"  ERROR         {display}: {e}")
         continue
 
+    # DEEP CLONE preserves Delta history but is unsupported on many Fabric Spark
+    # runtimes, and never applies to MLVs. It is only attempted when explicitly
+    # enabled and the object is not a view; otherwise a CTAS snapshot is used
+    # (sufficient for a pre-deploy backup — it captures the current data).
+    _try_clone = p_use_deep_clone and not is_view
+
     if p_dry_run:
-        _how = "CTAS (MLV)" if is_view else "DEEP CLONE"
+        _how = "DEEP CLONE" if _try_clone else "CTAS"
         print(f"  WOULD BACKUP  {display:<52} — {rows_src:,} rows via {_how} -> {'.'.join(temp_parts)}")
         cloned.append((display, _how, rows_src))
         continue
 
-    # MLV schemas: DEEP CLONE does not apply to views — snapshot with CTAS.
-    # Table schemas: prefer DEEP CLONE (preserves Delta history); fall back to
-    # CTAS if the engine refuses (e.g. the object is a view).
     method = None
-    try:
-        if is_view:
-            spark.sql(f"CREATE OR REPLACE TABLE {dst} AS SELECT * FROM {src}")
-            method = "CTAS (MLV)"
-        else:
+    if _try_clone:
+        try:
             spark.sql(f"CREATE OR REPLACE TABLE {dst} DEEP CLONE {src}")
             method = "DEEP CLONE"
-    except Exception as e_clone:
+        except Exception:
+            print(f"  NOTE          {display}: DEEP CLONE unavailable — using CTAS")
+    if method is None:
         try:
             spark.sql(f"CREATE OR REPLACE TABLE {dst} AS SELECT * FROM {src}")
-            method = "CTAS (fallback)"
-            print(f"  NOTE          {display}: DEEP CLONE failed, used CTAS ({e_clone})")
+            method = "CTAS"
         except Exception as e_ctas:
             clone_error.append((display, f"clone failed: {e_ctas}"))
             print(f"  ERROR         {display}: {e_ctas}")
@@ -235,47 +257,73 @@ _clone_ok      = len(clone_error) == 0 and len(verify_fail) == 0
 _have_failures = not _clone_ok
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SECTION 4 — Phase 2: empty the originals (guarded)
-# Runs ONLY when: not dry run, p_drop_originals, and every clone verified.
+# SECTION 4 — Phase 2: empty the schemas (guarded)
+# Drops the ORIGINAL objects (backed up, per p_drop_originals) and optionally the
+# stray in-schema *_temp tables (NOT backed up, per p_remove_inschema_temp).
+# Runs ONLY when: not dry run, at least one drop flag set, and every clone verified.
 # ══════════════════════════════════════════════════════════════════════════════
 
-dropped     = []
-drop_error  = []
-drop_ran    = False
+dropped      = []   # originals dropped
+dropped_temp = []   # leftover in-schema *_temp tables removed
+drop_error   = []
+drop_ran     = False
+
+def _drop_object(src_parts, table, is_view, display):
+    """MLV-aware drop of one object + verify it is gone. Appends to drop_error on
+    failure. Returns 'dropped', 'absent' (already gone), or 'error'."""
+    src = f"{_quote(src_parts)}.`{table}`"
+    if not _obj_exists(src_parts, table):
+        return "absent"
+    try:
+        # MLV schemas need DROP MATERIALIZED LAKE VIEW; plain schemas DROP TABLE.
+        if is_view:
+            try:
+                spark.sql(f"DROP MATERIALIZED LAKE VIEW IF EXISTS {src}")
+            except Exception:
+                spark.sql(f"DROP TABLE IF EXISTS {src}")
+        else:
+            spark.sql(f"DROP TABLE IF EXISTS {src}")
+        if _obj_exists(src_parts, table):
+            raise RuntimeError("object still present after drop")
+        return "dropped"
+    except Exception as e:
+        drop_error.append((display, str(e)))
+        print(f"  ERROR         {display}: {e}")
+        return "error"
+
+_want_destructive = p_drop_originals or p_remove_inschema_temp
 
 if p_dry_run:
     if p_drop_originals:
         print(f"\n[DRY RUN] Would drop {len(work)} original object(s) after verified backup.")
-elif not p_drop_originals:
-    print("\nDrop phase skipped — p_drop_originals is False (backup-only run).")
+    if p_remove_inschema_temp and leftover_temp:
+        print(f"[DRY RUN] Would remove {len(leftover_temp)} leftover in-schema "
+              f"*{p_temp_suffix} table(s) (NOT backed up).")
+elif not _want_destructive:
+    print("\nDrop phase skipped — p_drop_originals and p_remove_inschema_temp are both "
+          "False (backup-only run).")
 elif _have_failures:
     print("\nDROP PHASE CANCELLED — one or more clones failed/could not be verified. "
-          "No originals dropped. Resolve the failures above and re-run.")
+          "Nothing dropped. Resolve the failures above and re-run.")
 else:
     drop_ran = True
-    print(f"\nDropping {len(work)} original object(s) — every clone verified.")
-    for src_parts, temp_parts, label, table, is_view in work:
-        src     = f"{_quote(src_parts)}.`{table}`"
-        display = f"{label}.{table}"
-        if not _obj_exists(src_parts, table):
-            continue  # already gone
-        try:
-            # MLV schemas need DROP MATERIALIZED LAKE VIEW; plain schemas DROP TABLE.
-            if is_view:
-                try:
-                    spark.sql(f"DROP MATERIALIZED LAKE VIEW IF EXISTS {src}")
-                except Exception:
-                    spark.sql(f"DROP TABLE IF EXISTS {src}")
-            else:
-                spark.sql(f"DROP TABLE IF EXISTS {src}")
+    if p_drop_originals:
+        print(f"\nDropping {len(work)} original object(s) — every clone verified.")
+        for src_parts, temp_parts, label, table, is_view in work:
+            display = f"{label}.{table}"
+            if _drop_object(src_parts, table, is_view, display) == "dropped":
+                dropped.append(display)
+                print(f"  DROPPED       {display}")
 
-            if _obj_exists(src_parts, table):
-                raise RuntimeError("object still present after drop")
-            dropped.append(display)
-            print(f"  DROPPED       {display}")
-        except Exception as e:
-            drop_error.append((display, str(e)))
-            print(f"  ERROR         {display}: {e}")
+    if p_remove_inschema_temp:
+        if leftover_temp:
+            print(f"\nRemoving {len(leftover_temp)} leftover in-schema "
+                  f"*{p_temp_suffix} table(s) — not backed up.")
+        for src_parts, label, table, is_view in leftover_temp:
+            display = f"{label}.{table}"
+            if _drop_object(src_parts, table, is_view, display) == "dropped":
+                dropped_temp.append(display)
+                print(f"  REMOVED TEMP  {display}")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SECTION 5 — Summary
@@ -286,12 +334,16 @@ print("\n" + "=" * 74)
 print("  nb_maintenance_backup_to_temp — COMPLETE")
 print(f"  Mode                  : {'DRY RUN' if p_dry_run else 'EXECUTE'}")
 print(f"  Objects considered    : {len(work)}")
+print(f"  Leftover in-schema {p_temp_suffix}: {len(leftover_temp)}")
 print(f"  {'Would back up' if p_dry_run else 'Backed up'}         : {len(cloned)}")
 print(f"  Source already gone   : {len(skipped_src)}")
 print(f"  Verify failures       : {len(verify_fail)}")
 print(f"  Clone errors          : {len(clone_error)}")
 if drop_ran or (p_dry_run and p_drop_originals):
     print(f"  Originals dropped     : {len(dropped)}")
+if drop_ran or (p_dry_run and p_remove_inschema_temp):
+    print(f"  In-schema {p_temp_suffix} removed : {len(dropped_temp)}")
+if drop_ran:
     print(f"  Drop errors           : {len(drop_error)}")
 if verify_fail:
     print("\n  Verify failures (row-count mismatch — NOT safe to drop):")
