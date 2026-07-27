@@ -190,7 +190,7 @@ for src_parts, temp_parts, label, table, is_view in work:
 
     if p_dry_run:
         _how = "CTAS (MLV)" if is_view else "DEEP CLONE"
-        print(f"  WOULD BACKUP  {display:<52} — {rows_src:,} rows via {_how} -> {temp_ns}")
+        print(f"  WOULD BACKUP  {display:<52} — {rows_src:,} rows via {_how} -> {'.'.join(temp_parts)}")
         cloned.append((display, _how, rows_src))
         continue
 
