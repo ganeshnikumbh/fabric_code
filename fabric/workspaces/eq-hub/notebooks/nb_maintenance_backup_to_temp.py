@@ -36,9 +36,10 @@
 #
 # Pre-requisites:
 #   - Attach BOTH lh_bronze and lh_silver to this notebook session
-#     (Notebook settings -> Lakehouses -> Add) so SHOW SCHEMAS sees every
-#     target schema. Schema names are unique across the two lakehouses, so each
-#     is matched by its schema (last) name and cloned within its own lakehouse.
+#     (Notebook settings -> Lakehouses -> Add). SHOW SCHEMAS only lists the
+#     DEFAULT lakehouse's schemas, so this notebook does NOT rely on it — it
+#     takes an explicit lakehouse->schemas map (p_schema_map) and enumerates
+#     each lakehouse by name. Each schema is cloned within its own lakehouse.
 
 import time
 from pyspark.sql import SparkSession
@@ -55,7 +56,9 @@ _notebook_start = time.time()
 # Cell tag: parameters — Fabric Pipeline injects values at runtime.
 # ══════════════════════════════════════════════════════════════════════════════
 
-p_target_schemas  = "bronze_eqwarehouse,bronze_hubspot,bronze_webex,silver_s1,silver_s2"
+# lakehouse -> schemas, as "lh:schemaA,schemaB;lh2:schemaC". Each schema is
+# enumerated inside its named lakehouse (SHOW SCHEMAS is default-lakehouse only).
+p_schema_map      = "lh_bronze:bronze_eqwarehouse,bronze_hubspot,bronze_webex;lh_silver:silver_s1,silver_s2"
 p_view_schemas    = "silver_s2"   # schemas whose objects are MLVs (special handling)
 p_temp_suffix     = "_temp"       # backup schema suffix
 p_dry_run         = True          # True = report plan only, no writes
@@ -64,7 +67,7 @@ p_drop_originals  = False         # True = drop originals AFTER all clones verif
 print("=" * 74)
 print("  nb_maintenance_backup_to_temp — START")
 print("=" * 74)
-print(f"  target schemas   : {p_target_schemas}")
+print(f"  schema map       : {p_schema_map}")
 print(f"  view (MLV) schemas: {p_view_schemas or '(none)'}")
 print(f"  temp suffix      : {p_temp_suffix}")
 print(f"  dry run          : {p_dry_run}")
@@ -72,59 +75,81 @@ print(f"  drop originals   : {p_drop_originals}")
 print("=" * 74)
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SECTION 2 — Discover target schemas and their tables
+# SECTION 2 — Resolve each lakehouse.schema and list its tables
 #
-# SHOW SCHEMAS returns a "namespace" column with three-part values
-# (workspace.lakehouse.schema). Each part must be backtick-quoted individually.
+# Fabric table names are multi-part (workspace.lakehouse.schema.table) and each
+# part must be backtick-quoted individually. SHOW SCHEMAS only returns the
+# DEFAULT lakehouse's schemas, so for a non-default lakehouse we address it by
+# name. We resolve the working namespace form per (lakehouse, schema) by trying
+# the workspace-qualified form first, then shorter forms, using SHOW TABLES as
+# the probe.
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _quote_ns(namespace: str) -> str:
-    """Backtick-quote each part of a dot-separated namespace for Spark SQL."""
-    return ".".join(f"`{p}`" for p in namespace.split("."))
+def _quote(parts: list) -> str:
+    """Backtick-quote each element of a namespace part list for Spark SQL."""
+    return ".".join(f"`{p}`" for p in parts)
 
-def _temp_namespace(namespace: str) -> str:
-    """Return the sibling backup namespace: <ws>.<lh>.<schema><suffix>."""
-    parts = namespace.split(".")
-    parts[-1] = parts[-1] + p_temp_suffix
-    return ".".join(parts)
+# Detect the workspace prefix from the default lakehouse's namespaces (if any
+# are three-part: workspace.lakehouse.schema). May stay None on some versions.
+_workspace = None
+try:
+    for _r in spark.sql("SHOW SCHEMAS").collect():
+        _p = _r["namespace"].split(".")
+        if len(_p) >= 3:
+            _workspace = _p[0]
+            break
+except Exception:
+    pass
+print(f"  workspace prefix : {_workspace or '(not detected)'}\n")
 
-_targets = {s.strip().lower() for s in p_target_schemas.split(",") if s.strip()}
-_views   = {s.strip().lower() for s in p_view_schemas.split(",") if s.strip()}
-
-if not _targets:
-    raise ValueError("p_target_schemas is empty — nothing to back up.")
-
-# Namespaces whose schema (last part) is a requested target, excluding any that
-# are themselves *_temp (so re-runs never back up a backup).
-all_namespaces = [
-    row["namespace"]
-    for row in spark.sql("SHOW SCHEMAS").collect()
-    if row["namespace"].split(".")[-1].lower() in _targets
-    and not row["namespace"].split(".")[-1].lower().endswith(p_temp_suffix.lower())
-]
-
-_found = {ns.split(".")[-1].lower() for ns in all_namespaces}
-_missing = _targets - _found
-if _missing:
-    # A requested schema not visible in the session is almost always a missing
-    # lakehouse attachment — fail loudly rather than silently skipping a backup.
+def _resolve(lakehouse: str, schema: str):
+    """Return the namespace part-list that Spark accepts for this
+    lakehouse.schema, plus its table rows. Tries longest form first."""
+    candidates = []
+    if _workspace:
+        candidates.append([_workspace, lakehouse, schema])
+    candidates.append([lakehouse, schema])
+    candidates.append([schema])   # only valid when lakehouse is the default
+    last_err = None
+    for parts in candidates:
+        try:
+            rows = spark.sql(f"SHOW TABLES IN {_quote(parts)}").collect()
+            return parts, rows
+        except Exception as e:
+            last_err = e
     raise ValueError(
-        f"Target schema(s) not found in this session: {sorted(_missing)}. "
-        f"Attach the owning lakehouse(s) (lh_bronze and lh_silver) and re-run."
+        f"Could not resolve '{lakehouse}.{schema}'. Is '{lakehouse}' attached to "
+        f"this session? Tried {candidates}. Last error: {last_err}"
     )
 
-print(f"Schemas to back up : {len(all_namespaces)}")
+def _obj_exists(parts: list, table: str) -> bool:
+    """True if `table` currently exists under namespace `parts`."""
+    return len(spark.sql(f"SHOW TABLES IN {_quote(parts)} LIKE '{table}'").collect()) > 0
 
-# (source_ns, temp_ns, schema_label, table, is_view)
+# Parse the lakehouse -> schemas map.
+_pairs = []
+for chunk in [c for c in p_schema_map.split(";") if c.strip()]:
+    lh, _, schemas = chunk.partition(":")
+    lh = lh.strip()
+    for sch in [s.strip() for s in schemas.split(",") if s.strip()]:
+        if sch.lower().endswith(p_temp_suffix.lower()):
+            continue  # never back up a backup
+        _pairs.append((lh, sch))
+if not _pairs:
+    raise ValueError("p_schema_map is empty or malformed — nothing to back up.")
+
+_views = {s.strip().lower() for s in p_view_schemas.split(",") if s.strip()}
+
+# (src_parts, temp_parts, schema_label, table, is_view)
 work = []
-for ns in sorted(all_namespaces):
-    label   = ns.split(".")[-1]
-    is_view = label.lower() in _views
-    rows    = spark.sql(f"SHOW TABLES IN {_quote_ns(ns)}").collect()
-    objs    = [r["tableName"] for r in rows if not r["isTemporary"]]
-    print(f"  {label}: {len(objs)} object(s){'  [MLV schema]' if is_view else ''}")
+for lh, sch in _pairs:
+    src_parts, rows = _resolve(lh, sch)
+    temp_parts      = src_parts[:-1] + [src_parts[-1] + p_temp_suffix]
+    is_view         = sch.lower() in _views
+    objs            = [r["tableName"] for r in rows if not r["isTemporary"]]
+    print(f"  {lh}.{sch}: {len(objs)} object(s){'  [MLV schema]' if is_view else ''}")
     for t in objs:
-        work.append((ns, _temp_namespace(ns), label, t, is_view))
+        work.append((src_parts, temp_parts, sch, t, is_view))
 
 print(f"\nTotal objects to back up: {len(work)}\n")
 
@@ -138,20 +163,20 @@ clone_error = []   # (display, message)
 skipped_src = []   # source already gone (prior-run backup)
 
 # Ensure each *_temp schema exists once (skipped on dry run).
-_temp_ns_set = sorted({tn for _, tn, _, _, _ in work})
+_temp_ns_set = {tuple(tp) for _, tp, _, _, _ in work}
 if not p_dry_run:
-    for tn in _temp_ns_set:
-        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {_quote_ns(tn)}")
-        print(f"  ensured schema  {tn}")
+    for tp in sorted(_temp_ns_set):
+        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {_quote(list(tp))}")
+        print(f"  ensured schema  {'.'.join(tp)}")
     print("")
 
-for src_ns, temp_ns, label, table, is_view in work:
-    src     = f"{_quote_ns(src_ns)}.`{table}`"
-    dst     = f"{_quote_ns(temp_ns)}.`{table}`"
+for src_parts, temp_parts, label, table, is_view in work:
+    src     = f"{_quote(src_parts)}.`{table}`"
+    dst     = f"{_quote(temp_parts)}.`{table}`"
     display = f"{label}.{table}"
     t0 = time.time()
 
-    if not spark.catalog.tableExists(f"{src_ns}.{table}"):
+    if not _obj_exists(src_parts, table):
         skipped_src.append(display)
         print(f"  SKIP SRC GONE {display:<52} — source absent (already backed up?)")
         continue
@@ -229,10 +254,10 @@ elif _have_failures:
 else:
     drop_ran = True
     print(f"\nDropping {len(work)} original object(s) — every clone verified.")
-    for src_ns, temp_ns, label, table, is_view in work:
-        src     = f"{_quote_ns(src_ns)}.`{table}`"
+    for src_parts, temp_parts, label, table, is_view in work:
+        src     = f"{_quote(src_parts)}.`{table}`"
         display = f"{label}.{table}"
-        if not spark.catalog.tableExists(f"{src_ns}.{table}"):
+        if not _obj_exists(src_parts, table):
             continue  # already gone
         try:
             # MLV schemas need DROP MATERIALIZED LAKE VIEW; plain schemas DROP TABLE.
@@ -244,7 +269,7 @@ else:
             else:
                 spark.sql(f"DROP TABLE IF EXISTS {src}")
 
-            if spark.catalog.tableExists(f"{src_ns}.{table}"):
+            if _obj_exists(src_parts, table):
                 raise RuntimeError("object still present after drop")
             dropped.append(display)
             print(f"  DROPPED       {display}")
