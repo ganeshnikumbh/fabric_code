@@ -1,0 +1,10 @@
+{
+  "table_name": "account",
+  "source_path": "records",
+  "fields": [
+    {"column": "attributes_type", "source": "attributes.type", "type": "string"},
+    {"column": "attributes_url",  "source": "attributes.url",  "type": "string"},
+    {"column": "id",              "source": "Id",              "type": "string"},
+    {"column": "name",            "source": "Name",            "type": "string"}
+  ]
+}

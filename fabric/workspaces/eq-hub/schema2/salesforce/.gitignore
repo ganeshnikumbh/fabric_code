@@ -1,0 +1,2 @@
+# Allow JSON schema files in this directory
+!*.json
