@@ -499,6 +499,17 @@ except Exception as _exc:
 # ══════════════════════════════════════════════════════════════════════════
     # SECTION  — Refresh / create Silver S2 materialized lake view(s)
 
+# Derived silver_s2-only columns: silver_table -> list of "EXPR AS name" appended
+# to the MLV projection. Lets a table expose computed columns (e.g. a DATE cut
+# from a TIMESTAMP) in silver_s2 WITHOUT storing them in silver_s1 or including
+# them in the md5 hash. Add future exceptions here; most tables have none.
+_SILVER_S2_DERIVED_COLUMNS = {
+    "marketing_events": [
+        "CAST(start_timestamp AS DATE) AS start_date",
+        "CAST(end_timestamp AS DATE) AS end_date",
+    ],
+}
+
 print(f"\n[MLV] Refreshing/creating silver_s2 materialized lake view(s) for '{p_target_table}'")
 
 if not spark.catalog.tableExists(qualified_target):
@@ -516,7 +527,11 @@ else:
         "ingestion_run_id", "ingestion_timestamp",
     }
     _mlv_cols     = [c for c in spark.table(qualified_target).columns]
-    _mlv_col_list = ",\n               ".join(_mlv_cols)
+    # Append any silver_s2-only derived columns registered for this table.
+    _mlv_derived  = _SILVER_S2_DERIVED_COLUMNS.get(p_target_table, [])
+    _mlv_col_list = ",\n               ".join(_mlv_cols + _mlv_derived)
+    if _mlv_derived:
+        print(f"  Derived s2 cols : {', '.join(_mlv_derived)}")
 
     # ensure_mlv_and_refresh is injected by %run nb_utils — refreshes the MLV if
     # it exists, otherwise creates it. Returns 'refreshed' or 'created'.

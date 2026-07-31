@@ -28,7 +28,6 @@ VALUES
   ('HubSpot', 'marketing_events', 'appInfo_name', 'STRING', 'marketing_events_base', 'name', 'STRING', 'marketing_events', 'app_info_name', 'STRING', 19, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
   ('HubSpot', 'marketing_events', 'created_at', 'STRING', 'marketing_events_base', 'created_at', 'STRING', 'marketing_events', 'created_timestamp', 'TIMESTAMP', 20, 1, 0, 0, '3000-01-01', 1, GETUTCDATE()),
   ('HubSpot', 'marketing_events', 'updated_at', 'STRING', 'marketing_events_base', 'updated_at', 'STRING', 'marketing_events', 'updated_timestamp', 'TIMESTAMP', 21, 1, 0, 0, '3000-01-01', 1, GETUTCDATE());
-
 -- [marketing_emails]  (28 transformed / 48 kept)
 INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
