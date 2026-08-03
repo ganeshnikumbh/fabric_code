@@ -8,6 +8,15 @@
 # short "driver" section at the bottom calls them in order. No frameworks — just
 # functions, a small config dictionary (meta), and a single try/except. A plain
 # `if source_row_count > 0:` handles the 0-row skip.
+#
+# Logging: uses the shared Logger from nb_utils via `logger` — every console
+# message is timestamped, levelled (INFO/WARNING/ERROR), and tagged with the
+# notebook name, instead of bare print().
+#
+# Performance: the fully-transformed source frame is cached ONCE and its row count
+# materialised a single time, so validation and the SCD write reuse the same
+# computed data instead of re-running the read->dedup->cast->project chain per
+# action.
 
 # In[ ]:
 
@@ -46,6 +55,7 @@
 #   4. deduplicate()         — dedup on md5_hash
 #   5. cast_and_default()    — cast bronze -> silver types, replace null/blank/junk
 #   6. project_columns()     — keep mapped silver + system columns only
+#      → cache + count once here (drives the 0-row skip and feeds later steps)
 #   7. validate()            — silver validation           (only if rows > 0)
 #   8. write_silver()        — SCD2 merge or non-SCD append (only if rows > 0)
 #   9. enforce_not_null()    — SET NOT NULL on is_nullable=0 columns
@@ -67,6 +77,9 @@ spark = SparkSession.builder.appName("nb_silver_s1_ingestion_v2").getOrCreate()
 spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
 spark.conf.set("spark.sql.parquet.datetimeRebaseModeInRead", "LEGACY")
 
+# Shared notebook logger (create_logger provided by nb_utils via %run above).
+logger = create_logger("nb_silver_s1_ingestion_v2")  # noqa: F821  # type: ignore[name-defined]
+
 _notebook_start = time.time()
 
 
@@ -87,6 +100,9 @@ p_ingestion_timestamp    = ""   # REQUIRED — e.g. "2025-04-09T01:00:00Z"
 p_ingestion_date         = ""   # REQUIRED — e.g. "2025-04-09"
 p_ingestion_config_json  = ""   # REQUIRED — full ingestion_config JSON array
 p_schema_config_json     = ""   # REQUIRED — full schema_config JSON array
+p_debug                  = False # OPTIONAL — True = take exact row counts for logging.
+                                 # False (default) skips operational counts; control
+                                 # flow uses cheap existence checks instead.
 
 
 # In[ ]:
@@ -141,7 +157,7 @@ _SILVER_S2_DERIVED_COLUMNS = {
 def resolve_metadata():
     """Step 1 — read schema_config mappings and ingestion_config flags. Returns
     `meta`, a dict of everything later steps need."""
-    print(f"\n[1/10] Resolving metadata from JSON parameters")
+    logger.info("[1/10] Resolving metadata from JSON parameters")
 
     # ── schema_config → mappings + entity_name ───────────────────────────────
     schema_config_df = schema_config_df_from_json(p_schema_config_json)  # noqa: F821  # type: ignore[name-defined]
@@ -181,17 +197,17 @@ def resolve_metadata():
         "src_busn_asst":  ((ic["src_busn_asst"] or "").strip() or None) if ic else None,
     }
 
-    print(f"  entity_name     : '{meta['entity_name']}' (from bronze_table_name='{p_source_table}')")
-    print(f"  Schema mappings : {len(meta['mappings'])} columns")
-    print(f"  is_scd2         : {meta['is_scd2']}")
-    print(f"  partition_cols  : {meta['partition_cols'] or '(none)'}")
-    print(f"  src_busn_asst   : {meta['src_busn_asst'] or '(none)'}")
+    logger.info(f"entity_name='{meta['entity_name']}' (bronze_table_name='{p_source_table}'), "
+                f"mappings={len(meta['mappings'])}, is_scd2={meta['is_scd2']}, "
+                f"partition_cols={meta['partition_cols'] or '(none)'}, "
+                f"src_busn_asst={meta['src_busn_asst'] or '(none)'}")
     return meta
 
 
 def read_bronze_source():
-    """Step 2 — read bronze for this ingestion_date. Returns (source_df, row_count)."""
-    print(f"\n[2/10] Reading bronze source: {qualified_source}")
+    """Step 2 — read bronze for this ingestion_date. Returns source_df (lazy).
+    The row count is taken once, later, off the cached projected frame."""
+    logger.info(f"[2/10] Reading bronze source: {qualified_source}")
     try:
         source_df = spark.table(qualified_source).filter(
             F.col("ingestion_date") == p_ingestion_date
@@ -201,16 +217,12 @@ def read_bronze_source():
             f"Failed to read '{qualified_source}'. "
             f"Ensure lh_bronze is added to this notebook session.\n{e}"
         )
-    row_count = source_df.count()
-    print(f"  Rows to merge : {row_count:,}")
-    if row_count == 0:
-        print("  WARNING: No source rows for the filter. Silver table will not be updated.")
-    return source_df, row_count
+    return source_df
 
 
 def swap_audit_columns(source_df, meta):
     """Step 3 — drop the bronze-run audit columns and add fresh silver-run ones."""
-    print(f"\n[3/10] Swapping audit columns (bronze -> silver-run)")
+    logger.info("[3/10] Swapping audit columns (bronze -> silver-run)")
     drop_cols = [c for c in source_df.columns if c in _BRONZE_AUDIT_COLS]
     if drop_cols:
         source_df = source_df.drop(*drop_cols)
@@ -223,47 +235,46 @@ def swap_audit_columns(source_df, meta):
         ingestion_timestamp = p_ingestion_timestamp,
         src_busn_asst       = meta["src_busn_asst"],
     )
-    print(f"  Replaced audit cols : {drop_cols or '(none found — added fresh)'}")
+    logger.info(f"Replaced audit cols: {drop_cols or '(none found — added fresh)'}")
     return source_df
 
 
 def deduplicate(source_df):
-    """Step 4 — remove duplicate rows by md5_hash. Returns (source_df, row_count)."""
-    print(f"\n[4/10] Deduplicating on md5_hash")
-    source_df = deduplicate_by_md5(source_df, label=p_source_table)  # noqa: F821  # type: ignore[name-defined]
-    return source_df, source_df.count()
+    """Step 4 — remove duplicate rows by md5_hash (lazy transform)."""
+    logger.info("[4/10] Deduplicating on md5_hash")
+    return deduplicate_by_md5(source_df, label=p_source_table, debug=p_debug)  # noqa: F821  # type: ignore[name-defined]
 
 
 def cast_and_default(source_df, meta):
     """Step 5 — cast bronze columns to silver types and replace null/blank/junk."""
-    print(f"\n[5/10] Casting bronze -> silver types + defaults")
+    logger.info("[5/10] Casting bronze -> silver types + defaults")
     source_df = cast_and_default_silver_columns(source_df, meta["mappings"])  # noqa: F821  # type: ignore[name-defined]
-    print(f"  Silver cast + defaults : {len(meta['mappings'])} columns typed & non-null")
+    logger.info(f"Silver cast + defaults: {len(meta['mappings'])} columns typed & non-null")
     return source_df
 
 
 def project_columns(source_df, meta):
     """Step 6 — keep only mapped silver columns + system columns (drop leaked ones)."""
-    print(f"\n[6/10] Projecting to mapped silver + system columns")
+    logger.info("[6/10] Projecting to mapped silver + system columns")
     mapped = [m["silver_column_name"] for m in meta["mappings"]
               if m["silver_column_name"] and m["silver_column_name"] in source_df.columns]
     system = [c for c in source_df.columns if c in (_BRONZE_AUDIT_COLS | {"md5_hash"})]
     keep   = list(dict.fromkeys(mapped + system))
     source_df = source_df.select(*keep)
-    print(f"  Projection : {len(mapped)} mapped + {len(system)} system column(s)")
+    logger.info(f"Projection: {len(mapped)} mapped + {len(system)} system column(s)")
     return source_df
 
 
 def validate(source_df, meta):
     """Step 7 — run silver validation checks (raises on a CRITICAL failure)."""
-    print(f"\n[7/10] Validating silver load")
+    logger.info("[7/10] Validating silver load")
     validate_silver_load(source_df, meta["mappings"], p_target_table, p_ingestion_date)  # noqa: F821  # type: ignore[name-defined]
 
 
 def write_silver(source_df, meta):
     """Step 8 — SCD2 merge or non-SCD append. Returns (rows_inserted, rows_updated)."""
     strategy = "SCD Type 2 (md5-only)" if meta["is_scd2"] else "SCD Type 1 (md5 insert-only)"
-    print(f"\n[8/10] Writing into {qualified_target}  [strategy: {strategy}]")
+    logger.info(f"[8/10] Writing into {qualified_target}  [strategy: {strategy}]")
     merge_start = time.time()
 
     if meta["is_scd2"]:
@@ -274,9 +285,10 @@ def write_silver(source_df, meta):
             effective_timestamp_val = p_ingestion_timestamp,
             partition_cols          = meta["partition_cols"],
             tbl_properties          = {"delta.enableChangeDataFeed": "true"},
+            debug                   = p_debug,
         )
-        print(f"  New records     : {rows_inserted:,}")
-        print(f"  Records expired : {rows_updated:,}")
+        logger.info(f"New records={rows_inserted}, Records expired={rows_updated}  "
+                    f"(-1 = present but not counted; enable p_debug for exact)")
     else:
         # Non-SCD append: add is_current, partition by ingestion_date (+ config),
         # replaceWhere the ingestion_date slice so re-runs replace rather than dup.
@@ -290,38 +302,44 @@ def write_silver(source_df, meta):
             partition_cols    = noscd_partition_cols,
             tbl_properties    = {"delta.enableChangeDataFeed": "true"},
             replace_where     = f"ingestion_date = '{p_ingestion_date}'",
+            debug             = p_debug,
         )
-        print(f"  Rows loaded     : {rows_inserted:,}  (replaceWhere ingestion_date={p_ingestion_date})")
+        logger.info(f"Rows loaded={rows_inserted} (replaceWhere ingestion_date={p_ingestion_date}; "
+                    f"-1 = written but not counted)")
 
-    print(f"  Merge duration  : {round(time.time() - merge_start, 6)}s")
+    logger.info(f"Merge duration: {round(time.time() - merge_start, 6)}s")
     return rows_inserted, rows_updated
 
 
 def enforce_not_null(meta):
     """Step 9 — SET NOT NULL on is_nullable=0 silver columns (no-op if no table yet)."""
-    print(f"\n[9/10] Enforcing NOT NULL on is_nullable=0 columns")
+    logger.info("[9/10] Enforcing NOT NULL on is_nullable=0 columns")
     nn_cols = enforce_silver_not_null(spark, qualified_target, meta["mappings"])  # noqa: F821  # type: ignore[name-defined]
-    print(f"  NOT NULL enforced : {len(nn_cols)} column(s)")
+    logger.info(f"NOT NULL enforced: {len(nn_cols)} column(s)")
 
 
 def verify_target():
-    """Step 10 — count rows in the target table (0 if it does not exist yet)."""
-    print(f"\n[10/10] Verifying target")
+    """Step 10 — count rows in the target table (operational only). Returns -1 when
+    p_debug is False (count skipped)."""
+    logger.info("[10/10] Verifying target")
+    if not p_debug:
+        logger.info("Target row count skipped (p_debug=False)")
+        return -1
     count = (
         spark.table(qualified_target).count()
         if spark.catalog.tableExists(qualified_target) else 0
     )
-    print(f"  Rows in {qualified_target} : {count:,}")
+    logger.info(f"Rows in {qualified_target}: {count:,}")
     return count
 
 
 def refresh_silver_s2_mlv(meta):
     """Non-fatal tail — refresh/create the silver_s2 materialized lake view(s).
     silver_s1 already loaded; a stale/failed MLV is logged as a WARNING. Change the
-    `print` in the except to `raise` to make it fail the pipeline activity instead."""
-    print(f"\n[MLV] Refreshing/creating silver_s2 materialized lake view(s) for '{p_target_table}'")
+    `logger.warning` in the except to `raise` to fail the pipeline activity instead."""
+    logger.info(f"[MLV] Refreshing/creating silver_s2 materialized lake view(s) for '{p_target_table}'")
     if not spark.catalog.tableExists(qualified_target):
-        print(f"  SKIP: '{qualified_target}' does not exist (no data loaded) — MLV refresh skipped.")
+        logger.info(f"SKIP: '{qualified_target}' does not exist (no data loaded) — MLV refresh skipped.")
         return
 
     mlv_lh     = "lh_silver"
@@ -330,7 +348,7 @@ def refresh_silver_s2_mlv(meta):
     derived    = _SILVER_S2_DERIVED_COLUMNS.get(p_target_table, [])
     col_list   = ",\n               ".join(base_cols + derived)
     if derived:
-        print(f"  Derived s2 cols : {', '.join(derived)}")
+        logger.info(f"Derived s2 cols: {', '.join(derived)}")
 
     if meta["is_scd2"]:
         mlv_targets = [
@@ -349,9 +367,9 @@ def refresh_silver_s2_mlv(meta):
                 col_list     = col_list,
                 where_clause = mlv_where,
             )
-            print(f"  {status.upper():<9} {mlv_name}")
+            logger.info(f"{status.upper():<9} {mlv_name}")
     except Exception as mlv_exc:
-        print(f"  WARNING: MLV refresh/create failed for '{p_target_table}': {mlv_exc}")
+        logger.warning(f"MLV refresh/create failed for '{p_target_table}': {mlv_exc}")
 
 
 # In[ ]:
@@ -361,38 +379,57 @@ def refresh_silver_s2_mlv(meta):
 # SECTION 3 — Driver
 # Runs the steps in order. One try/except: on any failure, log it and re-raise so
 # the pipeline marks the activity as failed. The 0-row skip is a plain `if`.
+#
+# Performance: the transformed frame is cached ONCE (persist) and counted ONCE.
+# That single count materialises the read->dedup->cast->project chain, and both
+# validate() and write_silver() then read the cached data instead of recomputing
+# the whole chain per action. The cache is released after the write.
 # ══════════════════════════════════════════════════════════════════════════════
 
-print("=" * 65)
-print("  nb_silver_s1_ingestion_v2 — START")
-print("=" * 65)
-print(f"  source          : {qualified_source}")
-print(f"  target          : {qualified_target}")
-print(f"  ingestion_date  : {p_ingestion_date}")
-print(f"  ingestion_run_id: {p_ingestion_run_id}")
-print("=" * 65)
+logger.info("=" * 55)
+logger.info("nb_silver_s1_ingestion_v2 — START")
+logger.info(f"source={qualified_source} | target={qualified_target} | "
+            f"ingestion_date={p_ingestion_date} | run_id={p_ingestion_run_id}")
 
 rows_inserted    = 0
 rows_updated     = 0
 source_row_count = 0
 target_row_count = 0
 meta             = None
+source_df        = None
 
 try:
     meta = resolve_metadata()
 
-    source_df, source_row_count = read_bronze_source()
+    source_df = read_bronze_source()
     source_df = swap_audit_columns(source_df, meta)
-    source_df, source_row_count = deduplicate(source_df)
+    source_df = deduplicate(source_df)
     source_df = cast_and_default(source_df, meta)
     source_df = project_columns(source_df, meta)
 
-    if source_row_count > 0:
+    # Cache the fully-transformed frame. The 0-row skip is driven by a cheap
+    # existence check (take(1)); the exact source count is operational only, so it
+    # is taken solely in debug. Either way one full materialisation of the source
+    # chain occurs (existence check or the first validate/write action), and
+    # validate() / write_silver() reuse the cached data.
+    source_df = source_df.persist()
+    source_has_rows  = bool(source_df.take(1))
+    source_row_count = source_df.count() if p_debug else (-1 if source_has_rows else 0)
+    logger.info(f"Source has rows: {source_has_rows}"
+                + (f" | count={source_row_count:,}" if p_debug else " (exact count skipped, p_debug=False)"))
+    if not source_has_rows:
+        logger.warning(f"No source rows for ingestion_date={p_ingestion_date} — "
+                       f"silver table will not be updated.")
+
+    if source_has_rows:
         validate(source_df, meta)
         rows_inserted, rows_updated = write_silver(source_df, meta)
     else:
-        print("\n[7-8/10] Validate + write SKIPPED — 0 source rows for "
-              f"ingestion_date={p_ingestion_date}. Silver table left unchanged.")
+        logger.info(f"[7-8/10] Validate + write SKIPPED — 0 source rows for "
+                    f"ingestion_date={p_ingestion_date}. Silver table left unchanged.")
+
+    # Done reading source_df — release the cache before the target-side steps.
+    source_df.unpersist()
 
     enforce_not_null(meta)
     target_row_count = verify_target()
@@ -401,28 +438,35 @@ try:
         notebook_name  = "nb_silver_s1_ingestion_v2",
         table_name     = qualified_target,
         operation_type = "MERGE",
-        rows_before    = target_row_count - rows_inserted,
-        rows_after     = target_row_count,
+        # Row counts are -1 when p_debug is False (operational counts skipped).
+        rows_before    = (target_row_count - rows_inserted) if p_debug else -1,
+        rows_after     = target_row_count if p_debug else -1,
         execution_time = round(time.time() - _notebook_start, 6),
         message        = (
             f"source={qualified_source} | entity={meta['entity_name']} | "
-            f"inserted={rows_inserted} | updated={rows_updated} | run_id={p_ingestion_run_id}"
+            f"inserted={rows_inserted} | updated={rows_updated} | "
+            f"debug={p_debug} | run_id={p_ingestion_run_id}"
         ),
     )
 
-    print("\n" + "=" * 65)
-    print("  nb_silver_s1_ingestion_v2 — COMPLETE")
-    print(f"  source          : {qualified_source}")
-    print(f"  target          : {qualified_target}")
-    print(f"  entity          : {meta['entity_name']}")
-    print(f"  source_rows     : {source_row_count:,}")
-    print(f"  rows_inserted   : {rows_inserted:,}")
-    print(f"  rows_updated    : {rows_updated:,}")
-    print(f"  target_total    : {target_row_count:,}")
-    print(f"  ingestion_run_id: {p_ingestion_run_id}")
-    print("=" * 65)
+    logger.info("=" * 55)
+    logger.info("nb_silver_s1_ingestion_v2 — COMPLETE")
+    logger.info(f"source={qualified_source} | target={qualified_target} | "
+                f"entity={meta['entity_name']}")
+    logger.info(f"source_rows={source_row_count} | rows_inserted={rows_inserted} | "
+                f"rows_updated={rows_updated} | target_total={target_row_count} | "
+                f"debug={p_debug} | run_id={p_ingestion_run_id}  "
+                f"(-1 = not counted; set p_debug=True for exact figures)")
+    logger.info("=" * 55)
 
 except Exception as _exc:
+    logger.error(f"FAILED — source={p_source_table} | run_id={p_ingestion_run_id} | {_exc}")
+    # Best-effort cache release on failure.
+    try:
+        if source_df is not None:
+            source_df.unpersist()
+    except Exception:
+        pass
     log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]
         notebook_name  = "nb_silver_s1_ingestion_v2",
         table_name     = qualified_target,

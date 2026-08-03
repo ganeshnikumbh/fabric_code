@@ -95,6 +95,8 @@ p_source_system         = ""    # e.g. 'HubSpot', 'Webex', 'EQ_Warehouse'
 p_ingestion_run_id      = ""    # UUID from pipeline
 p_ingestion_timestamp   = ""    # e.g. '2025-04-09T01:00:00Z'
 p_context_json          = "{}"  # optional — JSON with pipeline context for N/A schema_config rows
+p_debug                 = False  # OPTIONAL — True = take exact row counts for logging.
+                                 # False (default) skips operational row counts.
 
 
 # In[ ]:
@@ -173,10 +175,13 @@ try:
             f"Ensure lh_landing is added to this notebook session.\n{e}"
         )
 
-    source_row_count = source_df.count()
-    print(f"  Rows read : {source_row_count:,}")
+    # Exact count is operational only — take it in debug; otherwise use a cheap
+    # existence check just for the empty-source warning.
+    _source_has_rows = bool(source_df.take(1))
+    source_row_count = source_df.count() if p_debug else (-1 if _source_has_rows else 0)
+    print(f"  Rows read : {source_row_count if p_debug else '(count skipped, p_debug=False)'}")
 
-    if source_row_count == 0:
+    if not _source_has_rows:
         print("  WARNING: Source table is empty. Writing zero rows to Bronze.")
 
 
@@ -435,8 +440,9 @@ try:
     )
     final_df = compute_md5_hash(final_df, hash_cols_ordered)  # noqa: F821  # type: ignore[name-defined]
 
-    final_row_count = final_df.count()
-    print(f"  Rows to write : {final_row_count:,}")
+    # Operational count only — the write does not need it. Take it in debug only.
+    final_row_count = final_df.count() if p_debug else -1
+    print(f"  Rows to write : {final_row_count if p_debug else '(count skipped, p_debug=False)'}")
 
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -448,7 +454,8 @@ try:
     print(f"\n[5/5] Target table validation & write")
 
     table_exists = spark.catalog.tableExists(qualified_target)
-    rows_before  = spark.table(qualified_target).count() if table_exists else 0
+    # Operational count only (feeds the LOAD audit row) — take it in debug only.
+    rows_before  = (spark.table(qualified_target).count() if table_exists else 0) if p_debug else -1
 
     print(f"  Target : lh_bronze.{qualified_target}")
     print(f"  Exists : {table_exists}")
@@ -471,8 +478,9 @@ try:
         print(f"  Written to : lh_bronze.{qualified_target}")
 
     _write_secs    = round(time.time() - _write_start, 6)
-    verified_count = spark.table(qualified_target).count()
-    print(f"  Verified rows in target : {verified_count:,}")
+    # Operational count only (feeds the LOAD audit row) — take it in debug only.
+    verified_count = spark.table(qualified_target).count() if p_debug else -1
+    print(f"  Verified rows in target : {verified_count if p_debug else '(count skipped, p_debug=False)'}")
 
     log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]
         notebook_name  = "nb_load_landing_to_bronze_v3",
@@ -488,9 +496,10 @@ try:
     print("  nb_load_landing_to_bronze_v3 — COMPLETE")
     print(f"  landing_table   : {p_landing_table_name}")
     print(f"  bronze_table    : lh_bronze.{qualified_target}")
-    print(f"  rows_read       : {source_row_count:,}")
-    print(f"  rows_written    : {final_row_count:,}")
-    print(f"  rows_in_target  : {verified_count:,}")
+    _fmt = (lambda v: f"{v:,}") if p_debug else (lambda v: "(skipped, p_debug=False)")
+    print(f"  rows_read       : {_fmt(source_row_count)}")
+    print(f"  rows_written    : {_fmt(final_row_count)}")
+    print(f"  rows_in_target  : {_fmt(verified_count)}")
     print(f"  ingestion_run_id: {p_ingestion_run_id}")
     print("=" * 65)
 

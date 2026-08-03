@@ -56,6 +56,46 @@ spark = SparkSession.builder.appName("nb_utils").getOrCreate()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Notebook logger  (merged from Utilities_Logger_8617)
+# Lightweight, dependency-free logger for notebook console output. Each message
+# is timestamped (UTC), levelled, and tagged with the notebook name. Create one
+# per notebook with create_logger("<notebook name>") and call
+# logger.info / warning / error / debug. This is separate from `_logger` further
+# below (Python logging, used internally by nb_utils' own functions).
+# ─────────────────────────────────────────────────────────────────────────────
+
+from datetime import datetime as _dt
+
+
+class Logger:
+    """Lightweight notebook logger — info/warning/error/debug print a formatted line."""
+
+    def __init__(self, notebook_name: str):
+        self._notebook_name = notebook_name
+
+    def info(self, message: str) -> None:
+        self._write("INFO", message)
+
+    def warning(self, message: str) -> None:
+        self._write("WARNING", message)
+
+    def error(self, message: str) -> None:
+        self._write("ERROR", message)
+
+    def debug(self, message: str) -> None:
+        self._write("DEBUG", message)
+
+    def _write(self, level: str, message: str) -> None:
+        timestamp = _dt.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+        print(f"[{timestamp}] [{level}] [{self._notebook_name}] {message}")
+
+
+def create_logger(notebook_name: str) -> "Logger":
+    """Factory — return a Logger tagged with notebook_name."""
+    return Logger(notebook_name)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Core SQL DB readers  (com.microsoft.sqlserver.jdbc.spark connector)
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -1068,7 +1108,7 @@ def compute_md5_hash(df, hash_cols_ordered: list):
     return result_df
 
 
-def deduplicate_by_md5(df, label: str = ""):
+def deduplicate_by_md5(df, label: str = "", debug: bool = False):
     """
     Remove duplicate rows from a DataFrame based on the md5_hash column.
 
@@ -1080,6 +1120,9 @@ def deduplicate_by_md5(df, label: str = ""):
     ----------
     df    : Input DataFrame.  Must contain an 'md5_hash' column.
     label : Optional descriptive label printed in the log line (e.g. table name).
+    debug : When True, count rows before/after and log how many duplicates were
+            removed. When False (default), skip those two counts entirely — the
+            dedup still happens, only the operational log line is suppressed.
 
     Returns
     -------
@@ -1089,15 +1132,18 @@ def deduplicate_by_md5(df, label: str = ""):
     -------
     source_df = deduplicate_by_md5(source_df, label="client_base")
     """
-    before  = df.count()
     deduped = df.dropDuplicates(["md5_hash"])
-    after   = deduped.count()
-    removed = before - after
-    prefix  = f"[{label}] " if label else ""
-    if removed > 0:
-        print(f"  {prefix}Deduplication : {removed:,} duplicate(s) removed  ({before:,} → {after:,} rows)")
-    else:
-        print(f"  {prefix}Deduplication : no duplicates found  ({before:,} rows)")
+    # The before/after counts are for operational logging only — dropDuplicates
+    # itself needs no count. Skip them unless debug is on (two full scans saved).
+    if debug:
+        before  = df.count()
+        after   = deduped.count()
+        removed = before - after
+        prefix  = f"[{label}] " if label else ""
+        if removed > 0:
+            print(f"  {prefix}Deduplication : {removed:,} duplicate(s) removed  ({before:,} → {after:,} rows)")
+        else:
+            print(f"  {prefix}Deduplication : no duplicates found  ({before:,} rows)")
     return deduped
 
 
@@ -1375,6 +1421,7 @@ def apply_scd2(
     partition_cols: list = None,
     tbl_properties: dict = None,
     audit_values: dict = None,
+    debug: bool = False,
 ) -> tuple:
     """
     Apply SCD Type 2 (md5-hash-only) merge strategy into a Delta table.
@@ -1408,9 +1455,17 @@ def apply_scd2(
                               When None (e.g. the silver path, which adds its own
                               audit columns before calling), nothing is appended.
 
+    debug                   : When True, take exact row counts (new / expired /
+                              reactivated) for logging. When False (default),
+                              control flow uses cheap existence checks instead and
+                              the returned counts are -1 ("change present, not
+                              counted") or 0 ("none"). The merge/expire/append
+                              decisions are identical either way.
+
     Returns
     -------
-    tuple  (rows_inserted: int, rows_updated: int)
+    tuple  (rows_inserted: int, rows_updated: int). With debug=False a non-zero
+           change is reported as -1 (exact figure not taken).
     """
     _OPEN_TS   = "9999-12-31 00:00:00"
     _tbl_props = tbl_properties or {"delta.enableChangeDataFeed": "true"}
@@ -1446,87 +1501,121 @@ def apply_scd2(
         # First run — write the full source as the initial state
         _logger.info("[apply_scd2] '%s' does not exist — creating via full write", qualified_target)
         write_delta_create(source_df, qualified_target, partition_cols, _tbl_props)
-        rows_inserted = source_df.count()
+        # Count is operational only (the write already happened) — take it only in debug.
+        rows_inserted = source_df.count() if debug else -1
 
     else:
-        target_df = spark.table(qualified_target)
-
-        # New records: source md5 does NOT appear anywhere in the target
-        new_records_df = source_df.join(
-            target_df.select("md5_hash"),
-            on  = "md5_hash",
-            how = "left_anti",
+        # ── Lean target "proxy" for all comparisons ──────────────────────────
+        # Every detection below matches on md5_hash only (plus is_current to
+        # split active/expired) — never on the payload columns. So read just those
+        # two columns from the target instead of the full, possibly very wide row
+        # (e.g. EQ_Warehouse, which carries full history every run), and cache it.
+        # The whole target is scanned ONCE into this small frame and reused by the
+        # new / expire / reactivate detections instead of three separate wide reads.
+        target_keys = (
+            spark.table(qualified_target)
+            .select("md5_hash", "is_current")
+            .persist()
         )
+        try:
+            src_md5 = source_df.select("md5_hash")
 
-        # Expired records: currently-active target rows whose md5 is absent from source
-        expired_df = (
-            target_df
-            .filter(F.col("is_current") == 1)
-            .join(source_df.select("md5_hash"), on="md5_hash", how="left_anti")
-            .select("md5_hash")
-        )
+            # New records: source md5 absent anywhere in target. Built from the
+            # FULL source_df (not the lean proxy) because the append needs all
+            # payload columns.
+            new_records_df = source_df.join(
+                target_keys.select("md5_hash"),
+                on="md5_hash", how="left_anti",
+            )
 
-        rows_inserted = new_records_df.count()
-        rows_updated  = expired_df.count()
-        _logger.info(
-            "[apply_scd2] %s — new=%d, to_expire=%d",
-            qualified_target, rows_inserted, rows_updated,
-        )
+            # Expired: currently-active target md5 that is absent from source.
+            expired_df = (
+                target_keys.filter(F.col("is_current") == 1).select("md5_hash")
+                .join(src_md5, on="md5_hash", how="left_anti")
+            )
 
-        # Expire stale active records — match on md5_hash AND is_current=1 so
-        # already-expired history rows are never touched
-        if rows_updated > 0:
-            (
-                _DeltaTable.forName(spark, qualified_target).alias("tgt")
-                .merge(
-                    source    = expired_df.alias("src"),
-                    condition = "tgt.md5_hash = src.md5_hash AND tgt.is_current = 1",
+            # Reactivate: previously-expired target md5 that reappears in source.
+            # md5 is unique across the table, so a matched md5 sits on exactly one
+            # row; if expired we set it active again and reopen its expiration.
+            reactivate_df = (
+                target_keys.filter(F.col("is_current") == 0).select("md5_hash").distinct()
+                .join(src_md5.distinct(), on="md5_hash", how="inner")
+            )
+
+            # Control flow is driven by cheap EXISTENCE checks (take(1) stops at
+            # the first row) — never by a full count. Exact counts are operational
+            # only, so they are taken solely in debug; otherwise the returned
+            # figures are -1 ("change present, not counted") or 0 ("none").
+            has_new   = bool(new_records_df.take(1))
+            has_exp   = bool(expired_df.take(1))
+            has_react = bool(reactivate_df.take(1))
+
+            if debug:
+                rows_inserted    = new_records_df.count()
+                rows_updated     = expired_df.count()
+                rows_reactivated = reactivate_df.count()
+                _logger.info(
+                    "[apply_scd2] %s — new=%d, to_expire=%d, to_reactivate=%d",
+                    qualified_target, rows_inserted, rows_updated, rows_reactivated,
                 )
-                .whenMatchedUpdate(set={
-                    "is_current":           F.lit(0).cast(IntegerType()),
-                    "expiration_timestamp": _eff_ts,
-                })
-                .execute()
-            )
-            _logger.info("[apply_scd2] Expired %d record(s) in '%s'", rows_updated, qualified_target)
+            else:
+                rows_inserted    = -1 if has_new   else 0
+                rows_updated     = -1 if has_exp   else 0
+                rows_reactivated = -1 if has_react else 0
 
-        # Reactivate matched records — md5 present in source but currently
-        # expired in target. md5 is unique across the table (new rows are only
-        # inserted when the md5 is absent), so a matched md5 sits on exactly one
-        # row; if that row is expired we set it active again (is_current=1) and
-        # reopen its expiration instead of leaving it expired.
-        reactivate_df = (
-            target_df.filter(F.col("is_current") == 0).select("md5_hash").distinct()
-            .join(source_df.select("md5_hash").distinct(), on="md5_hash", how="inner")
-        )
-        rows_reactivated = reactivate_df.count()
-        _logger.info("rows need reactivation '%s'", rows_reactivated)
-
-        if rows_reactivated > 0:
-            (
-                _DeltaTable.forName(spark, qualified_target).alias("tgt")
-                .merge(
-                    source    = reactivate_df.alias("src"),
-                    condition = "tgt.md5_hash = src.md5_hash AND tgt.is_current = 0",
+            # Only touch the table when something actually changed. Each block is
+            # additionally guarded, so a no-op run performs zero MERGE/append.
+            if not (has_new or has_exp or has_react):
+                _logger.info(
+                    "[apply_scd2] No changes for '%s' — skipping merge/append.",
+                    qualified_target,
                 )
-                .whenMatchedUpdate(set={
-                    "is_current":           F.lit(1).cast(IntegerType()),
-                    "expiration_timestamp": F.lit(_OPEN_TS).cast(TimestampType()),
-                })
-                .execute()
-            )
-            _logger.info("[apply_scd2] Reactivated %d record(s) in '%s'", rows_reactivated, qualified_target)
 
-        # Append new / changed records — md5 uniqueness guaranteed by left_anti above
-        if rows_inserted > 0:
-            (
-                new_records_df.write
-                .format("delta")
-                .option("mergeSchema", "true")
-                .mode("append")
-                .saveAsTable(qualified_target)
-            )
-            _logger.info("[apply_scd2] Appended %d new record(s) to '%s'", rows_inserted, qualified_target)
+            # Expire stale active records — match on md5_hash AND is_current=1 so
+            # already-expired history rows are never touched.
+            if has_exp:
+                (
+                    _DeltaTable.forName(spark, qualified_target).alias("tgt")
+                    .merge(
+                        source    = expired_df.alias("src"),
+                        condition = "tgt.md5_hash = src.md5_hash AND tgt.is_current = 1",
+                    )
+                    .whenMatchedUpdate(set={
+                        "is_current":           F.lit(0).cast(IntegerType()),
+                        "expiration_timestamp": _eff_ts,
+                    })
+                    .execute()
+                )
+                _logger.info("[apply_scd2] Expired active record(s) in '%s' (n=%s)", qualified_target, rows_updated)
+
+            # Reactivate — set is_current=1 and reopen expiration for returning md5.
+            if has_react:
+                (
+                    _DeltaTable.forName(spark, qualified_target).alias("tgt")
+                    .merge(
+                        source    = reactivate_df.alias("src"),
+                        condition = "tgt.md5_hash = src.md5_hash AND tgt.is_current = 0",
+                    )
+                    .whenMatchedUpdate(set={
+                        "is_current":           F.lit(1).cast(IntegerType()),
+                        "expiration_timestamp": F.lit(_OPEN_TS).cast(TimestampType()),
+                    })
+                    .execute()
+                )
+                _logger.info("[apply_scd2] Reactivated record(s) in '%s' (n=%s)", qualified_target, rows_reactivated)
+
+            # Append new / changed records — md5 uniqueness guaranteed by left_anti.
+            if has_new:
+                (
+                    new_records_df.write
+                    .format("delta")
+                    .option("mergeSchema", "true")
+                    .mode("append")
+                    .saveAsTable(qualified_target)
+                )
+                _logger.info("[apply_scd2] Appended new record(s) to '%s' (n=%s)", qualified_target, rows_inserted)
+        finally:
+            target_keys.unpersist()
 
     return rows_inserted, rows_updated
 
@@ -1647,6 +1736,7 @@ def apply_noscd(
     tbl_properties: dict = None,
     audit_values: dict = None,
     replace_where: str = None,
+    debug: bool = False,
 ) -> tuple:
     """
     Non-SCD load into a Delta table — no merge, no per-row updates.
@@ -1698,7 +1788,9 @@ def apply_noscd(
         source_df = add_audit_columns(source_df, **audit_values)
 
     table_exists  = spark.catalog.tableExists(qualified_target)
-    rows_inserted = source_df.count()
+    # Count is operational only — the write below does not need it. Take it only
+    # in debug; otherwise report -1 ("written, not counted").
+    rows_inserted = source_df.count() if debug else -1
     rows_updated  = 0
 
     if not table_exists:
@@ -1717,7 +1809,7 @@ def apply_noscd(
             .saveAsTable(qualified_target)
         )
         _logger.info(
-            "[apply_noscd] Replaced slice WHERE %s in '%s' with %d row(s)",
+            "[apply_noscd] Replaced slice WHERE %s in '%s' (n=%s)",
             replace_where, qualified_target, rows_inserted,
         )
 
@@ -1729,7 +1821,7 @@ def apply_noscd(
             .mode("append")
             .saveAsTable(qualified_target)
         )
-        _logger.info("[apply_noscd] Appended %d row(s) to '%s'", rows_inserted, qualified_target)
+        _logger.info("[apply_noscd] Appended row(s) to '%s' (n=%s)", qualified_target, rows_inserted)
 
     return rows_inserted, rows_updated
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1758,8 +1850,10 @@ def ensure_mlv_and_refresh(
                                   columns take effect (a REFRESH would keep the
                                   old definition and never pick them up).
       - view exists, columns
-        unchanged               → REFRESH MATERIALIZED LAKE VIEW <view> FULL
-                                  (recompute from source rather than incremental)
+        unchanged               → REFRESH MATERIALIZED LAKE VIEW <view>
+                                  (INCREMENTAL — only changed data recomputed;
+                                  automatically falls back to FULL if the engine
+                                  rejects incremental for this view's shape)
 
     The structure check compares the view's current columns against the columns
     the SELECT would produce, resolved via a zero-row probe (schema only, no data
@@ -1834,8 +1928,19 @@ def ensure_mlv_and_refresh(
         _create()
         return "recreated"
 
-    spark.sql(f"REFRESH MATERIALIZED LAKE VIEW {view_name} FULL")
-    _logger.info("[ensure_mlv_and_refresh] Refreshed '%s'", view_name)
+    # ── Structure unchanged → refresh. Prefer INCREMENTAL (only changed data is
+    # recomputed); fall back to FULL if the engine rejects incremental for this
+    # view's shape (some operators are not incrementally refreshable). ──────────
+    try:
+        spark.sql(f"REFRESH MATERIALIZED LAKE VIEW {view_name}")
+        _logger.info("[ensure_mlv_and_refresh] Refreshed '%s' (incremental)", view_name)
+    except Exception as _inc_exc:
+        _logger.warning(
+            "[ensure_mlv_and_refresh] Incremental refresh failed for '%s' (%s) — "
+            "falling back to FULL.", view_name, _inc_exc,
+        )
+        spark.sql(f"REFRESH MATERIALIZED LAKE VIEW {view_name} FULL")
+        _logger.info("[ensure_mlv_and_refresh] Refreshed '%s' (full fallback)", view_name)
     return "refreshed"
 
 
