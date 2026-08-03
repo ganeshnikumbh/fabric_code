@@ -1751,10 +1751,22 @@ def ensure_mlv_and_refresh(
     a Warehouse Materialized View.
 
     Behaviour:
-      - view exists  → REFRESH MATERIALIZED LAKE VIEW <view> FULL
-                       (recompute from source rather than incremental)
-      - view missing → CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS <view>
-                       selecting col_list FROM source_ref with where_clause.
+      - view missing            → CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS
+                                  <view> selecting col_list FROM source_ref.
+      - view exists, columns
+        changed vs col_list     → DROP + CREATE, so added/removed/renamed
+                                  columns take effect (a REFRESH would keep the
+                                  old definition and never pick them up).
+      - view exists, columns
+        unchanged               → REFRESH MATERIALIZED LAKE VIEW <view> FULL
+                                  (recompute from source rather than incremental)
+
+    The structure check compares the view's current columns against the columns
+    the SELECT would produce, resolved via a zero-row probe (schema only, no data
+    scanned). Only the COLUMN SET is compared — a change to where_clause alone,
+    or a column type change with the same names, is NOT detected and results in a
+    plain refresh. If the desired schema cannot be resolved, the view is refreshed
+    (never dropped) and a warning is logged.
 
     Parameters
     ----------
@@ -1769,21 +1781,62 @@ def ensure_mlv_and_refresh(
 
     Returns
     -------
-    str  'refreshed' if the view already existed, 'created' otherwise.
+    str  'created'   — view did not exist and was created,
+         'recreated' — view existed but its column set changed (dropped + created),
+         'refreshed' — view existed with an unchanged column set (refreshed FULL).
     """
-    if spark.catalog.tableExists(view_name):
-        spark.sql(f"REFRESH MATERIALIZED LAKE VIEW {view_name} FULL")
-        _logger.info("[ensure_mlv_and_refresh] Refreshed '%s'", view_name)
-        return "refreshed"
+    def _create():
+        spark.sql(f"""
+            CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS {view_name} AS
+            SELECT {col_list}
+            FROM   {source_ref}
+            {where_clause}
+        """)
 
-    spark.sql(f"""
-        CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS {view_name} AS
-        SELECT {col_list}
-        FROM   {source_ref}
-        {where_clause}
-    """)
-    _logger.info("[ensure_mlv_and_refresh] Created '%s'", view_name)
-    return "created"
+    # ── View does not exist → create it ──────────────────────────────────────
+    if not spark.catalog.tableExists(view_name):
+        _create()
+        _logger.info("[ensure_mlv_and_refresh] Created '%s'", view_name)
+        return "created"
+
+    # ── View exists → detect a column-set change ─────────────────────────────
+    # A REFRESH keeps the existing view definition, so a changed SELECT column
+    # list (e.g. a newly added derived column) is only picked up by recreating.
+    # The desired columns are resolved with a zero-row probe of the SELECT — this
+    # reads only schema (no data scan) and correctly resolves expression aliases
+    # such as "CAST(start_timestamp AS DATE) AS start_date".
+    try:
+        desired_cols = spark.sql(
+            f"SELECT {col_list} FROM {source_ref} {where_clause} LIMIT 0"
+        ).columns
+        current_cols = spark.table(view_name).columns
+        structure_changed = set(desired_cols) != set(current_cols)
+    except Exception as _probe_exc:
+        # If the desired schema can't be resolved, do NOT risk dropping a healthy
+        # view — fall back to a plain refresh and surface the reason.
+        _logger.warning(
+            "[ensure_mlv_and_refresh] Could not resolve desired schema for '%s' "
+            "(%s) — refreshing without structure check.", view_name, _probe_exc,
+        )
+        structure_changed = False
+
+    if structure_changed:
+        _current_set = set(current_cols)
+        _desired_set = set(desired_cols)
+        _logger.info(
+            "[ensure_mlv_and_refresh] Structure change for '%s' — recreating "
+            "(added=%s, removed=%s)",
+            view_name,
+            [c for c in desired_cols if c not in _current_set],
+            [c for c in current_cols if c not in _desired_set],
+        )
+        spark.sql(f"DROP MATERIALIZED LAKE VIEW IF EXISTS {view_name}")
+        _create()
+        return "recreated"
+
+    spark.sql(f"REFRESH MATERIALIZED LAKE VIEW {view_name} FULL")
+    _logger.info("[ensure_mlv_and_refresh] Refreshed '%s'", view_name)
+    return "refreshed"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
