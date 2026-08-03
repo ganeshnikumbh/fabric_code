@@ -1,18 +1,19 @@
 {
+  "table_name": "contact",
+  "description": "Salesforce Contact object — one row per Contact record from the SOQL query. Records extracted from each page's 'records' array. Custom fields (suffix _c) are org-specific.",
+  "source_path": "records",
+  "context_fields": [],
   "fields": [
     {"column": "attributes_type", "source": "attributes.type", "type": "string"},
     {"column": "attributes_url", "source": "attributes.url", "type": "string"},
-
     {"column": "id", "source": "Id", "type": "string"},
     {"column": "first_name", "source": "FirstName", "type": "string"},
     {"column": "last_name", "source": "LastName", "type": "string"},
     {"column": "salutation", "source": "Salutation", "type": "string"},
-
     {"column": "account_id", "source": "AccountId", "type": "string"},
     {"column": "reports_to_id", "source": "ReportsToId", "type": "string"},
     {"column": "owner_id", "source": "OwnerId", "type": "string"},
     {"column": "master_record_id", "source": "MasterRecordId", "type": "string"},
-
     {"column": "email", "source": "Email", "type": "string"},
     {"column": "phone", "source": "Phone", "type": "string"},
     {"column": "mobile_phone", "source": "MobilePhone", "type": "string"},
@@ -21,18 +22,15 @@
     {"column": "fax", "source": "Fax", "type": "string"},
     {"column": "assistant_name", "source": "AssistantName", "type": "string"},
     {"column": "assistant_phone", "source": "AssistantPhone", "type": "string"},
-
     {"column": "title", "source": "Title", "type": "string"},
     {"column": "department", "source": "Department", "type": "string"},
     {"column": "lead_source", "source": "LeadSource", "type": "string"},
     {"column": "description", "source": "Description", "type": "string"},
     {"column": "birthdate", "source": "Birthdate", "type": "string"},
-
     {"column": "has_opted_out_of_email", "source": "HasOptedOutOfEmail", "type": "boolean"},
     {"column": "is_email_bounced", "source": "IsEmailBounced", "type": "boolean"},
     {"column": "email_bounced_date", "source": "EmailBouncedDate", "type": "string"},
     {"column": "email_bounced_reason", "source": "EmailBouncedReason", "type": "string"},
-
     {"column": "mailing_street", "source": "MailingStreet", "type": "string"},
     {"column": "mailing_city", "source": "MailingCity", "type": "string"},
     {"column": "mailing_state", "source": "MailingState", "type": "string"},
@@ -43,17 +41,14 @@
     {"column": "other_state", "source": "OtherState", "type": "string"},
     {"column": "other_postal_code", "source": "OtherPostalCode", "type": "string"},
     {"column": "other_country", "source": "OtherCountry", "type": "string"},
-
     {"column": "last_activity_date", "source": "LastActivityDate", "type": "string"},
     {"column": "last_viewed_date", "source": "LastViewedDate", "type": "string"},
     {"column": "last_referenced_date", "source": "LastReferencedDate", "type": "string"},
     {"column": "is_deleted", "source": "IsDeleted", "type": "boolean"},
-
     {"column": "created_by_id", "source": "CreatedById", "type": "string"},
     {"column": "created_date", "source": "CreatedDate", "type": "string"},
     {"column": "last_modified_by_id", "source": "LastModifiedById", "type": "string"},
     {"column": "last_modified_date", "source": "LastModifiedDate", "type": "string"},
-
     {"column": "nickname_c", "source": "Nickname__c", "type": "string"},
     {"column": "alternate_name_c", "source": "Alternate_Name__c", "type": "string"},
     {"column": "agent_id_c", "source": "Agent_ID__c", "type": "string"},
@@ -78,7 +73,6 @@
     {"column": "goals_del_c", "source": "Goals_del__c", "type": "string"},
     {"column": "hobbies_del_c", "source": "Hobbies_del__c", "type": "string"},
     {"column": "other_personal_information_del_c", "source": "Other_Personal_Information_del__c", "type": "string"},
-
     {"column": "licensed_del_c", "source": "Licensed_del__c", "type": "boolean"},
     {"column": "sync_with_salesforce_c", "source": "Sync_with_Salesforce__c", "type": "boolean"},
     {"column": "do_not_mail_c", "source": "Do_Not_Mail__c", "type": "boolean"},
@@ -86,7 +80,6 @@
     {"column": "do_not_email_for_c", "source": "Do_Not_Email_FOR__c", "type": "boolean"},
     {"column": "do_not_email_per_related_account_c", "source": "Do_Not_Email_per_Related_Account__c", "type": "boolean"},
     {"column": "supress_hubspot_integration_c", "source": "Supress_HubSpot_Integration__c", "type": "boolean"},
-
     {"column": "salesvue_salesvue_add_to_plan_ids_c", "source": "SalesVue__Salesvue_Add_To_Plan_Ids__c", "type": "string"},
     {"column": "salesvue_salesvue_plan_status_c", "source": "SalesVue__Salesvue_Plan_Status__c", "type": "string"},
     {"column": "salesvue_salesvue_remove_from_plan_ids_c", "source": "SalesVue__Salesvue_Remove_From_Plan_Ids__c", "type": "string"},
