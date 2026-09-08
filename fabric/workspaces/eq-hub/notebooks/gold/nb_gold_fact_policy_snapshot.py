@@ -5,14 +5,28 @@
 # 
 # New notebook
 
-# In[21]:
+# In[ ]:
+
+
+# The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
+# %%configure
+# {
+#     "defaultLakehouse": {
+#         "name":        { "variableName": "$(/**/vl_lakehouse_config/lh_silver_name)" },
+#         "id":          { "variableName": "$(/**/vl_lakehouse_config/lh_silver_id)" },
+#         "workspaceId": { "variableName": "$(/**/vl_lakehouse_config/lh_workspace_id)" }
+#     }
+# }
+
+
+# In[ ]:
 
 
 # The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
 # %run nb_utils.py
 
 
-# In[22]:
+# In[ ]:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -20,12 +34,13 @@
 # Cell tag: parameters — Fabric Pipeline injects values at runtime.
 # ══════════════════════════════════════════════════════════════════════════════
 
-p_ingestion_date      = "2026-04-23"    # REQUIRED — e.g. "2025-04-09"
-p_ingestion_timestamp = "2026-04-23T01:00:00Z"    # REQUIRED — e.g. "2025-04-09T01:00:00Z"
-p_src_busn_asst       = "elic"    # REQUIRED — e.g. "elic"
+p_ingestion_date = "2026-08-19"
+p_ingestion_timestamp = "2026-08-19T00:00:00Z"
+p_src_busn_asst = "elic"
+p_ingestion_run_id = "8c020222-a8e4-42db-a11c-b344be4ea73c"
 
 
-# In[23]:
+# In[ ]:
 
 
 # Notebook: nb_gold_fact_policy_snapshot
@@ -53,6 +68,9 @@ from pyspark.sql import functions as F
 
 spark = SparkSession.builder.appName("nb_gold_fact_policy_snapshot").getOrCreate()
 
+spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
+spark.conf.set("spark.sql.parquet.datetimeRebaseModeInRead", "LEGACY")
+
 _notebook_start = time.time()
 
 # F.col("agent_number"),
@@ -63,11 +81,13 @@ _notebook_start = time.time()
 
 
 _target_table = "lh_gold.gold.fact_policy_snapshot"
-_business_key_cols = ['snapshot_date_key','issue_date_key','policy_key','owner_key','annuitant_key','product_key','writing_agent_key','imo_agent_key','nmo_agent_key','servicing_agent_key','company_key']   # list
+_business_key_cols = ['snapshot_date_key','issue_date_key','policy_key','owner_key','annuitant_key','product_key','agent_key','company_key','is_writing_agent','is_servicing_agent','hierarchy_order','agent_contract_key','reverse_level','split_percent','commission_level_rank_key']   # list
 _is_scd2           = False
 _surrogate_key_col = "policy_snapshot_key"
 _hash_col          = "md5_hash"
+p_snapshot_date_key = int(p_ingestion_date.replace("-", ""))
 
+print(p_snapshot_date_key)
 
 print("=" * 65)
 print("  nb_gold_fact_policy_snapshot — START")
@@ -77,144 +97,60 @@ print(f"  src_busn_asst   : {p_src_busn_asst}")
 print("=" * 65)
 
 
-# In[24]:
+# In[ ]:
 
 
 policy_snapshot_df = spark.sql(f'''WITH
 
 -- ── 1. Flatten both hierarchy tables ─────────────────────────────────────
 hierarchy_flat AS (
-    SELECT
-        brg.hierarchy_group_key,
-        brg.split_percent,
-        brg.servicing_agent_indicator,
-        brg.commission_only_indicator,
-        brg.hierarchy_order,
-        sh.hierarchy_set_key,
-        sh.reverse_level,
-        ac.agent_contract_id,
-        ac.agent_number,
-        ac.commission_level,
-        clr.rank AS comm_rank
-    FROM silver_s2.hierarchy_super_hierarchy_base_current sh
-    INNER JOIN silver_s2.agent_contract_base                ac  ON ac.agent_contract_id = sh.agent_contract_id
-    INNER JOIN silver_s2.commission_level_rank_base_current clr ON clr.commission_level = ac.commission_level
-    INNER JOIN silver_s2.hierarchy_bridge_base_current      brg ON brg.hierarchy_set_key = sh.hierarchy_set_key
-    WHERE ac.status            = 'Active'
-      AND ac.is_current_record = 'Y'
 
-    UNION ALL
-
-    SELECT
-        brg.hierarchy_group_key,
-        brg.split_percent,
-        brg.servicing_agent_indicator,
-        brg.commission_only_indicator,
-        brg.hierarchy_order,
-        h.hierarchy_set_key,
-        h.reverse_level,
-        ac.agent_contract_id,
-        ac.agent_number,
-        ac.commission_level,
-        clr.rank AS comm_rank
-    FROM silver_s2.hierarchy_base_current               h
-    INNER JOIN silver_s2.agent_contract_base                ac  ON ac.agent_contract_id = h.agent_contract_id
-    INNER JOIN silver_s2.commission_level_rank_base_current clr ON clr.commission_level = ac.commission_level
-    INNER JOIN silver_s2.hierarchy_bridge_base_current      brg ON brg.hierarchy_set_key = h.hierarchy_set_key
-    WHERE ac.status            = 'Active'
-      AND ac.is_current_record = 'Y'
-),
-
--- ── 2. Tag every row with the min reverse_level of its chain ──────────────
-hierarchy_ranked AS (
-    SELECT
-        *,
-        MIN(reverse_level) OVER (PARTITION BY hierarchy_set_key) AS chain_min_rl
-    FROM hierarchy_flat
-) ,
-
--- ── 3. Writing agents ─────────────────────────────────────────────────────
-writing_agents AS (
-    SELECT
-        hierarchy_group_key,
-        hierarchy_order,
-        hierarchy_set_key,
-        agent_contract_id AS writing_agent_contract_id,
-        agent_number      AS writing_agent_number,
-        commission_level  AS wa_commission_level,
-        split_percent
-    FROM hierarchy_ranked
-    WHERE reverse_level             = chain_min_rl
-      AND servicing_agent_indicator = 'N'
-) , -- select * from writing_agents where hierarchy_group_key=266612
-
--- ── 4. IMO within each chain ──────────────────────────────────────────────
-imo_in_chain AS (
-    SELECT
-        hierarchy_set_key,
-        agent_contract_id AS imo_agent_contract_id,
-        agent_number      AS imo_agent_number
-    FROM (
+    SELECT DISTINCT hierarchy_group_key,split_percent,servicing_agent_indicator,commission_only_indicator,
+    hierarchy_order,hierarchy_set_key,reverse_level,agent_contract_key,agent_number,commission_level_rank_key
+    from
+    (
         SELECT
-            hierarchy_set_key,
-            agent_contract_id,
-            agent_number,
-            ROW_NUMBER() OVER (
-                PARTITION BY hierarchy_set_key
-                ORDER BY reverse_level DESC
-            ) AS rn
-        FROM hierarchy_flat
-        WHERE commission_level          = 'IMO'
-          AND servicing_agent_indicator = 'N'
-    ) t
-    WHERE rn = 1
-),
+            brg.hierarchy_group_key,
+            brg.split_percent,
+            brg.servicing_agent_indicator,
+            brg.commission_only_indicator,
+            brg.hierarchy_order,
+            sh.hierarchy_set_key,
+            sh.reverse_level,
+            gac.agent_contract_key,
+            ac.agent_number,
+            COALESCE(gclr.commission_level_rank_key,-1) as commission_level_rank_key
+        FROM silver_s2.hierarchy_current sh
+        INNER JOIN silver_s2.agent_contract ac ON ac.agent_contract_id = sh.agent_contract_id
+        INNER JOIN silver_s2.hierarchy_bridge_current brg ON brg.hierarchy_set_key = sh.hierarchy_set_key
+        LEFT JOIN lh_gold.gold.dim_agent_contract gac ON ac.agent_contract_id = gac.source_agent_contract_id
+        LEFT JOIN lh_gold.gold.dim_commission_level_rank gclr ON gclr.commission_level=ac.commission_level
+        
 
--- ── 5. NMO within each chain ──────────────────────────────────────────────
-nmo_in_chain AS (
-    SELECT
-        hierarchy_set_key,
-        agent_contract_id AS nmo_agent_contract_id,
-        agent_number      AS nmo_agent_number
-    FROM (
-        SELECT
-            hierarchy_set_key,
-            agent_contract_id,
-            agent_number,
-            ROW_NUMBER() OVER (
-                PARTITION BY hierarchy_set_key
-                ORDER BY reverse_level DESC
-            ) AS rn
-        FROM hierarchy_flat
-        WHERE commission_level          = 'NMO'
-          AND servicing_agent_indicator = 'N'
-    ) t
-    WHERE rn = 1
-),
+        UNION ALL
 
--- ── 6. Servicing agent ────────────────────────────────────────────────────
-servicing_agents AS (
-    SELECT
-        hierarchy_group_key,
-        agent_contract_id AS servicing_agent_contract_id,
-        agent_number      AS servicing_agent_number
-    FROM (
         SELECT
-            hierarchy_group_key,
-            agent_contract_id,
-            agent_number,
-            ROW_NUMBER() OVER (
-                PARTITION BY hierarchy_group_key
-                ORDER BY reverse_level ASC
-            ) AS rn
-        FROM hierarchy_flat
-        WHERE servicing_agent_indicator = 'Y'
-    ) t
-    WHERE rn = 1
+            brg.hierarchy_group_key,
+            brg.split_percent,
+            brg.servicing_agent_indicator,
+            brg.commission_only_indicator,
+            brg.hierarchy_order,
+            h.hierarchy_set_key,
+            h.reverse_level,
+            COALESCE(gac.agent_contract_key,-1) as agent_contract_key,
+            ac.agent_number,
+            COALESCE(gclr.commission_level_rank_key,-1) as commission_level_rank_key
+        FROM silver_s2.hierarchy_current h
+        INNER JOIN silver_s2.agent_contract ac ON ac.agent_contract_id = h.agent_contract_id
+        INNER JOIN silver_s2.hierarchy_bridge_current brg ON brg.hierarchy_set_key = h.hierarchy_set_key
+        LEFT JOIN lh_gold.gold.dim_agent_contract gac ON ac.agent_contract_id = gac.source_agent_contract_id 
+        LEFT JOIN lh_gold.gold.dim_commission_level_rank gclr ON gclr.commission_level=ac.commission_level
+    --where hierarchy_group_key=406163
+    ) as tab
 ),
 
 -- ── 7. Base contracts ─────────────────────────────────────────────────────
-contract_base AS (
+contract AS (
     SELECT
         contract_id,
         contract_number,
@@ -230,8 +166,8 @@ contract_base AS (
         recovered_cost_basis,
         coverage_ratio,
         surrender_id
-    FROM silver_s2.contract_base_current
-    where start_timestamp <= '{p_ingestion_date}'
+    FROM silver_s2.contract_current
+    where is_current = 1
 ),
 
 -- New Premium amount based on initial premium
@@ -264,20 +200,20 @@ activity_kpis AS (
     SUM(CASE WHEN at.activity_type_name='InternalReplacement' THEN a.net_amount ELSE 0 END ) AS  net_internal_replacement,
     SUM(CASE WHEN at.activity_type_name='Premium' THEN a.gross_amount ELSE 0 END ) AS  gross_premium,
     SUM(CASE WHEN at.activity_type_name='Premium' THEN a.net_amount ELSE 0 END ) AS  net_premium,
-    SUM(CASE WHEN at.activity_type_name='CAPRepayment' THEN a.gross_amount ELSE 0 END ) AS  gross_cap_repayment,
-    SUM(CASE WHEN at.activity_type_name='CAPRepayment' THEN a.net_amount ELSE 0 END ) AS  net_cap_repayment,
-    SUM(CASE WHEN at.activity_type_name='PremiumRefund' THEN a.gross_amount ELSE 0 END ) AS  gross_premium_refund,
-    SUM(CASE WHEN at.activity_type_name='PremiumRefund' THEN a.net_amount ELSE 0 END ) AS  net_premium_refund,
+    SUM(CASE WHEN at.activity_type_name='CAP Repayment' THEN a.gross_amount ELSE 0 END ) AS  gross_cap_repayment,
+    SUM(CASE WHEN at.activity_type_name='CAP Repayment' THEN a.net_amount ELSE 0 END ) AS  net_cap_repayment,
+    SUM(CASE WHEN at.activity_type_name='Premium Refund' THEN a.gross_amount ELSE 0 END ) AS  gross_premium_refund,
+    SUM(CASE WHEN at.activity_type_name='Premium Refund' THEN a.net_amount ELSE 0 END ) AS  net_premium_refund,
     SUM(CASE WHEN at.activity_type_name='Commission' THEN a.gross_amount ELSE 0 END ) AS  gross_commission,
     SUM(CASE WHEN at.activity_type_name='Commission' THEN a.net_amount ELSE 0 END ) AS  net_commission,
     SUM(CASE WHEN at.activity_type_name='Death' THEN a.gross_amount ELSE 0 END ) AS  gross_death,
     SUM(CASE WHEN at.activity_type_name='Death' THEN a.net_amount ELSE 0 END ) AS  net_death,
     SUM(CASE WHEN at.activity_type_name='FullSurrender' THEN a.gross_amount ELSE 0 END ) AS  gross_full_surrender,
     SUM(CASE WHEN at.activity_type_name='FullSurrender' THEN a.net_amount ELSE 0 END ) AS  net_full_surrender
-    from silver_s2.activity_base a
-    left join silver_s2.activity_type_base_current at
+    from silver_s2.activity a
+    left join silver_s2.activity_type_current at
     on a.activity_type_id = at.activity_type_id
-    where a.effective_date_id <= cast(date_format('{p_ingestion_date}', 'yyyyMMdd') as int)
+    where a.ingestion_date = '{p_ingestion_date}'
     GROUP BY
     a.contract_id
 
@@ -285,7 +221,7 @@ activity_kpis AS (
 -- ── 8. Contract value EAV → pivot ────────────────────────────────────────
 contract_values AS (
     SELECT
-    contract_value_group_key,
+    contract_value_key,
     COALESCE(annual_ratchet_amount,                    0) AS annual_ratchet_amount,
     COALESCE(anticipated_premium,                      0) AS anticipated_premium,
     COALESCE(cash_surrender_value,                     0) AS cash_surrender_value,
@@ -314,13 +250,13 @@ contract_values AS (
     COALESCE(withdrawals_since_inception,              0) AS withdrawals_since_inception
     FROM (
         SELECT
-            contract_value_group_key,
+            contract_value_key,
             value_type,
             value
-        FROM lh_silver.silver_s2.contract_value_group_base
-        WHERE value_type <> 'Year End Value'
-        and start_timestamp <= '{p_ingestion_date}'
-        OR value_type IS NULL
+        FROM silver_s2.contract_value_group
+        WHERE ingestion_date = '{p_ingestion_date}'
+        and (value_type <> 'Year End Value'
+        OR value_type IS NULL)
     ) AS source
     PIVOT (
         MIN(value)
@@ -363,19 +299,9 @@ surrender_details AS (
     COALESCE(policy_year,0) AS surrender_policy_year,
     COALESCE(penalty_duration_years,0) AS surrender_penalty_duration_years,
     COALESCE(penalty_percentage,0) AS surrender_penalty_percentage,
-    COALESCE(rate_calculation_basis,0) AS surrender_rate_calculation_basis
-    from (
-    select s.surrender_id,
-    s.customer_age,
-    s.policy_year,
-    s.penalty_duration_years,
-    s.penalty_percentage,
-    s.rate_calculation_basis,
-    row_number() over(partition by s.surrender_id order by s.ingestion_date desc) as rnk
-    from silver_s2.surrender_base s
-    where s.ingestion_date <= '{p_ingestion_date}'
-    )
-    where rnk=1
+    COALESCE(rate_calculation_basis,'Unknown') AS surrender_rate_calculation_basis
+    from silver_s2.surrender s
+    where ingestion_date = '{p_ingestion_date}'
 )
 
 -- ── 11. Final assembly ────────────────────────────────────────────────────
@@ -394,110 +320,114 @@ SELECT
     COALESCE(dprod.product_key,-1) as product_key,
 
     -- ── Agent dimension foreign keys ──────────────────────────────────────
-    COALESCE(dwa.agent_key,-1) as writing_agent_key,
-    COALESCE(dimo.agent_key,-1) as imo_agent_key,
-    COALESCE(dnmo.agent_key,-1) as nmo_agent_key,
-    COALESCE(dsvc.agent_key,-1) as servicing_agent_key,
+    -1 as writing_agent_key,
+    -1 as imo_agent_key,
+    -1 as nmo_agent_key,
+    -1 as servicing_agent_key,
 
     COALESCE(dco.company_key,-1) as company_key,
     
     -- ── Split ─────────────────────────────────────────────────────────────
     -- Taken from bridge; sums to 1.0 across all hierarchy_orders per contract
-    CAST(wa.split_percent AS DECIMAL(5,4))                  AS split_percent,
-    COALESCE(cb.cost_basis,                       0)        AS cost_basis,
-    COALESCE(cb.recovered_cost_basis,0)        AS recovered_cost_basis,
+    CAST(hf.split_percent AS DECIMAL(5,4))                  AS split_percent,
+    CAST(COALESCE(cb.cost_basis, 0) AS DECIMAL(13,2))        AS cost_basis,
+    CAST(COALESCE(cb.recovered_cost_basis,0) AS DECIMAL(13,2))         AS recovered_cost_basis,
     CAST(cb.coverage_ratio AS DECIMAL(5,4)) AS coverage_ratio,
 
     --- Activity measures
 
-    COALESCE(ak.gross_premium, 0) AS gross_premium,
-    COALESCE(ak.net_premium, 0) AS net_premium,
-    COALESCE(ak.gross_commission_held, 0) AS gross_commission_held,
-    COALESCE(ak.net_commission_held, 0) AS net_commission_held,
-    COALESCE(ak.gross_print, 0) AS gross_print,
-    COALESCE(ak.net_print, 0) AS net_print,
-    COALESCE(ak.gross_suitability, 0) AS gross_suitability,
-    COALESCE(ak.net_suitability, 0) AS net_suitability,
-    COALESCE(ak.gross_claim_payment, 0) AS gross_claim_payment,
-    COALESCE(ak.net_claim_payment, 0) AS net_claim_payment,
-    COALESCE(ak.gross_commission_paid, 0) AS gross_commission_paid,
-    COALESCE(ak.net_commission_paid, 0) AS net_commission_paid,
-    COALESCE(ak.gross_lapse, 0) AS gross_lapse,
-    COALESCE(ak.net_lapse, 0) AS net_lapse,
-    COALESCE(ak.gross_annuitization, 0) AS gross_annuitization,
-    COALESCE(ak.net_annuitization, 0) AS net_annuitization,
-    COALESCE(ak.gross_loan, 0) AS gross_loan,
-    COALESCE(ak.net_loan, 0) AS net_loan,
-    COALESCE(ak.gross_payout, 0) AS gross_payout,
-    COALESCE(ak.net_payout, 0) AS net_payout,
-    COALESCE(ak.gross_tax_conversion, 0) AS gross_tax_conversion,
-    COALESCE(ak.net_tax_conversion, 0) AS net_tax_conversion,
-    COALESCE(ak.gross_withdrawal, 0) AS gross_withdrawal,
-    COALESCE(ak.net_withdrawal, 0) AS net_withdrawal,
-    COALESCE(ak.gross_internal_replacement, 0) AS gross_internal_replacement,
-    COALESCE(ak.net_internal_replacement, 0) AS net_internal_replacement,
-    COALESCE(ak.gross_cap_repayment, 0) AS gross_cap_repayment,
-    COALESCE(ak.net_cap_repayment, 0) AS net_cap_repayment,
-    COALESCE(ak.gross_premium_refund, 0) AS gross_premium_refund,
-    COALESCE(ak.net_premium_refund, 0) AS net_premium_refund,
-    COALESCE(ak.gross_commission, 0) AS gross_commission,
-    COALESCE(ak.net_commission, 0) AS net_commission,
-    COALESCE(ak.gross_death, 0) AS gross_death,
-    COALESCE(ak.net_death, 0) AS net_death,
-    COALESCE(ak.gross_full_surrender, 0) AS gross_full_surrender,
-    COALESCE(ak.net_full_surrender, 0) AS net_full_surrender,
+    CAST(COALESCE(ak.gross_premium, 0) AS DECIMAL(28,4)) AS gross_premium,
+    CAST(COALESCE(ak.net_premium, 0) AS DECIMAL(28,4)) AS net_premium,
+    CAST(COALESCE(ak.gross_commission_held, 0) AS DECIMAL(28,4)) AS gross_commission_held,
+    CAST(COALESCE(ak.net_commission_held, 0) AS DECIMAL(28,4)) AS net_commission_held,
+    CAST(COALESCE(ak.gross_print, 0) AS DECIMAL(28,4)) AS gross_print,
+    CAST(COALESCE(ak.net_print, 0) AS DECIMAL(28,4)) AS net_print,
+    CAST(COALESCE(ak.gross_suitability, 0) AS DECIMAL(28,4)) AS gross_suitability,
+    CAST(COALESCE(ak.net_suitability, 0) AS DECIMAL(28,4)) AS net_suitability,
+    CAST(COALESCE(ak.gross_claim_payment, 0) AS DECIMAL(28,4)) AS gross_claim_payment,
+    CAST(COALESCE(ak.net_claim_payment, 0) AS DECIMAL(28,4)) AS net_claim_payment,
+    CAST(COALESCE(ak.gross_commission_paid, 0) AS DECIMAL(28,4)) AS gross_commission_paid,
+    CAST(COALESCE(ak.net_commission_paid, 0) AS DECIMAL(28,4)) AS net_commission_paid,
+    CAST(COALESCE(ak.gross_lapse, 0) AS DECIMAL(28,4)) AS gross_lapse,
+    CAST(COALESCE(ak.net_lapse, 0) AS DECIMAL(28,4)) AS net_lapse,
+    CAST(COALESCE(ak.gross_annuitization, 0) AS DECIMAL(28,4)) AS gross_annuitization,
+    CAST(COALESCE(ak.net_annuitization, 0) AS DECIMAL(28,4)) AS net_annuitization,
+    CAST(COALESCE(ak.gross_loan, 0) AS DECIMAL(28,4)) AS gross_loan,
+    CAST(COALESCE(ak.net_loan, 0) AS DECIMAL(28,4)) AS net_loan,
+    CAST(COALESCE(ak.gross_payout, 0) AS DECIMAL(28,4)) AS gross_payout,
+    CAST(COALESCE(ak.net_payout, 0) AS DECIMAL(28,4)) AS net_payout,
+    CAST(COALESCE(ak.gross_tax_conversion, 0) AS DECIMAL(28,4)) AS gross_tax_conversion,
+    CAST(COALESCE(ak.net_tax_conversion, 0) AS DECIMAL(28,4)) AS net_tax_conversion,
+    CAST(COALESCE(ak.gross_withdrawal, 0) AS DECIMAL(28,4)) AS gross_withdrawal,
+    CAST(COALESCE(ak.net_withdrawal, 0) AS DECIMAL(28,4)) AS net_withdrawal,
+    CAST(COALESCE(ak.gross_internal_replacement, 0) AS DECIMAL(28,4)) AS gross_internal_replacement,
+    CAST(COALESCE(ak.net_internal_replacement, 0) AS DECIMAL(28,4)) AS net_internal_replacement,
+    CAST(COALESCE(ak.gross_cap_repayment, 0) AS DECIMAL(28,4)) AS gross_cap_repayment,
+    CAST(COALESCE(ak.net_cap_repayment, 0) AS DECIMAL(28,4)) AS net_cap_repayment,
+    CAST(COALESCE(ak.gross_premium_refund, 0) AS DECIMAL(28,4)) AS gross_premium_refund,
+    CAST(COALESCE(ak.net_premium_refund, 0) AS DECIMAL(28,4)) AS net_premium_refund,
+    CAST(COALESCE(ak.gross_commission, 0) AS DECIMAL(28,4)) AS gross_commission,
+    CAST(COALESCE(ak.net_commission, 0) AS DECIMAL(28,4)) AS net_commission,
+    CAST(COALESCE(ak.gross_death, 0) AS DECIMAL(28,4)) AS gross_death,
+    CAST(COALESCE(ak.net_death, 0) AS DECIMAL(28,4)) AS net_death,
+    CAST(COALESCE(ak.gross_full_surrender, 0) AS DECIMAL(28,4)) AS gross_full_surrender,
+    CAST(COALESCE(ak.net_full_surrender, 0) AS DECIMAL(28,4)) AS net_full_surrender,
 
-    COALESCE(cv.annual_ratchet_amount,                    0) AS annual_ratchet_amount,
-    COALESCE(cv.anticipated_premium,                      0) AS anticipated_premium,
-    COALESCE(cv.cash_surrender_value,                     0) AS cash_surrender_value,
-    COALESCE(cv.certain_end_date,                         0) AS certain_end_date,
-    COALESCE(cv.death_benefit,                            0) AS death_benefit,
-    COALESCE(cv.enhanced_accumulation_value,              0) AS enhanced_accumulation_value,
-    COALESCE(cv.face_amount,                              0) AS face_amount,
-    COALESCE(cv.free_amount_remaining,                    0) AS free_amount_remaining,
-    COALESCE(cv.frequency,                                0) AS frequency,
-    COALESCE(cv.guaranteed_enhanced_accumulation_value,   0) AS guaranteed_enhanced_accumulation_value,
-    COALESCE(cv.ibr_benefit_base,                         0) AS ibr_benefit_base,
-    COALESCE(cv.loan_balance,                             0) AS loan_balance,
-    COALESCE(cv.ltc_benefit_amount,                       0) AS ltc_benefit_amount,
-    COALESCE(cv.ltc_benefit_base,                         0) AS ltc_benefit_base,
-    COALESCE(cv.mva_charge,                               0) AS mva_charge,
-    COALESCE(cv.next_payment_date,                        0) AS next_payment_date,
-    COALESCE(cv.payment_amount,                           0) AS payment_amount,
-    COALESCE(cv.premium_received,                         0) AS premium_received,
-    COALESCE(cv.surrender_charge,                         0) AS surrender_charge,
-    COALESCE(cv.vested_benefit_base,                      0) AS vested_benefit_base,
-    COALESCE(cv.vested_eav,                               0) AS vested_eav,
-    COALESCE(cv.vested_geav,                              0) AS vested_geav,
-    COALESCE(cv.vested_total_ltc_benefits,                0) AS vested_total_ltc_benefits,
-    COALESCE(cv.vested_wellness_credit,                   0) AS vested_wellness_credit,
-    COALESCE(cv.wellness_credit,                          0) AS wellness_credit,
-    COALESCE(cv.withdrawals_since_inception,              0) AS withdrawals_since_inception,
+    CAST(COALESCE(cv.annual_ratchet_amount,                    0) AS DECIMAL(14,4)) AS annual_ratchet_amount,
+    CAST(COALESCE(cv.anticipated_premium,                      0) AS DECIMAL(14,4)) AS anticipated_premium,
+    CAST(COALESCE(cv.cash_surrender_value,                     0) AS DECIMAL(14,4)) AS cash_surrender_value,
+    CAST(COALESCE(cv.certain_end_date,                         0) AS DECIMAL(14,4)) AS certain_end_date,
+    CAST(COALESCE(cv.death_benefit,                            0) AS DECIMAL(14,4)) AS death_benefit,
+    CAST(COALESCE(cv.enhanced_accumulation_value,              0) AS DECIMAL(14,4)) AS enhanced_accumulation_value,
+    CAST(COALESCE(cv.face_amount,                              0) AS DECIMAL(14,4)) AS face_amount,
+    CAST(COALESCE(cv.free_amount_remaining,                    0) AS DECIMAL(14,4)) AS free_amount_remaining,
+    CAST(COALESCE(cv.frequency,                                0) AS DECIMAL(14,4)) AS frequency,
+    CAST(COALESCE(cv.guaranteed_enhanced_accumulation_value,   0) AS DECIMAL(14,4)) AS guaranteed_enhanced_accumulation_value,
+    CAST(COALESCE(cv.ibr_benefit_base,                         0) AS DECIMAL(14,4)) AS ibr_benefit_base,
+    CAST(COALESCE(cv.loan_balance,                             0) AS DECIMAL(14,4)) AS loan_balance,
+    CAST(COALESCE(cv.ltc_benefit_amount,                       0) AS DECIMAL(14,4)) AS ltc_benefit_amount,
+    CAST(COALESCE(cv.ltc_benefit_base,                         0) AS DECIMAL(14,4)) AS ltc_benefit_base,
+    CAST(COALESCE(cv.mva_charge,                               0) AS DECIMAL(14,4)) AS mva_charge,
+    CAST(COALESCE(cv.next_payment_date,                        0) AS DECIMAL(14,4)) AS next_payment_date,
+    CAST(COALESCE(cv.payment_amount,                           0) AS DECIMAL(14,4)) AS payment_amount,
+    CAST(COALESCE(cv.premium_received,                         0) AS DECIMAL(14,4)) AS premium_received,
+    CAST(COALESCE(cv.surrender_charge,                         0) AS DECIMAL(14,4)) AS surrender_charge,
+    CAST(COALESCE(cv.vested_benefit_base,                      0) AS DECIMAL(14,4)) AS vested_benefit_base,
+    CAST(COALESCE(cv.vested_eav,                               0) AS DECIMAL(14,4)) AS vested_eav,
+    CAST(COALESCE(cv.vested_geav,                              0) AS DECIMAL(14,4)) AS vested_geav,
+    CAST(COALESCE(cv.vested_total_ltc_benefits,                0) AS DECIMAL(14,4)) AS vested_total_ltc_benefits,
+    CAST(COALESCE(cv.vested_wellness_credit,                   0) AS DECIMAL(14,4)) AS vested_wellness_credit,
+    CAST(COALESCE(cv.wellness_credit,                          0) AS DECIMAL(14,4)) AS wellness_credit,
+    CAST(COALESCE(cv.withdrawals_since_inception,              0) AS DECIMAL(14,4)) AS withdrawals_since_inception,
     
     COALESCE(sd.surrender_customer_age,0) AS surrender_customer_age,
     COALESCE(sd.surrender_policy_year,0) AS surrender_policy_year,
     COALESCE(sd.surrender_penalty_duration_years,0) AS surrender_penalty_duration_years,
     CAST(COALESCE(sd.surrender_penalty_percentage,0) AS DECIMAL(5,4)) AS surrender_penalty_percentage,
-    COALESCE(sd.surrender_rate_calculation_basis,0) AS surrender_rate_calculation_basis
+    case when (sd.surrender_rate_calculation_basis is null or 
+    sd.surrender_rate_calculation_basis='') then 'NOT PROVIDED' 
+    else sd.surrender_rate_calculation_basis end AS surrender_rate_calculation_basis,
+    
+    COALESCE(dwa.agent_key,-1) as agent_key,
+    case when COALESCE(hf.servicing_agent_indicator,'N') = 'N' then 1 else 0 end as is_writing_agent,
+    case when COALESCE(hf.servicing_agent_indicator,'N') = 'Y' then 1 else 0 end as is_servicing_agent,
+    case when COALESCE(hf.commission_only_indicator,'N') = 'Y' then 1 else 0 end as is_commission_only,
+    COALESCE(hf.hierarchy_order,99) as hierarchy_order,
+    CAST(COALESCE(hf.reverse_level,99) AS DECIMAL(11,1)) as reverse_level,
+    COALESCE(hf.agent_contract_key,-1) as agent_contract_key,
+    COALESCE(hf.commission_level_rank_key,-1) as commission_level_rank_key
     
 
-FROM contract_base cb
+FROM contract cb
 
 -- ── Hierarchy joins ───────────────────────────────────────────────────────
 -- writing_agents expands the grain: one row per hierarchy_order per contract
 LEFT JOIN activity_kpis ak
     ON cb.contract_id = ak.contract_id
-LEFT JOIN writing_agents wa
-    ON  wa.hierarchy_group_key  = cb.hierarchy_group_key
-LEFT JOIN imo_in_chain imo
-    ON  imo.hierarchy_set_key   = wa.hierarchy_set_key
-LEFT JOIN nmo_in_chain nmo
-    ON  nmo.hierarchy_set_key   = wa.hierarchy_set_key
-LEFT JOIN servicing_agents svc
-    ON  svc.hierarchy_group_key = cb.hierarchy_group_key
-
+LEFT JOIN hierarchy_flat hf
+    ON  hf.hierarchy_group_key  = cb.hierarchy_group_key
 LEFT JOIN contract_values cv
-    ON  cv.contract_value_group_key = cb.contract_value_group_key
+    ON  cv.contract_value_key = cb.contract_value_group_key
 -- ── Gold dim surrogate key lookups ────────────────────────────────────────
 LEFT JOIN lh_gold.gold.dim_policy dp
     ON  dp.policy_number          = cb.contract_number
@@ -506,17 +436,8 @@ LEFT JOIN lh_gold.gold.dim_product dprod
     ON  dprod.source_product_id        = cb.product_id
     AND dprod.is_current        = 1
 LEFT JOIN lh_gold.gold.dim_agent dwa
-    ON  dwa.agent_number   = wa.writing_agent_number
+    ON  dwa.agent_number   = hf.agent_number
     AND dwa.is_current          = 1
-LEFT JOIN lh_gold.gold.dim_agent dimo
-    ON  dimo.agent_number  = imo.imo_agent_number
-    AND dimo.is_current         = 1
-LEFT JOIN lh_gold.gold.dim_agent dnmo
-    ON  dnmo.agent_number  = nmo.nmo_agent_number
-    AND dnmo.is_current         = 1
-LEFT JOIN lh_gold.gold.dim_agent dsvc
-    ON  dsvc.agent_number  = svc.servicing_agent_number
-    AND dsvc.is_current         = 1
 LEFT JOIN lh_gold.gold.dim_client oc
     ON  oc.source_client_id            = cb.owner_client_id
     AND oc.is_current           = 1
@@ -538,13 +459,7 @@ LEFT JOIN surrender_details sd
 WHERE dp.policy_key IS NOT NULL''')
 
 
-# In[25]:
-
-
-display(policy_snapshot_df.limit(2))
-
-
-# In[26]:
+# In[ ]:
 
 
 policy_snapshot_df = (
@@ -635,12 +550,26 @@ policy_snapshot_df = (
         "surrender_policy_year",
         "surrender_penalty_duration_years",
         "surrender_penalty_percentage",
-        "surrender_rate_calculation_basis"
+        "surrender_rate_calculation_basis",
+        "agent_key",
+        "is_writing_agent",
+        "is_servicing_agent",
+        "is_commission_only",
+        "hierarchy_order",
+        "reverse_level",
+        "agent_contract_key",
+        "commission_level_rank_key"
     )
 )
 
 
-# In[27]:
+# In[ ]:
+
+
+policy_snapshot_df = policy_snapshot_df.dropDuplicates()
+
+
+# In[ ]:
 
 
 display(policy_snapshot_df.limit(2))
@@ -648,7 +577,7 @@ display(policy_snapshot_df.limit(2))
 #  ['agent_number','agent_name','agent_type','national_producer_number','nasd_finra_number','status'] 
 
 
-# In[28]:
+# In[ ]:
 
 
 # ── Load ──────────────────────────────────────────────────────────────────────
@@ -668,7 +597,30 @@ loader.load(
     business_key_cols = _business_key_cols,
     surrogate_key_col = _surrogate_key_col,
     hash_col          = _hash_col,
-    partition_cols = ['snapshot_date_key']
+    partition_cols = ['snapshot_date_key'],
+    ingestion_date = p_ingestion_date,
+    data_timestamp = p_ingestion_timestamp,
+    source_system = "EQ_Warehouse",
+    ingestion_run_id = p_ingestion_run_id,
+    ingestion_timestamp = p_ingestion_timestamp,
+    src_busn_asst = p_src_busn_asst,
+    replace_where     = f"snapshot_date_key = '{p_snapshot_date_key}'"
 )
 print(f"  [load]  Complete  ({round(time.time() - _load_start, 2)}s)")
+
+
+# In[ ]:
+
+
+# The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
+# %%sql
+
+# -- REFRESH MATERIALIZED LAKE VIEW lh_gold.gold.rp_dim_agent_factpolicysnapshot_imoagent FULL;
+# -- REFRESH MATERIALIZED LAKE VIEW lh_gold.gold.rp_dim_agent_factpolicysnapshot_nmoagent FULL;
+# -- REFRESH MATERIALIZED LAKE VIEW lh_gold.gold.rp_dim_agent_factpolicysnapshot_servicingagent FULL;
+# -- REFRESH MATERIALIZED LAKE VIEW lh_gold.gold.rp_dim_agent_factpolicysnapshot_writingagent FULL;
+# -- REFRESH MATERIALIZED LAKE VIEW lh_gold.gold.rp_dim_client_factpolicysnapshot_annuitant FULL;
+# -- REFRESH MATERIALIZED LAKE VIEW lh_gold.gold.rp_dim_client_factpolicysnapshot_owner FULL;
+# REFRESH MATERIALIZED LAKE VIEW lh_gold.gold.rp_dim_date_factpolicysnapshot_issuedate FULL;
+# REFRESH MATERIALIZED LAKE VIEW lh_gold.gold.rp_dim_date_factpolicysnapshot_snapshotdate FULL;
 

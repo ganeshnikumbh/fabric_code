@@ -5,14 +5,28 @@
 # 
 # New notebook
 
-# In[ ]:
+# In[1]:
+
+
+# The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
+# %%configure
+# {
+#     "defaultLakehouse": {
+#         "name":        { "variableName": "$(/**/vl_lakehouse_config/lh_silver_name)" },
+#         "id":          { "variableName": "$(/**/vl_lakehouse_config/lh_silver_id)" },
+#         "workspaceId": { "variableName": "$(/**/vl_lakehouse_config/lh_workspace_id)" }
+#     }
+# }
+
+
+# In[2]:
 
 
 # The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
 # %run nb_utils.py
 
 
-# In[ ]:
+# In[3]:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -20,12 +34,13 @@
 # Cell tag: parameters — Fabric Pipeline injects values at runtime.
 # ══════════════════════════════════════════════════════════════════════════════
 
-p_ingestion_date      = "2025-05-03"    # REQUIRED — e.g. "2025-04-09"
-p_ingestion_timestamp = "2025-05-03T01:00:00Z"    # REQUIRED — e.g. "2025-04-09T01:00:00Z"
+p_ingestion_date      = "2026-06-10"    # REQUIRED — e.g. "2025-04-09"
+p_ingestion_timestamp = "2026-06-10T01:00:00Z"    # REQUIRED — e.g. "2025-04-09T01:00:00Z"
 p_src_busn_asst       = "elic"    # REQUIRED — e.g. "elic"
+p_ingestion_run_id = "040b71a5-97a3-4f91-8912-e4d9b802b109"
 
 
-# In[ ]:
+# In[4]:
 
 
 # Notebook: nb_gold_dim_agent
@@ -76,47 +91,24 @@ print(f"  src_busn_asst   : {p_src_busn_asst}")
 print("=" * 65)
 
 
-# In[ ]:
+# In[5]:
 
 
 agent_dim_df = spark.sql('''select a.agent_number,a.display_name as agent_name, a.agent_type,a.agent_id as source_agent_id,a.client_id as source_agent_client_id,
 a.national_producer_number,a.nasd_finra_number,a.hire_date,a.termination_date,a.status,
-case when a.start_timestamp < a.effective_timestamp then a.start_timestamp
-else a.effective_timestamp end as effective_timestamp,
-case when a.end_timestamp < a.expiration_timestamp then a.end_timestamp
-else a.expiration_timestamp end as expiration_timestamp,
+a.effective_timestamp,
+a.expiration_timestamp,
 1 as is_current
-from silver_s2.agent_base_current a''')
+from lh_silver.silver_s2.agent_current a''')
 
 
-# In[ ]:
-
-
-display(agent_dim_df.limit(2))
-
-
-# In[ ]:
-
-
-agent_dim_df = resolve_dim_key(
-    spark       = spark,
-    source_df   = agent_dim_df,
-    source_col  = "source_agent_client_id",
-    dim_table   = "gold.dim_client",
-    dim_bk_col  = "source_client_id",
-    dim_sk_col  = "client_key",
-    target_col_name = "client_key",
-    is_current_col  = "is_current"
-)
-
-
-# In[ ]:
+# In[6]:
 
 
 display(agent_dim_df.limit(2))
 
 
-# In[ ]:
+# In[7]:
 
 
 agent_dim_df = (
@@ -153,15 +145,24 @@ agent_dim_df = (
         "hire_date",
         "termination_date",
         "source_agent_id",
-        "client_key",
+        "source_agent_client_id",
         "effective_timestamp",
         "expiration_timestamp",
         "is_current"
     )
+    
 )
 
 
-# In[ ]:
+# In[8]:
+
+
+display(agent_dim_df.limit(2))
+
+#  ['agent_number','agent_name','agent_type','national_producer_number','nasd_finra_number','status'] 
+
+
+# In[11]:
 
 
 # ── Load ──────────────────────────────────────────────────────────────────────
@@ -181,11 +182,17 @@ loader.load(
     business_key_cols = _business_key_cols,
     surrogate_key_col = _surrogate_key_col,
     hash_col          = _hash_col,
+    ingestion_date = p_ingestion_date,
+    data_timestamp = p_ingestion_timestamp,
+    source_system = "EQ_Warehouse",
+    ingestion_run_id = p_ingestion_run_id,
+    ingestion_timestamp = p_ingestion_timestamp,
+    src_busn_asst = p_src_busn_asst
 )
 print(f"  [load]  Complete  ({round(time.time() - _load_start, 2)}s)")
 
 
-# In[ ]:
+# In[12]:
 
 
 # ── Unknown / default row (agent_key = -1) ────────────────────────────────────
@@ -206,11 +213,17 @@ _unknown_df = spark.range(1).select(
     F.lit(None)         .cast("date")      .alias("hire_date"),
     F.lit(None)         .cast("date")      .alias("termination_date"),
     F.lit(0)            .cast("int")       .alias("source_agent_id"),
-    F.lit(-1)           .cast("long")      .alias("client_key"),
+    F.lit(0)            .cast("int")      .alias("source_agent_client_id"),
     F.lit(None)         .cast("timestamp") .alias("effective_timestamp"),
     F.lit(None)         .cast("timestamp") .alias("expiration_timestamp"),
     F.lit(1)            .cast("int")       .alias("is_current"),
     F.lit(None)         .cast("string")    .alias("md5_hash"),
+    F.lit(None)         .cast("date")      .alias("ingestion_date"),
+    F.lit(None)         .cast("timestamp") .alias("data_timestamp"),
+    F.lit("EQ_Warehouse")                       .alias("source_system"),
+    F.lit(None)         .cast("string")    .alias("ingestion_run_id"),
+    F.lit(None)         .cast("timestamp") .alias("ingestion_timestamp"),
+    F.lit("elic")                       .alias("src_busn_asst"),
 )
 
 (

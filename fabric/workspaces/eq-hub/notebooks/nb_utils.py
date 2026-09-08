@@ -1,23 +1,5 @@
 #!/usr/bin/env python
 # coding: utf-8
-
-# ## nb_utils.py
-# 
-# null
-
-# In[ ]:
-
-
-#!/usr/bin/env python
-# coding: utf-8
-
-# ## nb_utils.py
-# 
-# null
-
-# In[ ]:
-
-
 # Notebook: nb_utils
 # Purpose:  Shared utility functions for the EquiTrust ingestion framework.
 #           Provides helpers to read control metadata from Fabric SQL DB using
@@ -2489,6 +2471,7 @@ class GoldLoader:
         ingestion_run_id: str = None,
         ingestion_timestamp: str = None,
         src_busn_asst: str = None,
+        replace_where: str = None
     ) -> None:
         """
         Persist the transformed DataFrame to a Gold Delta table.
@@ -2639,14 +2622,16 @@ class GoldLoader:
         # Step 3b: SCD Type 1 UPSERT — delegated to apply_scd1()
         else:
             _logger.info("[GoldLoader.load] is_scd2=False — calling apply_scd1 for '%s'", target_table)
-            rows_inserted, rows_updated = apply_scd1(
+            rows_inserted, rows_updated = apply_noscd(
                 spark             = self.spark,
                 source_df         = df,
                 qualified_target  = target_table,
                 business_key_cols = business_key_cols,
                 partition_cols    = partition_cols,
                 audit_values      = _audit_values,
+                replace_where     = replace_where
             )
+
             _logger.info(
                 "[GoldLoader.load] apply_scd1 done — inserted=%d, updated=%d",
                 rows_inserted, rows_updated,

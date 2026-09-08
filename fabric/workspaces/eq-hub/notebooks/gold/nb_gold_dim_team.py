@@ -50,7 +50,7 @@ _notebook_start = time.time()
 
 _target_table      = "lh_gold.gold.dim_team"
 _business_key_cols = ["team_id", "team_name"]
-_is_scd2           = False
+_is_scd2           = True
 _surrogate_key_col = "team_key"
 _hash_col          = "md5_hash"
 
