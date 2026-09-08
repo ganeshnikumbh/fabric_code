@@ -254,3 +254,18 @@ VALUES
 ('Salesforce', 'api', 'lh_landing', 'salesforce', 'event',    'lh_bronze', 'bronze_salesforce', 'event_base',    'lh_silver', 'silver_s1', 'event',    'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'records', 'q=SELECT+Id,Subject,Type,EventSubtype,StartDateTime,EndDateTime,EndDate,ActivityDate,ActivityDateTime,DurationInMinutes,Location,Description,OwnerId,WhoId,WhatId,AccountId,IsAllDayEvent,IsPrivate,IsGroupEvent,GroupEventType,IsArchived,IsChild,IsReminderSet,ReminderDateTime,ShowAs,ClientGuid,IsClientManaged,IsVisibleInSelfService,IsRecurrence,RecurrenceActivityId,RecurrenceStartDateTime,RecurrenceEndDateOnly,RecurrenceType,RecurrenceInterval,RecurrenceInstance,RecurrenceDayOfWeekMask,RecurrenceDayOfMonth,RecurrenceMonthOfYear,RecurrenceTimeZoneSidKey,IsRecurrence2,IsRecurrence2Exception,IsRecurrence2Exclusion,Recurrence2PatternText,Recurrence2PatternStartDate,Recurrence2PatternTimeZone,Recurrence2PatternVersion,AcceptedEventInviteeIds,DeclinedEventInviteeIds,UndecidedEventInviteeIds,EventWhoIds,CurrencyIsoCode,Division,CreatedById,CreatedDate,LastModifiedById,LastModifiedDate,Legacy_Creator_Name__c,Legacy_Created_On__c,Call_Subject__c,Follow_Up_Date__c,maps__BaseObjectId__c,maps__LayerId__c,maps__WA_AdvRouteWaypoint__c,Follow_Up_Subject__c,Host__c,Call_Type__c,Subject_Type__c,Subject_Sub_Type__c,Product__c,Bypass_Subject_Change__c,Campaign_Name__c,First_Contract__c,Sum_of_Initial_Premium__c,SalesVue__Call_Record__c,SalesVue__Plan_Task__c+FROM+Event'),
 ('Salesforce', 'api', 'lh_landing', 'salesforce', 'task',     'lh_bronze', 'bronze_salesforce', 'task_base',     'lh_silver', 'silver_s1', 'task',     'full', NULL, NULL, NULL, NULL, 0, 1, 'elic', 'records', 'q=SELECT+Id,Subject,Type,TaskSubtype,Status,Priority,IsHighPriority,IsClosed,ActivityDate,CompletedDateTime,Description,OwnerId,WhoId,WhatId,AccountId,CallType,CallObject,CallDisposition,CallDurationInSeconds,IsArchived,IsReminderSet,ReminderDateTime,IsRecurrence,RecurrenceActivityId,RecurrenceStartDateOnly,RecurrenceEndDateOnly,RecurrenceType,RecurrenceRegeneratedType,RecurrenceInterval,RecurrenceInstance,RecurrenceDayOfWeekMask,RecurrenceDayOfMonth,RecurrenceMonthOfYear,RecurrenceTimeZoneSidKey,ConnectionReceivedId,ConnectionSentId,IsVisibleInSelfService,TaskWhoIds,CreatedById,CreatedDate,LastModifiedById,LastModifiedDate,Legacy_Creator_Name__c,Legacy_Created_On__c,Call_Subject__c,Follow_Up_Date__c,maps__BaseObjectId__c,maps__LayerId__c,maps__WA_AdvRouteWaypoint__c,Follow_Up_Subject__c,Host__c,Call_Type__c,Subject_Type__c,Subject_Sub_Type__c,Product__c,Bypass_Subject_Change__c,Campaign_Name__c,First_Contract__c,Sum_of_Initial_Premium__c,SalesVue__Call_Record__c,SalesVue__Plan_Task__c+FROM+Task');
 GO
+
+INSERT INTO dbo.ingestion_config
+    (source_name, source_type,
+     landing_lakehouse, landing_schema, landing_table_name,
+     bronze_lakehouse, bronze_schema, bronze_table,
+     silver_lakehouse, silver_schema, silver_table,
+     load_type, watermark_column, watermark_type, batch_size, partition_by_column_names,
+     is_scd2, api_endpoint, api_method, active_flag, src_busn_asst, source_path)
+VALUES
+('HubSpot', 'api', 'lh_landing', 'hubspot', 'email_events',
+     'lh_bronze', 'bronze_hubspot', 'email_events_base',
+     'lh_silver', 'silver_s1', 'email_events',
+     'full', NULL, NULL, NULL, NULL,
+     0, '/hub-api/email/public/v1/events',            'GET', 1, 'elic', 'results');
+GO
