@@ -204,7 +204,7 @@ VALUES
      'lh_bronze', 'bronze_hubspot', 'event_details_base',
      'lh_silver', 'silver_s1', 'event_details',
      'full', NULL, NULL, NULL, NULL,
-     0, '/events/v3/events',                               'GET', 1, 'elic', 'results');
+     0, '/events/v3/events',                               'GET', 1, 'elic', 'events');
 GO
 
 SET IDENTITY_INSERT dbo.ingestion_config OFF;
@@ -263,9 +263,9 @@ INSERT INTO dbo.ingestion_config
      load_type, watermark_column, watermark_type, batch_size, partition_by_column_names,
      is_scd2, api_endpoint, api_method, active_flag, src_busn_asst, source_path)
 VALUES
-('HubSpot', 'api', 'lh_landing', 'hubspot', 'email_events',
-     'lh_bronze', 'bronze_hubspot', 'email_events_base',
-     'lh_silver', 'silver_s1', 'email_events',
+('HubSpot', 'api', 'lh_landing', 'hubspot', 'marketing_email_events',
+     'lh_bronze', 'bronze_hubspot', 'marketing_email_events_base',
+     'lh_silver', 'silver_s1', 'marketing_email_events',
      'full', NULL, NULL, NULL, NULL,
-     0, '/hub-api/email/public/v1/events',            'GET', 1, 'elic', 'results');
+     0, '/hub-api/email/public/v1/events',            'GET', 1, 'elic', 'events');
 GO

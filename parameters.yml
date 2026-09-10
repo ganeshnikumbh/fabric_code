@@ -1,0 +1,142 @@
+# ==============================================================================
+# FABRIC CI/CD CONFIGURATION RULES
+# Dynamically maps DEV IDs to target environment IDs during deployment.
+#
+# A Direct Lake semantic model needs TWO separate things to publish into a
+# target workspace. They are configured independently:
+#
+#   1. find_replace           -> WHICH lakehouse it reads. The OneLake GUID is
+#                                hardcoded in expressions.tmdl, so it must be
+#                                rewritten per environment. (Sections 1-5.)
+#   2. semantic_model_binding -> PERMISSION to read it. The data source has to
+#                                be bound to a connection. (Section 6.)
+#
+# Git stores the path but never the connection -- bindings are workspace state,
+# not source. So every definition re-import arrives unbound, which is why a
+# deployment fails with DMTS_MonikerWithUnboundDataSources even when the GUIDs
+# in section 5 are already correct.
+# ==============================================================================
+find_replace:
+  # ---------------------------------------------------------
+  # 1. WORKSPACE ID REPLACEMENT
+  # ---------------------------------------------------------
+  - find_value: "6e27daca-2faf-4374-b036-3cf5158f6fc9"
+    replace_value:
+      dev: "$workspace.$id"
+      tst: "$workspace.$id"
+      uat: "$workspace.$id"
+      stg: "$workspace.$id"
+      prd: "$workspace.$id"
+
+  # ---------------------------------------------------------
+  # 2. LANDING LAKEHOUSE (lh_landing)
+  # ---------------------------------------------------------
+  - find_value: "338127f5-1dcf-4e98-a7b9-d5bba2217609"
+    replace_value:
+      dev: "$items.Lakehouse.lh_landing.$id"
+      tst: "$items.Lakehouse.lh_landing.$id"
+      uat: "$items.Lakehouse.lh_landing.$id"
+      stg: "$items.Lakehouse.lh_landing.$id"
+      prd: "$items.Lakehouse.lh_landing.$id"
+
+  - find_value: "5f8ec3a7-7e9b-418d-91fb-d76f35dabfa6"
+    replace_value:
+      dev: "$items.Lakehouse.lh_landing.$sqlendpointid"
+      tst: "$items.Lakehouse.lh_landing.$sqlendpointid"
+      uat: "$items.Lakehouse.lh_landing.$sqlendpointid"
+      stg: "$items.Lakehouse.lh_landing.$sqlendpointid"
+      prd: "$items.Lakehouse.lh_landing.$sqlendpointid"
+
+  # ---------------------------------------------------------
+  # 3. BRONZE LAKEHOUSE (lh_bronze)
+  # ---------------------------------------------------------
+  - find_value: "54d3bc04-ac88-4f73-adcb-806bfcf81d29"
+    replace_value:
+      dev: "$items.Lakehouse.lh_bronze.$id"
+      tst: "$items.Lakehouse.lh_bronze.$id"
+      uat: "$items.Lakehouse.lh_bronze.$id"
+      stg: "$items.Lakehouse.lh_bronze.$id"
+      prd: "$items.Lakehouse.lh_bronze.$id"
+
+  - find_value: "421453fb-1519-480e-b0df-0b19a3cad911"
+    replace_value:
+      dev: "$items.Lakehouse.lh_bronze.$sqlendpointid"
+      tst: "$items.Lakehouse.lh_bronze.$sqlendpointid"
+      uat: "$items.Lakehouse.lh_bronze.$sqlendpointid"
+      stg: "$items.Lakehouse.lh_bronze.$sqlendpointid"
+      prd: "$items.Lakehouse.lh_bronze.$sqlendpointid"
+
+  # ---------------------------------------------------------
+  # 4. SILVER LAKEHOUSE (lh_silver)
+  # ---------------------------------------------------------
+  - find_value: "b22fb862-d8c6-400f-99a0-2c5ed3b11b1f"
+    replace_value:
+      dev: "$items.Lakehouse.lh_silver.$id"
+      tst: "$items.Lakehouse.lh_silver.$id"
+      uat: "$items.Lakehouse.lh_silver.$id"
+      stg: "$items.Lakehouse.lh_silver.$id"
+      prd: "$items.Lakehouse.lh_silver.$id"
+
+  - find_value: "cb370c7a-f964-427f-804b-eab161aae836"
+    replace_value:
+      dev: "$items.Lakehouse.lh_silver.$sqlendpointid"
+      tst: "$items.Lakehouse.lh_silver.$sqlendpointid"
+      uat: "$items.Lakehouse.lh_silver.$sqlendpointid"
+      stg: "$items.Lakehouse.lh_silver.$sqlendpointid"
+      prd: "$items.Lakehouse.lh_silver.$sqlendpointid"
+
+  # ---------------------------------------------------------
+  # 5. GOLD LAKEHOUSE (lh_gold)
+  #    The Direct Lake semantic model's expressions.tmdl points here.
+  # ---------------------------------------------------------
+  - find_value: "220a1187-7fbe-4445-a6a1-830dee89c22c"
+    replace_value:
+      dev: "$items.Lakehouse.lh_gold.$id"
+      tst: "$items.Lakehouse.lh_gold.$id"
+      uat: "$items.Lakehouse.lh_gold.$id"
+      stg: "$items.Lakehouse.lh_gold.$id"
+      prd: "$items.Lakehouse.lh_gold.$id"
+
+  - find_value: "497f926d-eb33-40d2-b3ee-aa6bc13ac660"
+    replace_value:
+      dev: "$items.Lakehouse.lh_gold.$sqlendpointid"
+      tst: "$items.Lakehouse.lh_gold.$sqlendpointid"
+      uat: "$items.Lakehouse.lh_gold.$sqlendpointid"
+      stg: "$items.Lakehouse.lh_gold.$sqlendpointid"
+      prd: "$items.Lakehouse.lh_gold.$sqlendpointid"
+
+# ==============================================================================
+# 6. SEMANTIC MODEL CONNECTION BINDING        <-- ACTION REQUIRED
+#
+# Currently commented out. While it stays commented out, publishing
+# 'equitrust_core_model' will keep failing with:
+#     Dataset_Import_FailedToImportDataset / DMTS_MonikerWithUnboundDataSources
+# Use deploySemanticModel=false in the pipeline to skip it until this is filled in.
+#
+# ---- BEFORE UNCOMMENTING: bootstrap once per workspace ----
+# fabric-cicd's binder RE-POINTS an existing connection; it cannot create the
+# first one. If the model has no connection yet it logs
+# "No existing connections found ... skipping binding" and does nothing.
+# So in each workspace the model must be published/bound once by a USER
+# (service principals cannot create the initial Direct Lake binding).
+#
+# ---- THEN: get the connection GUIDs ----
+#   GET https://api.fabric.microsoft.com/v1/connections
+# Grant the deployment service principal at least the 'User' role on each
+# connection, otherwise fabric-cicd logs:
+#     "Connection ID '<guid>' not found for semantic model 'equitrust_core_model'"
+#
+# ---- ONE GUID PER ENVIRONMENT ----
+# Section 5 rewrites the lakehouse GUID per environment, so the model's data
+# source path is different in every workspace and each needs its own
+# connection. Do NOT reuse the dev GUID for prd.
+# ==============================================================================
+# semantic_model_binding:
+#   models:
+#     - semantic_model_name: "equitrust_core_model"
+#       connection_id:
+#         dev: "00000000-0000-0000-0000-000000000000"
+#         tst: "00000000-0000-0000-0000-000000000000"
+#         uat: "00000000-0000-0000-0000-000000000000"
+#         stg: "00000000-0000-0000-0000-000000000000"
+#         prd: "00000000-0000-0000-0000-000000000000"

@@ -1,5 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
+
+# ## nb_utils.py
+# 
+# null
+
+# In[ ]:
+
+
+#!/usr/bin/env python
+# coding: utf-8
 # Notebook: nb_utils
 # Purpose:  Shared utility functions for the EquiTrust ingestion framework.
 #           Provides helpers to read control metadata from Fabric SQL DB using
@@ -659,6 +669,10 @@ def silver_cast_type(silver_data_type: str) -> str:
         "float": "float", "real": "float", "double": "double",
         "boolean": "boolean", "bool": "boolean", "bit": "boolean",
         "date": "date", "datetime": "timestamp", "timestamp": "timestamp",
+        # Epoch milliseconds stored as a number. The Spark type is a plain
+        # timestamp; the marker exists so cast_and_default_silver_columns knows
+        # to convert the epoch rather than cast it. See that function for why.
+        "timestamp_millis": "timestamp",
     }
     return _MAP.get(tl, "string")
 
@@ -744,13 +758,15 @@ def cast_and_default_silver_columns(df: DataFrame, mappings: list) -> DataFrame:
     non-null; mappings with no bronze source are omitted.
     """
     _skipped_missing = []
+    _to_drop         = set()
     for row in mappings:
         silver_col = row["silver_column_name"]
         bronze_col = row["bronze_column_name"]
         if not silver_col:
             continue
 
-        cast_type   = silver_cast_type(row["silver_data_type"])
+        cast_type        = silver_cast_type(row["silver_data_type"])
+        _silver_type_raw = (row["silver_data_type"] or "").strip().upper()
         default_str = (
             row["default_value"] if row["default_value"] is not None
             else silver_type_default(cast_type)
@@ -782,6 +798,25 @@ def cast_and_default_silver_columns(df: DataFrame, mappings: list) -> DataFrame:
                 boolean_to_int_expr(F.col(src_col)),
                 F.lit(default_str).cast(cast_type),
             )
+
+        elif _silver_type_raw == "TIMESTAMP_MILLIS":
+            # Epoch milliseconds -> TIMESTAMP.  The generic path below casts the
+            # value to a STRING first, and CAST('1788920667854' AS TIMESTAMP) is
+            # not a parseable timestamp literal, so it returns NULL and every row
+            # collapses to the default.  timestamp_millis() does the arithmetic
+            # properly.  The inner CAST(... AS BIGINT) keeps this working whether
+            # bronze stored the value as BIGINT or as a STRING.
+            # Only rows whose silver_data_type is literally TIMESTAMP_MILLIS take
+            # this path -- plain TIMESTAMP mappings are untouched.
+            _epoch = F.col(src_col).cast("bigint")
+            typed  = F.coalesce(
+                F.when(
+                    _epoch.isNotNull() & (_epoch > 0),
+                    F.expr(f"timestamp_millis(CAST(`{src_col}` AS BIGINT))"),
+                ),
+                F.lit(default_str).cast(cast_type),
+            )
+
         else:
             _src_str = F.col(src_col).cast("string")
             cleaned = F.when(
@@ -797,8 +832,21 @@ def cast_and_default_silver_columns(df: DataFrame, mappings: list) -> DataFrame:
 
         df = df.withColumn(silver_col, typed)
 
+        # Mark the bronze source for removal, but do NOT drop it yet -- see the
+        # deferred drop after the loop.
         if bronze_col and bronze_col != silver_col and bronze_col in df.columns:
-            df = df.drop(bronze_col)
+            _to_drop.add(bronze_col)
+
+    # Drop bronze source columns only once EVERY mapping has been processed.
+    # One bronze column can legitimately feed more than one silver column (e.g.
+    # an epoch BIGINT feeding both a raw *_epoch_ms column and a converted
+    # *_timestamp column). Dropping inline made the second mapping find its
+    # source already gone, fall back to the silver name, miss that too, and get
+    # silently skipped. A name that is itself a silver column is never dropped.
+    _silver_names = {r["silver_column_name"] for r in mappings if r["silver_column_name"]}
+    _to_drop      = {c for c in _to_drop if c in df.columns and c not in _silver_names}
+    if _to_drop:
+        df = df.drop(*_to_drop)
 
     if _skipped_missing:
         print(
@@ -2636,5 +2684,6 @@ class GoldLoader:
                 "[GoldLoader.load] apply_scd1 done — inserted=%d, updated=%d",
                 rows_inserted, rows_updated,
             )
+
 
 

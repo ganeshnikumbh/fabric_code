@@ -388,39 +388,53 @@ VALUES
   ('HubSpot', 'crm_tasks', 'N/A', 'STRING', 'crm_tasks_base', 'N/A', 'STRING', 'crm_tasks', 'object_type', 'STRING', 9, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE());
 
 
--- [email_events]  (29 fields — generated from schema2/hubspot/email_events.json)
+-- [marketing_email_events]  (35 rows / 33 bronze fields — generated from schema2/hubspot/email_events.json)
 -- Source: HubSpot GET /email/public/v1/events. Records live under 'events' (NOT 'results').
 -- 'created' and 'sentBy.created' are epoch MILLISECONDS and are kept as BIGINT in silver;
 -- casting them to TIMESTAMP here would read them as seconds and silently yield year ~58000.
 -- Convert in gold with TIMESTAMP_MILLIS(event_created_epoch_ms).
 INSERT INTO schema_config (source_name, landing_table_name, landing_column_name, landing_data_type, bronze_table_name, bronze_column_name, bronze_data_type, silver_table_name, silver_column_name, silver_data_type, ordinal_position, include_in_md5hash, is_primary_key, is_nullable, default_value, is_active, created_at)
 VALUES
-  ('HubSpot', 'email_events', 'id', 'STRING', 'email_events_base', 'id', 'STRING', 'email_events', 'email_event_id', 'STRING', 1, 0, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'type', 'STRING', 'email_events_base', 'event_type', 'STRING', 'email_events', 'event_type', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'created', 'BIGINT', 'email_events_base', 'created', 'BIGINT', 'email_events', 'event_created_epoch_ms', 'BIGINT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'recipient', 'STRING', 'email_events_base', 'recipient', 'STRING', 'email_events', 'recipient_email', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'duration', 'BIGINT', 'email_events_base', 'duration', 'BIGINT', 'email_events', 'duration_ms', 'BIGINT', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'portalId', 'BIGINT', 'email_events_base', 'portal_id', 'BIGINT', 'email_events', 'portal_id', 'BIGINT', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'appId', 'BIGINT', 'email_events_base', 'app_id', 'BIGINT', 'email_events', 'app_id', 'BIGINT', 7, 1, 0, 0, '0', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'appName', 'STRING', 'email_events_base', 'app_name', 'STRING', 'email_events', 'app_name', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'emailCampaignId', 'BIGINT', 'email_events_base', 'email_campaign_id', 'BIGINT', 'email_events', 'email_campaign_id', 'BIGINT', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'emailCampaignGroupId', 'BIGINT', 'email_events_base', 'email_campaign_group_id', 'BIGINT', 'email_events', 'email_campaign_group_id', 'BIGINT', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'smtpId', 'STRING', 'email_events_base', 'smtp_id', 'STRING', 'email_events', 'smtp_id', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'filteredEvent', 'BOOLEAN', 'email_events_base', 'filtered_event', 'BOOLEAN', 'email_events', 'is_filtered_event', 'INT', 12, 1, 0, 0, '0', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'sentBy_id', 'STRING', 'email_events_base', 'sent_by_id', 'STRING', 'email_events', 'sent_by_event_id', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'sentBy_created', 'BIGINT', 'email_events_base', 'sent_by_created', 'BIGINT', 'email_events', 'sent_by_created_epoch_ms', 'BIGINT', 14, 1, 0, 0, '0', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'deviceType', 'STRING', 'email_events_base', 'device_type', 'STRING', 'email_events', 'device_type', 'STRING', 15, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'userAgent', 'STRING', 'email_events_base', 'user_agent', 'STRING', 'email_events', 'user_agent', 'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'browser_name', 'STRING', 'email_events_base', 'browser_name', 'STRING', 'email_events', 'browser_name', 'STRING', 17, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'browser_family', 'STRING', 'email_events_base', 'browser_family', 'STRING', 'email_events', 'browser_family', 'STRING', 18, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'browser_producer', 'STRING', 'email_events_base', 'browser_producer', 'STRING', 'email_events', 'browser_producer', 'STRING', 19, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'browser_producerUrl', 'STRING', 'email_events_base', 'browser_producer_url', 'STRING', 'email_events', 'browser_producer_url', 'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'browser_type', 'STRING', 'email_events_base', 'browser_type', 'STRING', 'email_events', 'browser_type', 'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'browser_url', 'STRING', 'email_events_base', 'browser_url', 'STRING', 'email_events', 'browser_url', 'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'browser_version', 'STRING', 'email_events_base', 'browser_version', 'STRING', 'email_events', 'browser_version_json', 'STRING', 23, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'location_country', 'STRING', 'email_events_base', 'location_country', 'STRING', 'email_events', 'country_name', 'STRING', 24, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'location_state', 'STRING', 'email_events_base', 'location_state', 'STRING', 'email_events', 'state_name', 'STRING', 25, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'location_city', 'STRING', 'email_events_base', 'location_city', 'STRING', 'email_events', 'city_name', 'STRING', 26, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'location_zipcode', 'STRING', 'email_events_base', 'location_zipcode', 'STRING', 'email_events', 'postal_code', 'STRING', 27, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'location_latitude', 'DOUBLE', 'email_events_base', 'location_latitude', 'DOUBLE', 'email_events', 'latitude', 'DOUBLE', 28, 1, 0, 0, '0', 1, GETUTCDATE()),
-  ('HubSpot', 'email_events', 'location_longitude', 'DOUBLE', 'email_events_base', 'location_longitude', 'DOUBLE', 'email_events', 'longitude', 'DOUBLE', 29, 1, 0, 0, '0', 1, GETUTCDATE());
+  ('HubSpot', 'marketing_email_events', 'id', 'STRING', 'marketing_email_events_base', 'id', 'STRING', 'marketing_email_events', 'email_event_id', 'STRING', 1, 0, 1, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'type', 'STRING', 'marketing_email_events_base', 'event_type', 'STRING', 'marketing_email_events', 'event_type', 'STRING', 2, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'created', 'BIGINT', 'marketing_email_events_base', 'created', 'BIGINT', 'marketing_email_events', 'event_created_epoch_ms', 'BIGINT', 3, 1, 0, 0, '0', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'recipient', 'STRING', 'marketing_email_events_base', 'recipient', 'STRING', 'marketing_email_events', 'recipient_email', 'STRING', 4, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'duration', 'BIGINT', 'marketing_email_events_base', 'duration', 'BIGINT', 'marketing_email_events', 'duration_ms', 'BIGINT', 5, 1, 0, 0, '0', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'portalId', 'BIGINT', 'marketing_email_events_base', 'portal_id', 'BIGINT', 'marketing_email_events', 'portal_id', 'BIGINT', 6, 1, 0, 0, '0', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'appId', 'BIGINT', 'marketing_email_events_base', 'app_id', 'BIGINT', 'marketing_email_events', 'app_id', 'BIGINT', 7, 1, 0, 0, '0', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'appName', 'STRING', 'marketing_email_events_base', 'app_name', 'STRING', 'marketing_email_events', 'app_name', 'STRING', 8, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'emailCampaignId', 'BIGINT', 'marketing_email_events_base', 'email_campaign_id', 'BIGINT', 'marketing_email_events', 'email_campaign_id', 'BIGINT', 9, 1, 0, 0, '0', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'emailCampaignGroupId', 'BIGINT', 'marketing_email_events_base', 'email_campaign_group_id', 'BIGINT', 'marketing_email_events', 'email_campaign_group_id', 'BIGINT', 10, 1, 0, 0, '0', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'smtpId', 'STRING', 'marketing_email_events_base', 'smtp_id', 'STRING', 'marketing_email_events', 'smtp_id', 'STRING', 11, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'filteredEvent', 'BOOLEAN', 'marketing_email_events_base', 'filtered_event', 'BOOLEAN', 'marketing_email_events', 'is_filtered_event', 'INT', 12, 1, 0, 0, '0', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'sentBy_id', 'STRING', 'marketing_email_events_base', 'sent_by_id', 'STRING', 'marketing_email_events', 'sent_by_event_id', 'STRING', 13, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'sentBy_created', 'BIGINT', 'marketing_email_events_base', 'sent_by_created', 'BIGINT', 'marketing_email_events', 'sent_by_created_epoch_ms', 'BIGINT', 14, 1, 0, 0, '0', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'deviceType', 'STRING', 'marketing_email_events_base', 'device_type', 'STRING', 'marketing_email_events', 'device_type', 'STRING', 15, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'userAgent', 'STRING', 'marketing_email_events_base', 'user_agent', 'STRING', 'marketing_email_events', 'user_agent', 'STRING', 16, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'browser_name', 'STRING', 'marketing_email_events_base', 'browser_name', 'STRING', 'marketing_email_events', 'browser_name', 'STRING', 17, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'browser_family', 'STRING', 'marketing_email_events_base', 'browser_family', 'STRING', 'marketing_email_events', 'browser_family', 'STRING', 18, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'browser_producer', 'STRING', 'marketing_email_events_base', 'browser_producer', 'STRING', 'marketing_email_events', 'browser_producer', 'STRING', 19, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'browser_producerUrl', 'STRING', 'marketing_email_events_base', 'browser_producer_url', 'STRING', 'marketing_email_events', 'browser_producer_url', 'STRING', 20, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'browser_type', 'STRING', 'marketing_email_events_base', 'browser_type', 'STRING', 'marketing_email_events', 'browser_type', 'STRING', 21, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'browser_url', 'STRING', 'marketing_email_events_base', 'browser_url', 'STRING', 'marketing_email_events', 'browser_url', 'STRING', 22, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'browser_version', 'STRING', 'marketing_email_events_base', 'browser_version', 'STRING', 'marketing_email_events', 'browser_version_json', 'STRING', 23, 0, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'location_country', 'STRING', 'marketing_email_events_base', 'location_country', 'STRING', 'marketing_email_events', 'country_name', 'STRING', 24, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'location_state', 'STRING', 'marketing_email_events_base', 'location_state', 'STRING', 'marketing_email_events', 'state_name', 'STRING', 25, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'location_city', 'STRING', 'marketing_email_events_base', 'location_city', 'STRING', 'marketing_email_events', 'city_name', 'STRING', 26, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'location_zipcode', 'STRING', 'marketing_email_events_base', 'location_zipcode', 'STRING', 'marketing_email_events', 'postal_code', 'STRING', 27, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'location_latitude', 'DOUBLE', 'marketing_email_events_base', 'location_latitude', 'DOUBLE', 'marketing_email_events', 'latitude', 'DOUBLE', 28, 1, 0, 0, '0', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'location_longitude', 'DOUBLE', 'marketing_email_events_base', 'location_longitude', 'DOUBLE', 'marketing_email_events', 'longitude', 'DOUBLE', 29, 1, 0, 0, '0', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'url', 'STRING', 'marketing_email_events_base', 'url', 'STRING', 'marketing_email_events', 'click_url', 'STRING', 30, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'linkId', 'BIGINT', 'marketing_email_events_base', 'link_id', 'BIGINT', 'marketing_email_events', 'link_id', 'BIGINT', 31, 1, 0, 0, '0', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'linkIdV2', 'STRING', 'marketing_email_events_base', 'link_id_v2', 'STRING', 'marketing_email_events', 'link_id_v2', 'STRING', 32, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'referer', 'STRING', 'marketing_email_events_base', 'referer', 'STRING', 'marketing_email_events', 'referer_url', 'STRING', 33, 1, 0, 0, 'NOT_PROVIDED', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'created', 'BIGINT', 'marketing_email_events_base', 'created', 'BIGINT', 'marketing_email_events', 'event_created_timestamp', 'TIMESTAMP_MILLIS', 34, 0, 0, 0, '3000-01-01', 1, GETUTCDATE()),
+  ('HubSpot', 'marketing_email_events', 'sentBy_created', 'BIGINT', 'marketing_email_events_base', 'sent_by_created', 'BIGINT', 'marketing_email_events', 'sent_by_created_timestamp', 'TIMESTAMP_MILLIS', 35, 0, 0, 0, '3000-01-01', 1, GETUTCDATE());
+
+-- Rows 34-35 read the SAME bronze columns as rows 3 and 14 (created / sent_by_created).
+-- Those are epoch MILLISECONDS: rows 3/14 keep the raw BIGINT, rows 34-35 expose the
+-- converted TIMESTAMP. silver_data_type TIMESTAMP_MILLIS (not TIMESTAMP) is what tells
+-- cast_and_default_silver_columns to run timestamp_millis() instead of a plain cast --
+-- a plain cast goes via string, yields NULL, and collapses every row to the default.
+-- include_in_md5hash = 0: the value is already hashed via the BIGINT rows, and hashing
+-- the same value twice would make the row hash change meaninglessly.

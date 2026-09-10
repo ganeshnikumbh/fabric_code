@@ -29,48 +29,44 @@
 # In[ ]:
 
 
-# Notebook: nb_silver_s1_ingestion
+# Notebook: nb_silver_s1_ingestion_v2
 # Layer:    Silver S1
-# Purpose:  Metadata-driven SCD2 MERGE from lh_bronze → lh_silver (silver_s1 schema).
-#           Reads the latest bronze batch by computing max(data_date) directly from
-#           the bronze table, then applies an md5-hash-only SCD2 strategy.
+# Purpose:  Metadata-driven bronze -> silver_s1 load with type-casting, defaults,
+#           NOT NULL enforcement, and an SCD2 / non-SCD write.
 #
-# Pipeline flow:
-#   1. nb_get_ingestion_entities (p_config_type='ingestion_config') → v_ingestion_config_json
-#   2. nb_get_ingestion_entities (p_config_type='schema_config')    → v_schema_config_json
-#   3. ForEach over ingestion_config items → calls this notebook per entity
-#      Parameters per iteration:
-#        p_source_schema         : @item().target_schema           ← bronze schema, e.g. bronze_eqwarehouse
-#        p_source_table          : @item().target_table            ← bronze table,  e.g. client_base
-#        p_target_table          : @item().target_table            ← silver table   (same name convention)
-#        p_ingestion_config_json : @variables('v_ingestion_config_json')
-#        p_schema_config_json    : @variables('v_schema_config_json')
-#
-# Bronze filter:
-#   max(data_date) is derived directly from the bronze table at runtime.
-#   All rows matching that max date are read as the current batch.
-#
-# schema_config lookup note:
-#   schema_config.target_table_name = bronze table name (e.g. 'client_base') = p_source_table.
-#   Filtering schema_config by target_table_name gives both the column mappings AND the
-#   source_table_name (landing entity name, e.g. 'Client').
+# The work is split into one function per step. The driver at the bottom runs
+# them in this order:
+#   1. resolve_metadata()    — schema_config mappings + ingestion_config flags
+#   2. read_bronze_source()  — read bronze for the ingestion_date
+#   3. swap_audit_columns()  — drop bronze audit cols, add fresh silver-run audit cols
+#   4. deduplicate()         — dedup on md5_hash
+#   5. cast_and_default()    — cast bronze -> silver types, replace null/blank/junk
+#   6. project_columns()     — keep mapped silver + system columns only
+#      → cache + count once here (drives the 0-row skip and feeds later steps)
+#   7. validate()            — silver validation           (only if rows > 0)
+#   8. write_silver()        — SCD2 merge or non-SCD append (only if rows > 0)
+#   9. enforce_not_null()    — SET NOT NULL on is_nullable=0 columns
+#  10. verify_target()       — target row count
+#  Then: log success, and (non-fatal) refresh silver_s2 materialized lake view(s).
 #
 # Pre-requisites:
 #   - Attach lh_silver as the default lakehouse before running.
-#   - lh_bronze must be added to the notebook session
-#     (Notebook settings → Lakehouses → Add).
+#   - lh_bronze must be added to the notebook session.
 
 import time
-from datetime import datetime, timedelta
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.types import StringType, TimestampType
+from pyspark.sql.types import StringType, TimestampType, IntegerType
 from delta.tables import DeltaTable
 
-spark = SparkSession.builder.appName("nb_silver_s1_ingestion").getOrCreate()
+spark = SparkSession.builder.appName("nb_silver_s1_ingestion_v2").getOrCreate()
 spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
 spark.conf.set("spark.sql.parquet.datetimeRebaseModeInRead", "LEGACY")
+
+# Shared notebook logger (create_logger provided by nb_utils via # The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
+# %run above).
+logger = create_logger("nb_silver_s1_ingestion_v2")  # noqa: F821  # type: ignore[name-defined]
 
 _notebook_start = time.time()
 
@@ -87,27 +83,14 @@ p_source_schema          = ""   # REQUIRED — bronze schema, e.g. "bronze_eqwar
 p_source_table           = ""   # REQUIRED — bronze table name, e.g. "client_base"
 p_target_table           = ""   # REQUIRED — silver table name, e.g. "client_base"
 p_source_system          = ""   # REQUIRED — source system name, e.g. "EQ_Warehouse"
-                                #            Pipeline expression: @item().source_name
 p_ingestion_run_id       = ""   # REQUIRED — UUID from pipeline
 p_ingestion_timestamp    = ""   # REQUIRED — e.g. "2025-04-09T01:00:00Z"
 p_ingestion_date         = ""   # REQUIRED — e.g. "2025-04-09"
 p_ingestion_config_json  = ""   # REQUIRED — full ingestion_config JSON array
 p_schema_config_json     = ""   # REQUIRED — full schema_config JSON array
-
-
-# In[ ]:
-
-
-# # This cell is generated from runtime parameters. Learn more: https://go.microsoft.com/fwlink/?linkid=2161015
-# p_source_schema = "bronze_hubspot"
-# p_source_table = "marketing_emails_base"
-# p_target_table = "marketing_emails"
-# p_source_system = "HubSpot"
-# p_ingestion_run_id = "469ad3ed-479f-4384-93a4-012ee8f547a4"
-# p_ingestion_timestamp = "026-07-09T00:00:00Z"
-# p_ingestion_date = "026-07-09"
-# p_ingestion_config_json = "[{\"source_id\":77,\"source_name\":\"HubSpot\",\"source_type\":\"api\",\"landing_lakehouse\":\"lh_landing\",\"landing_schema\":\"hubspot\",\"landing_table_name\":\"crm_owners\",\"bronze_lakehouse\":\"lh_bronze\",\"bronze_schema\":\"bronze_hubspot\",\"bronze_table\":\"crm_owners_base\",\"silver_lakehouse\":\"lh_silver\",\"silver_schema\":\"silver_s1\",\"silver_table\":\"crm_owners\",\"load_type\":\"full\",\"watermark_column\":null,\"watermark_type\":null,\"batch_size\":null,\"partition_by_column_names\":null,\"is_scd2\":true,\"src_busn_asst\":\"elic\",\"source_path\":\"results\"},{\"source_id\":70,\"source_name\":\"HubSpot\",\"source_type\":\"api\",\"landing_lakehouse\":\"lh_landing\",\"landing_schema\":\"hubspot\",\"landing_table_name\":\"marketing_events\",\"bronze_lakehouse\":\"lh_bronze\",\"bronze_schema\":\"bronze_hubspot\",\"bronze_table\":\"marketing_events_base\",\"silver_lakehouse\":\"lh_silver\",\"silver_schema\":\"silver_s1\",\"silver_table\":\"marketing_events\",\"load_type\":\"full\",\"watermark_column\":null,\"watermark_type\":null,\"batch_size\":null,\"partition_by_column_names\":null,\"is_scd2\":false,\"src_busn_asst\":\"elic\",\"source_path\":\"results\"},{\"source_id\":71,\"source_name\":\"HubSpot\",\"source_type\":\"api\",\"landing_lakehouse\":\"lh_landing\",\"landing_schema\":\"hubspot\",\"landing_table_name\":\"marketing_emails\",\"bronze_lakehouse\":\"lh_bronze\",\"bronze_schema\":\"bronze_hubspot\",\"bronze_table\":\"marketing_emails_base\",\"silver_lakehouse\":\"lh_silver\",\"silver_schema\":\"silver_s1\",\"silver_table\":\"marketing_emails\",\"load_type\":\"full\",\"watermark_column\":null,\"watermark_type\":null,\"batch_size\":null,\"partition_by_column_names\":null,\"is_scd2\":false,\"src_busn_asst\":\"elic\",\"source_path\":\"results\"},{\"source_id\":72,\"source_name\":\"HubSpot\",\"source_type\":\"api\",\"landing_lakehouse\":\"lh_landing\",\"landing_schema\":\"hubspot\",\"landing_table_name\":\"events_event_types\",\"bronze_lakehouse\":\"lh_bronze\",\"bronze_schema\":\"bronze_hubspot\",\"bronze_table\":\"events_event_types_base\",\"silver_lakehouse\":\"lh_silver\",\"silver_schema\":\"silver_s1\",\"silver_table\":\"events_event_types\",\"load_type\":\"full\",\"watermark_column\":null,\"watermark_type\":null,\"batch_size\":null,\"partition_by_column_names\":null,\"is_scd2\":true,\"src_busn_asst\":\"elic\",\"source_path\":\"results\"},{\"source_id\":73,\"source_name\":\"HubSpot\",\"source_type\":\"api\",\"landing_lakehouse\":\"lh_landing\",\"landing_schema\":\"hubspot\",\"landing_table_name\":\"crm_contacts\",\"bronze_lakehouse\":\"lh_bronze\",\"bronze_schema\":\"bronze_hubspot\",\"bronze_table\":\"crm_contacts_base\",\"silver_lakehouse\":\"lh_silver\",\"silver_schema\":\"silver_s1\",\"silver_table\":\"crm_contacts\",\"load_type\":\"full\",\"watermark_column\":null,\"watermark_type\":null,\"batch_size\":null,\"partition_by_column_names\":null,\"is_scd2\":true,\"src_busn_asst\":\"elic\",\"source_path\":\"results\"},{\"source_id\":74,\"source_name\":\"HubSpot\",\"source_type\":\"api\",\"landing_lakehouse\":\"lh_landing\",\"landing_schema\":\"hubspot\",\"landing_table_name\":\"crm_companies\",\"bronze_lakehouse\":\"lh_bronze\",\"bronze_schema\":\"bronze_hubspot\",\"bronze_table\":\"crm_companies_base\",\"silver_lakehouse\":\"lh_silver\",\"silver_schema\":\"silver_s1\",\"silver_table\":\"crm_companies\",\"load_type\":\"full\",\"watermark_column\":null,\"watermark_type\":null,\"batch_size\":null,\"partition_by_column_names\":null,\"is_scd2\":true,\"src_busn_asst\":\"elic\",\"source_path\":\"results\"},{\"source_id\":75,\"source_name\":\"HubSpot\",\"source_type\":\"api\",\"landing_lakehouse\":\"lh_landing\",\"landing_schema\":\"hubspot\",\"landing_table_name\":\"marketing_email_statistics\",\"bronze_lakehouse\":\"lh_bronze\",\"bronze_schema\":\"bronze_hubspot\",\"bronze_table\":\"marketing_email_statistics_base\",\"silver_lakehouse\":\"lh_silver\",\"silver_schema\":\"silver_s1\",\"silver_table\":\"marketing_email_statistics\",\"load_type\":\"full\",\"watermark_column\":null,\"watermark_type\":null,\"batch_size\":null,\"partition_by_column_names\":null,\"is_scd2\":false,\"src_busn_asst\":\"elic\",\"source_path\":\"\"},{\"source_id\":76,\"source_name\":\"HubSpot\",\"source_type\":\"api\",\"landing_lakehouse\":\"lh_landing\",\"landing_schema\":\"hubspot\",\"landing_table_name\":\"event_details\",\"bronze_lakehouse\":\"lh_bronze\",\"bronze_schema\":\"bronze_hubspot\",\"bronze_table\":\"event_details_base\",\"silver_lakehouse\":\"lh_silver\",\"silver_schema\":\"silver_s1\",\"silver_table\":\"event_details\",\"load_type\":\"full\",\"watermark_column\":null,\"watermark_type\":null,\"batch_size\":null,\"partition_by_column_names\":null,\"is_scd2\":false,\"src_busn_asst\":\"elic\",\"source_path\":\"results\"}]"
-# p_schema_config_json = "[{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.ratios.clickratio\",\"target_column_name\":\"ratio_click\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":18,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.ratios.clickthroughratio\",\"target_column_name\":\"ratio_clickthrough\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":19,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.ratios.deliveredratio\",\"target_column_name\":\"ratio_delivered\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":20,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.ratios.openratio\",\"target_column_name\":\"ratio_open\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":21,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.ratios.replyratio\",\"target_column_name\":\"ratio_reply\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":22,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.ratios.unsubscribedratio\",\"target_column_name\":\"ratio_unsubscribed\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":23,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.ratios.spamreportratio\",\"target_column_name\":\"ratio_spamreport\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":24,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.ratios.bounceratio\",\"target_column_name\":\"ratio_bounce\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":25,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.ratios.hardbounceratio\",\"target_column_name\":\"ratio_hardbounce\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":26,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.ratios.softbounceratio\",\"target_column_name\":\"ratio_softbounce\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":27,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.ratios.contactslostratio\",\"target_column_name\":\"ratio_contactslost\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":28,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.ratios.pendingratio\",\"target_column_name\":\"ratio_pending\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":29,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.ratios.notsentratio\",\"target_column_name\":\"ratio_notsent\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":30,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.ratios.clickratio\",\"target_column_name\":\"campaign_ratio_click\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":50,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.ratios.clickthroughratio\",\"target_column_name\":\"campaign_ratio_clickthrough\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":51,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.ratios.deliveredratio\",\"target_column_name\":\"campaign_ratio_delivered\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":52,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.ratios.openratio\",\"target_column_name\":\"campaign_ratio_open\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":53,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.ratios.replyratio\",\"target_column_name\":\"campaign_ratio_reply\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":54,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.ratios.unsubscribedratio\",\"target_column_name\":\"campaign_ratio_unsubscribed\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":55,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.ratios.spamreportratio\",\"target_column_name\":\"campaign_ratio_spamreport\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":56,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.ratios.bounceratio\",\"target_column_name\":\"campaign_ratio_bounce\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":57,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.ratios.hardbounceratio\",\"target_column_name\":\"campaign_ratio_hardbounce\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":58,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.ratios.softbounceratio\",\"target_column_name\":\"campaign_ratio_softbounce\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":59,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.ratios.contactslostratio\",\"target_column_name\":\"campaign_ratio_contactslost\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":60,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.ratios.pendingratio\",\"target_column_name\":\"campaign_ratio_pending\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":61,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.ratios.notsentratio\",\"target_column_name\":\"campaign_ratio_notsent\",\"target_data_type\":\"FLOAT\",\"ordinal_position\":62,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"archived\",\"target_column_name\":\"archived\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":8,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"archived\",\"target_column_name\":\"archived\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"archived\",\"target_column_name\":\"archived\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_deals\",\"target_table_name\":\"crm_deals_base\",\"source_column_name\":\"archived\",\"target_column_name\":\"archived\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tickets\",\"target_table_name\":\"crm_tickets_base\",\"source_column_name\":\"archived\",\"target_column_name\":\"archived\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_products\",\"target_table_name\":\"crm_products_base\",\"source_column_name\":\"archived\",\"target_column_name\":\"archived\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_line_items\",\"target_table_name\":\"crm_line_items_base\",\"source_column_name\":\"archived\",\"target_column_name\":\"archived\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_quotes\",\"target_table_name\":\"crm_quotes_base\",\"source_column_name\":\"archived\",\"target_column_name\":\"archived\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_calls\",\"target_table_name\":\"crm_calls_base\",\"source_column_name\":\"archived\",\"target_column_name\":\"archived\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_meetings\",\"target_table_name\":\"crm_meetings_base\",\"source_column_name\":\"archived\",\"target_column_name\":\"archived\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_notes\",\"target_table_name\":\"crm_notes_base\",\"source_column_name\":\"archived\",\"target_column_name\":\"archived\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tasks\",\"target_table_name\":\"crm_tasks_base\",\"source_column_name\":\"archived\",\"target_column_name\":\"archived\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_owners\",\"target_table_name\":\"crm_owners_base\",\"source_column_name\":\"archived\",\"target_column_name\":\"archived\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":10,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"isAb\",\"target_column_name\":\"is_ab\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":9,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"isPublished\",\"target_column_name\":\"is_published\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":10,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"isTransactional\",\"target_column_name\":\"is_transactional\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":11,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"sendOnPublish\",\"target_column_name\":\"send_on_publish\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":12,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"jitterSendTime\",\"target_column_name\":\"jitter_send_time\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":13,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"webversion.enabled\",\"target_column_name\":\"webversion_enabled\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":45,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"to.limitSendFrequency\",\"target_column_name\":\"to_limit_send_frequency\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":57,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"to.suppressGraymail\",\"target_column_name\":\"to_suppress_graymail\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":58,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"eventCancelled\",\"target_column_name\":\"event_cancelled\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":12,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"eventCompleted\",\"target_column_name\":\"event_completed\",\"target_data_type\":\"BOOLEAN\",\"ordinal_position\":13,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"registrants\",\"target_column_name\":\"registrants\",\"target_data_type\":\"INT\",\"ordinal_position\":14,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"attendees\",\"target_column_name\":\"attendees\",\"target_data_type\":\"INT\",\"ordinal_position\":15,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"cancellations\",\"target_column_name\":\"cancellations\",\"target_data_type\":\"INT\",\"ordinal_position\":16,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"noShows\",\"target_column_name\":\"no_shows\",\"target_data_type\":\"INT\",\"ordinal_position\":17,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_owners\",\"target_table_name\":\"crm_owners_base\",\"source_column_name\":\"userId\",\"target_column_name\":\"user_id\",\"target_data_type\":\"INT\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.unsubscribed\",\"target_column_name\":\"cnt_unsubscribed\",\"target_data_type\":\"INT\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.reply\",\"target_column_name\":\"cnt_reply\",\"target_data_type\":\"INT\",\"ordinal_position\":8,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.dropped\",\"target_column_name\":\"cnt_dropped\",\"target_data_type\":\"INT\",\"ordinal_position\":9,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.selected\",\"target_column_name\":\"cnt_selected\",\"target_data_type\":\"INT\",\"ordinal_position\":10,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.spamreport\",\"target_column_name\":\"cnt_spamreport\",\"target_data_type\":\"INT\",\"ordinal_position\":11,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.suppressed\",\"target_column_name\":\"cnt_suppressed\",\"target_data_type\":\"INT\",\"ordinal_position\":12,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.hardbounced\",\"target_column_name\":\"cnt_hardbounced\",\"target_data_type\":\"INT\",\"ordinal_position\":13,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.softbounced\",\"target_column_name\":\"cnt_softbounced\",\"target_data_type\":\"INT\",\"ordinal_position\":14,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.pending\",\"target_column_name\":\"cnt_pending\",\"target_data_type\":\"INT\",\"ordinal_position\":15,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.contactslost\",\"target_column_name\":\"cnt_contactslost\",\"target_data_type\":\"INT\",\"ordinal_position\":16,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.notsent\",\"target_column_name\":\"cnt_notsent\",\"target_data_type\":\"INT\",\"ordinal_position\":17,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.sent\",\"target_column_name\":\"campaign_cnt_sent\",\"target_data_type\":\"INT\",\"ordinal_position\":34,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.open\",\"target_column_name\":\"campaign_cnt_open\",\"target_data_type\":\"INT\",\"ordinal_position\":35,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.delivered\",\"target_column_name\":\"campaign_cnt_delivered\",\"target_data_type\":\"INT\",\"ordinal_position\":36,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.bounce\",\"target_column_name\":\"campaign_cnt_bounce\",\"target_data_type\":\"INT\",\"ordinal_position\":37,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.unsubscribed\",\"target_column_name\":\"campaign_cnt_unsubscribed\",\"target_data_type\":\"INT\",\"ordinal_position\":38,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.click\",\"target_column_name\":\"campaign_cnt_click\",\"target_data_type\":\"INT\",\"ordinal_position\":39,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.reply\",\"target_column_name\":\"campaign_cnt_reply\",\"target_data_type\":\"INT\",\"ordinal_position\":40,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.dropped\",\"target_column_name\":\"campaign_cnt_dropped\",\"target_data_type\":\"INT\",\"ordinal_position\":41,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.selected\",\"target_column_name\":\"campaign_cnt_selected\",\"target_data_type\":\"INT\",\"ordinal_position\":42,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.spamreport\",\"target_column_name\":\"campaign_cnt_spamreport\",\"target_data_type\":\"INT\",\"ordinal_position\":43,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.suppressed\",\"target_column_name\":\"campaign_cnt_suppressed\",\"target_data_type\":\"INT\",\"ordinal_position\":44,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.hardbounced\",\"target_column_name\":\"campaign_cnt_hardbounced\",\"target_data_type\":\"INT\",\"ordinal_position\":45,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.softbounced\",\"target_column_name\":\"campaign_cnt_softbounced\",\"target_data_type\":\"INT\",\"ordinal_position\":46,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.pending\",\"target_column_name\":\"campaign_cnt_pending\",\"target_data_type\":\"INT\",\"ordinal_position\":47,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.contactslost\",\"target_column_name\":\"campaign_cnt_contactslost\",\"target_data_type\":\"INT\",\"ordinal_position\":48,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.counters.notsent\",\"target_column_name\":\"campaign_cnt_notsent\",\"target_data_type\":\"INT\",\"ordinal_position\":49,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_owners\",\"target_table_name\":\"crm_owners_base\",\"source_column_name\":\"userIdIncludingInactive\",\"target_column_name\":\"user_id_including_inactive\",\"target_data_type\":\"INT\",\"ordinal_position\":7,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.click\",\"target_column_name\":\"cnt_click\",\"target_data_type\":\"INT\",\"ordinal_position\":7,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.bounce\",\"target_column_name\":\"cnt_bounce\",\"target_data_type\":\"INT\",\"ordinal_position\":5,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.delivered\",\"target_column_name\":\"cnt_delivered\",\"target_data_type\":\"INT\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.open\",\"target_column_name\":\"cnt_open\",\"target_data_type\":\"INT\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.counters.sent\",\"target_column_name\":\"cnt_sent\",\"target_data_type\":\"INT\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"id\",\"target_column_name\":\"id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"id\",\"target_column_name\":\"id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"id\",\"target_column_name\":\"id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_deals\",\"target_table_name\":\"crm_deals_base\",\"source_column_name\":\"id\",\"target_column_name\":\"id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tickets\",\"target_table_name\":\"crm_tickets_base\",\"source_column_name\":\"id\",\"target_column_name\":\"id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_products\",\"target_table_name\":\"crm_products_base\",\"source_column_name\":\"id\",\"target_column_name\":\"id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_line_items\",\"target_table_name\":\"crm_line_items_base\",\"source_column_name\":\"id\",\"target_column_name\":\"id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_quotes\",\"target_table_name\":\"crm_quotes_base\",\"source_column_name\":\"id\",\"target_column_name\":\"id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_calls\",\"target_table_name\":\"crm_calls_base\",\"source_column_name\":\"id\",\"target_column_name\":\"id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_meetings\",\"target_table_name\":\"crm_meetings_base\",\"source_column_name\":\"id\",\"target_column_name\":\"id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_notes\",\"target_table_name\":\"crm_notes_base\",\"source_column_name\":\"id\",\"target_column_name\":\"id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tasks\",\"target_table_name\":\"crm_tasks_base\",\"source_column_name\":\"id\",\"target_column_name\":\"id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_owners\",\"target_table_name\":\"crm_owners_base\",\"source_column_name\":\"id\",\"target_column_name\":\"id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"id\",\"target_column_name\":\"id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":false,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"objectId\",\"target_column_name\":\"object_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"events_event_types\",\"target_table_name\":\"events_event_types_base\",\"source_column_name\":\"__item__\",\"target_column_name\":\"event_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"emails.$0\",\"target_column_name\":\"email_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":1,\"include_in_md5hash\":true,\"is_primary_key\":true},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_deals\",\"target_table_name\":\"crm_deals_base\",\"source_column_name\":\"objectWriteTraceId\",\"target_column_name\":\"object_write_trace_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tickets\",\"target_table_name\":\"crm_tickets_base\",\"source_column_name\":\"objectWriteTraceId\",\"target_column_name\":\"object_write_trace_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_products\",\"target_table_name\":\"crm_products_base\",\"source_column_name\":\"objectWriteTraceId\",\"target_column_name\":\"object_write_trace_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_line_items\",\"target_table_name\":\"crm_line_items_base\",\"source_column_name\":\"objectWriteTraceId\",\"target_column_name\":\"object_write_trace_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_quotes\",\"target_table_name\":\"crm_quotes_base\",\"source_column_name\":\"objectWriteTraceId\",\"target_column_name\":\"object_write_trace_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_calls\",\"target_table_name\":\"crm_calls_base\",\"source_column_name\":\"objectWriteTraceId\",\"target_column_name\":\"object_write_trace_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_meetings\",\"target_table_name\":\"crm_meetings_base\",\"source_column_name\":\"objectWriteTraceId\",\"target_column_name\":\"object_write_trace_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_notes\",\"target_table_name\":\"crm_notes_base\",\"source_column_name\":\"objectWriteTraceId\",\"target_column_name\":\"object_write_trace_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tasks\",\"target_table_name\":\"crm_tasks_base\",\"source_column_name\":\"objectWriteTraceId\",\"target_column_name\":\"object_write_trace_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"eventStatusV2\",\"target_column_name\":\"event_status_v2\",\"target_data_type\":\"STRING\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"subcategory\",\"target_column_name\":\"subcategory\",\"target_data_type\":\"STRING\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.agent_id__c\",\"target_column_name\":\"agent_id_c\",\"target_data_type\":\"STRING\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.agent_id__c\",\"target_column_name\":\"agent_id_c\",\"target_data_type\":\"STRING\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_base_url\",\"target_column_name\":\"hs_base_url\",\"target_data_type\":\"STRING\",\"ordinal_position\":6,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"eventStatus\",\"target_column_name\":\"event_status\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"type\",\"target_column_name\":\"type\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_owners\",\"target_table_name\":\"crm_owners_base\",\"source_column_name\":\"type\",\"target_column_name\":\"type\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"occurredAt\",\"target_column_name\":\"occurred_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_deals\",\"target_table_name\":\"crm_deals_base\",\"source_column_name\":\"archivedAt\",\"target_column_name\":\"archived_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tickets\",\"target_table_name\":\"crm_tickets_base\",\"source_column_name\":\"archivedAt\",\"target_column_name\":\"archived_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_products\",\"target_table_name\":\"crm_products_base\",\"source_column_name\":\"archivedAt\",\"target_column_name\":\"archived_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_line_items\",\"target_table_name\":\"crm_line_items_base\",\"source_column_name\":\"archivedAt\",\"target_column_name\":\"archived_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_quotes\",\"target_table_name\":\"crm_quotes_base\",\"source_column_name\":\"archivedAt\",\"target_column_name\":\"archived_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_calls\",\"target_table_name\":\"crm_calls_base\",\"source_column_name\":\"archivedAt\",\"target_column_name\":\"archived_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_meetings\",\"target_table_name\":\"crm_meetings_base\",\"source_column_name\":\"archivedAt\",\"target_column_name\":\"archived_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_notes\",\"target_table_name\":\"crm_notes_base\",\"source_column_name\":\"archivedAt\",\"target_column_name\":\"archived_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tasks\",\"target_table_name\":\"crm_tasks_base\",\"source_column_name\":\"archivedAt\",\"target_column_name\":\"archived_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"updatedAt\",\"target_column_name\":\"updated_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"updatedAt\",\"target_column_name\":\"updated_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_deals\",\"target_table_name\":\"crm_deals_base\",\"source_column_name\":\"updatedAt\",\"target_column_name\":\"updated_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tickets\",\"target_table_name\":\"crm_tickets_base\",\"source_column_name\":\"updatedAt\",\"target_column_name\":\"updated_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_products\",\"target_table_name\":\"crm_products_base\",\"source_column_name\":\"updatedAt\",\"target_column_name\":\"updated_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_line_items\",\"target_table_name\":\"crm_line_items_base\",\"source_column_name\":\"updatedAt\",\"target_column_name\":\"updated_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_quotes\",\"target_table_name\":\"crm_quotes_base\",\"source_column_name\":\"updatedAt\",\"target_column_name\":\"updated_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_calls\",\"target_table_name\":\"crm_calls_base\",\"source_column_name\":\"updatedAt\",\"target_column_name\":\"updated_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_meetings\",\"target_table_name\":\"crm_meetings_base\",\"source_column_name\":\"updatedAt\",\"target_column_name\":\"updated_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_notes\",\"target_table_name\":\"crm_notes_base\",\"source_column_name\":\"updatedAt\",\"target_column_name\":\"updated_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tasks\",\"target_table_name\":\"crm_tasks_base\",\"source_column_name\":\"updatedAt\",\"target_column_name\":\"updated_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"eventName\",\"target_column_name\":\"event_name\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"subject\",\"target_column_name\":\"subject\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_owners\",\"target_table_name\":\"crm_owners_base\",\"source_column_name\":\"firstName\",\"target_column_name\":\"first_name\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"objectId\",\"target_column_name\":\"object_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":3,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"externalEventId\",\"target_column_name\":\"external_event_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"eventType\",\"target_column_name\":\"event_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"startDateTime\",\"target_column_name\":\"start_date_time\",\"target_data_type\":\"STRING\",\"ordinal_position\":7,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"endDateTime\",\"target_column_name\":\"end_date_time\",\"target_data_type\":\"STRING\",\"ordinal_position\":8,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"eventOrganizer\",\"target_column_name\":\"event_organizer\",\"target_data_type\":\"STRING\",\"ordinal_position\":9,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"eventDescription\",\"target_column_name\":\"event_description\",\"target_data_type\":\"STRING\",\"ordinal_position\":10,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"eventUrl\",\"target_column_name\":\"event_url\",\"target_data_type\":\"STRING\",\"ordinal_position\":11,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"appInfo.id\",\"target_column_name\":\"app_info_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":18,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"appInfo.name\",\"target_column_name\":\"app_info_name\",\"target_data_type\":\"STRING\",\"ordinal_position\":19,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"updatedAt\",\"target_column_name\":\"updated_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":21,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"name\",\"target_column_name\":\"name\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"state\",\"target_column_name\":\"state\",\"target_data_type\":\"STRING\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"language\",\"target_column_name\":\"language\",\"target_data_type\":\"STRING\",\"ordinal_position\":7,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"activeDomain\",\"target_column_name\":\"active_domain\",\"target_data_type\":\"STRING\",\"ordinal_position\":14,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"campaign\",\"target_column_name\":\"campaign\",\"target_data_type\":\"STRING\",\"ordinal_position\":15,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"campaignName\",\"target_column_name\":\"campaign_name\",\"target_data_type\":\"STRING\",\"ordinal_position\":16,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"campaignUtm\",\"target_column_name\":\"campaign_utm\",\"target_data_type\":\"STRING\",\"ordinal_position\":17,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"emailCampaignGroupId\",\"target_column_name\":\"email_campaign_group_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":18,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"primaryEmailCampaignId\",\"target_column_name\":\"primary_email_campaign_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":19,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"emailTemplateMode\",\"target_column_name\":\"email_template_mode\",\"target_data_type\":\"STRING\",\"ordinal_position\":20,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"feedbackSurveyId\",\"target_column_name\":\"feedback_survey_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":21,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"folderId\",\"target_column_name\":\"folder_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":22,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"businessUnitId\",\"target_column_name\":\"business_unit_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":23,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"clonedFrom\",\"target_column_name\":\"cloned_from\",\"target_data_type\":\"STRING\",\"ordinal_position\":24,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"previewKey\",\"target_column_name\":\"preview_key\",\"target_data_type\":\"STRING\",\"ordinal_position\":25,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"publishDate\",\"target_column_name\":\"publish_date\",\"target_data_type\":\"STRING\",\"ordinal_position\":26,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"publishedAt\",\"target_column_name\":\"published_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":27,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"unpublishedAt\",\"target_column_name\":\"unpublished_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":28,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"publishedByEmail\",\"target_column_name\":\"published_by_email\",\"target_data_type\":\"STRING\",\"ordinal_position\":29,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"publishedById\",\"target_column_name\":\"published_by_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":30,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"publishedByName\",\"target_column_name\":\"published_by_name\",\"target_data_type\":\"STRING\",\"ordinal_position\":31,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"createdById\",\"target_column_name\":\"created_by_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":33,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"deletedAt\",\"target_column_name\":\"deleted_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":34,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"updatedAt\",\"target_column_name\":\"updated_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":35,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"updatedById\",\"target_column_name\":\"updated_by_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":36,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"from.fromName\",\"target_column_name\":\"from_name\",\"target_data_type\":\"STRING\",\"ordinal_position\":37,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"from.replyTo\",\"target_column_name\":\"from_reply_to\",\"target_data_type\":\"STRING\",\"ordinal_position\":38,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"from.customReplyTo\",\"target_column_name\":\"from_custom_reply_to\",\"target_data_type\":\"STRING\",\"ordinal_position\":39,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"subscriptionDetails.subscriptionId\",\"target_column_name\":\"subscription_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":40,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"subscriptionDetails.subscriptionName\",\"target_column_name\":\"subscription_name\",\"target_data_type\":\"STRING\",\"ordinal_position\":41,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"subscriptionDetails.officeLocationId\",\"target_column_name\":\"subscription_office_location_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":42,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"subscriptionDetails.preferencesGroupId\",\"target_column_name\":\"subscription_preferences_group_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":43,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"webversion.url\",\"target_column_name\":\"webversion_url\",\"target_data_type\":\"STRING\",\"ordinal_position\":44,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.agent_number\",\"target_column_name\":\"agent_number\",\"target_data_type\":\"STRING\",\"ordinal_position\":7,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.associatedcompanyid\",\"target_column_name\":\"associatedcompanyid\",\"target_data_type\":\"STRING\",\"ordinal_position\":8,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.associatedcompanylastupdated\",\"target_column_name\":\"associatedcompanylastupdated\",\"target_data_type\":\"STRING\",\"ordinal_position\":9,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.agent_number\",\"target_column_name\":\"agent_number\",\"target_data_type\":\"STRING\",\"ordinal_position\":7,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.agent_type__c\",\"target_column_name\":\"agent_type_c\",\"target_data_type\":\"STRING\",\"ordinal_position\":8,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.aggregation__c\",\"target_column_name\":\"aggregation_c\",\"target_data_type\":\"STRING\",\"ordinal_position\":9,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.company\",\"target_column_name\":\"company\",\"target_data_type\":\"STRING\",\"ordinal_position\":10,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.createdate\",\"target_column_name\":\"createdate\",\"target_data_type\":\"STRING\",\"ordinal_position\":11,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.email\",\"target_column_name\":\"email\",\"target_data_type\":\"STRING\",\"ordinal_position\":12,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.hs_email_click\",\"target_column_name\":\"hs_email_click\",\"target_data_type\":\"STRING\",\"ordinal_position\":13,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.hs_email_first_click_date\",\"target_column_name\":\"hs_email_first_click_date\",\"target_data_type\":\"STRING\",\"ordinal_position\":14,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.hs_email_first_open_date\",\"target_column_name\":\"hs_email_first_open_date\",\"target_data_type\":\"STRING\",\"ordinal_position\":15,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.createdate\",\"target_column_name\":\"createdate\",\"target_data_type\":\"STRING\",\"ordinal_position\":10,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.hs_lastmodifieddate\",\"target_column_name\":\"hs_lastmodifieddate\",\"target_data_type\":\"STRING\",\"ordinal_position\":11,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.hs_object_id\",\"target_column_name\":\"hs_object_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":12,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.name\",\"target_column_name\":\"name\",\"target_data_type\":\"STRING\",\"ordinal_position\":13,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.parent_imo_agent\",\"target_column_name\":\"parent_imo_agent\",\"target_data_type\":\"STRING\",\"ordinal_position\":14,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_owners\",\"target_table_name\":\"crm_owners_base\",\"source_column_name\":\"email\",\"target_column_name\":\"email\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_owners\",\"target_table_name\":\"crm_owners_base\",\"source_column_name\":\"lastName\",\"target_column_name\":\"last_name\",\"target_data_type\":\"STRING\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_owners\",\"target_table_name\":\"crm_owners_base\",\"source_column_name\":\"updatedAt\",\"target_column_name\":\"updated_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":9,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"to.contactIds\",\"target_column_name\":\"to_contact_ids\",\"target_data_type\":\"STRING\",\"ordinal_position\":54,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"to.contactIlsLists\",\"target_column_name\":\"to_contact_ils_lists\",\"target_data_type\":\"STRING\",\"ordinal_position\":55,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"to.contactLists\",\"target_column_name\":\"to_contact_lists\",\"target_data_type\":\"STRING\",\"ordinal_position\":56,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first_key\",\"target_column_name\":\"campaign_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":33,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"objectType\",\"target_column_name\":\"object_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"eventType\",\"target_column_name\":\"event_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":4,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_url\",\"target_column_name\":\"hs_url\",\"target_data_type\":\"STRING\",\"ordinal_position\":7,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_query_params\",\"target_column_name\":\"hs_query_params\",\"target_data_type\":\"STRING\",\"ordinal_position\":8,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_canonical_url\",\"target_column_name\":\"hs_canonical_url\",\"target_data_type\":\"STRING\",\"ordinal_position\":9,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_url_domain\",\"target_column_name\":\"hs_url_domain\",\"target_data_type\":\"STRING\",\"ordinal_position\":10,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_url_path\",\"target_column_name\":\"hs_url_path\",\"target_data_type\":\"STRING\",\"ordinal_position\":11,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_analytics_normalized_page_url\",\"target_column_name\":\"hs_analytics_normalized_page_url\",\"target_data_type\":\"STRING\",\"ordinal_position\":12,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_is_virtual_url\",\"target_column_name\":\"hs_is_virtual_url\",\"target_data_type\":\"STRING\",\"ordinal_position\":13,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_page_id\",\"target_column_name\":\"hs_page_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":14,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_page_title\",\"target_column_name\":\"hs_page_title\",\"target_data_type\":\"STRING\",\"ordinal_position\":15,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_title\",\"target_column_name\":\"hs_title\",\"target_data_type\":\"STRING\",\"ordinal_position\":16,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_targeted_content_aggregation\",\"target_column_name\":\"hs_targeted_content_aggregation\",\"target_data_type\":\"STRING\",\"ordinal_position\":17,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_is_virtual_referrer\",\"target_column_name\":\"hs_is_virtual_referrer\",\"target_data_type\":\"STRING\",\"ordinal_position\":18,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_is_external\",\"target_column_name\":\"hs_is_external\",\"target_data_type\":\"STRING\",\"ordinal_position\":19,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_is_amp\",\"target_column_name\":\"hs_is_amp\",\"target_data_type\":\"STRING\",\"ordinal_position\":20,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_is_in_chat_view\",\"target_column_name\":\"hs_is_in_chat_view\",\"target_data_type\":\"STRING\",\"ordinal_position\":21,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_is_new_cookie\",\"target_column_name\":\"hs_is_new_cookie\",\"target_data_type\":\"STRING\",\"ordinal_position\":22,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_is_contact\",\"target_column_name\":\"hs_is_contact\",\"target_data_type\":\"STRING\",\"ordinal_position\":23,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_referrer\",\"target_column_name\":\"hs_referrer\",\"target_data_type\":\"STRING\",\"ordinal_position\":24,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_device_type\",\"target_column_name\":\"hs_device_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":25,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_device_name\",\"target_column_name\":\"hs_device_name\",\"target_data_type\":\"STRING\",\"ordinal_position\":26,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_browser\",\"target_column_name\":\"hs_browser\",\"target_data_type\":\"STRING\",\"ordinal_position\":27,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_browser_type\",\"target_column_name\":\"hs_browser_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":28,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_browser_version_major\",\"target_column_name\":\"hs_browser_version_major\",\"target_data_type\":\"STRING\",\"ordinal_position\":29,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_browser_fingerprint\",\"target_column_name\":\"hs_browser_fingerprint\",\"target_data_type\":\"STRING\",\"ordinal_position\":30,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_operating_system\",\"target_column_name\":\"hs_operating_system\",\"target_data_type\":\"STRING\",\"ordinal_position\":31,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_vendor\",\"target_column_name\":\"hs_vendor\",\"target_data_type\":\"STRING\",\"ordinal_position\":32,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_user_agent\",\"target_column_name\":\"hs_user_agent\",\"target_data_type\":\"STRING\",\"ordinal_position\":33,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_country\",\"target_column_name\":\"hs_country\",\"target_data_type\":\"STRING\",\"ordinal_position\":34,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_region\",\"target_column_name\":\"hs_region\",\"target_data_type\":\"STRING\",\"ordinal_position\":35,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_qualified_region\",\"target_column_name\":\"hs_qualified_region\",\"target_data_type\":\"STRING\",\"ordinal_position\":36,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_city\",\"target_column_name\":\"hs_city\",\"target_data_type\":\"STRING\",\"ordinal_position\":37,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_cf_bot_score\",\"target_column_name\":\"hs_cf_bot_score\",\"target_data_type\":\"STRING\",\"ordinal_position\":38,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_hash_id\",\"target_column_name\":\"hs_hash_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":39,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_log_line_timestamp\",\"target_column_name\":\"hs_log_line_timestamp\",\"target_data_type\":\"STRING\",\"ordinal_position\":40,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_processed_timestamp\",\"target_column_name\":\"hs_processed_timestamp\",\"target_data_type\":\"STRING\",\"ordinal_position\":41,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_visit_source\",\"target_column_name\":\"hs_visit_source\",\"target_data_type\":\"STRING\",\"ordinal_position\":42,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_visit_source_details_1\",\"target_column_name\":\"hs_visit_source_details_1\",\"target_data_type\":\"STRING\",\"ordinal_position\":43,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_visit_source_details_2\",\"target_column_name\":\"hs_visit_source_details_2\",\"target_data_type\":\"STRING\",\"ordinal_position\":44,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_utm_campaign\",\"target_column_name\":\"hs_utm_campaign\",\"target_data_type\":\"STRING\",\"ordinal_position\":45,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_leviathan_linked_vids\",\"target_column_name\":\"hs_leviathan_linked_vids\",\"target_data_type\":\"STRING\",\"ordinal_position\":46,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_company_id\",\"target_column_name\":\"hs_company_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":47,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_company_domain\",\"target_column_name\":\"hs_company_domain\",\"target_data_type\":\"STRING\",\"ordinal_position\":48,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_company_domain_by_association\",\"target_column_name\":\"hs_company_domain_by_association\",\"target_data_type\":\"STRING\",\"ordinal_position\":49,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_historical_contact_associatedcompanyid\",\"target_column_name\":\"hs_historical_contact_associatedcompanyid\",\"target_data_type\":\"STRING\",\"ordinal_position\":50,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"event_details\",\"target_table_name\":\"event_details_base\",\"source_column_name\":\"properties.hs_historical_contact_lifecyclestage\",\"target_column_name\":\"hs_historical_contact_lifecyclestage\",\"target_data_type\":\"STRING\",\"ordinal_position\":51,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.parent_imo_agent_id_annuity__c\",\"target_column_name\":\"parent_imo_agent_id_annuity_c\",\"target_data_type\":\"STRING\",\"ordinal_position\":15,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.parent_imo_agent_id_life__c\",\"target_column_name\":\"parent_imo_agent_id_life_c\",\"target_data_type\":\"STRING\",\"ordinal_position\":16,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.primary_contact_email__c\",\"target_column_name\":\"primary_contact_email_c\",\"target_data_type\":\"STRING\",\"ordinal_position\":17,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.salesforce_id\",\"target_column_name\":\"salesforce_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":18,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.salesforceaccountid\",\"target_column_name\":\"salesforceaccountid\",\"target_data_type\":\"STRING\",\"ordinal_position\":19,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.salesforcedeleted\",\"target_column_name\":\"salesforcedeleted\",\"target_data_type\":\"STRING\",\"ordinal_position\":20,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"properties.salesforcelastsynctime\",\"target_column_name\":\"salesforcelastsynctime\",\"target_data_type\":\"STRING\",\"ordinal_position\":21,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.hs_email_first_reply_date\",\"target_column_name\":\"hs_email_first_reply_date\",\"target_data_type\":\"STRING\",\"ordinal_position\":16,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.hs_email_first_send_date\",\"target_column_name\":\"hs_email_first_send_date\",\"target_data_type\":\"STRING\",\"ordinal_position\":17,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.hs_email_last_click_date\",\"target_column_name\":\"hs_email_last_click_date\",\"target_data_type\":\"STRING\",\"ordinal_position\":18,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.hs_email_last_email_name\",\"target_column_name\":\"hs_email_last_email_name\",\"target_data_type\":\"STRING\",\"ordinal_position\":19,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.hs_email_last_open_date\",\"target_column_name\":\"hs_email_last_open_date\",\"target_data_type\":\"STRING\",\"ordinal_position\":20,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.hs_email_last_reply_date\",\"target_column_name\":\"hs_email_last_reply_date\",\"target_data_type\":\"STRING\",\"ordinal_position\":21,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.hs_email_last_send_date\",\"target_column_name\":\"hs_email_last_send_date\",\"target_data_type\":\"STRING\",\"ordinal_position\":22,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.hs_object_id\",\"target_column_name\":\"hs_object_id\",\"target_data_type\":\"STRING\",\"ordinal_position\":23,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"properties.lastmodifieddate\",\"target_column_name\":\"lastmodifieddate\",\"target_data_type\":\"STRING\",\"ordinal_position\":24,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"createdAt\",\"target_column_name\":\"created_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":20,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"createdAt\",\"target_column_name\":\"created_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":32,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"createdAt\",\"target_column_name\":\"created_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"createdAt\",\"target_column_name\":\"created_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_deals\",\"target_table_name\":\"crm_deals_base\",\"source_column_name\":\"createdAt\",\"target_column_name\":\"created_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tickets\",\"target_table_name\":\"crm_tickets_base\",\"source_column_name\":\"createdAt\",\"target_column_name\":\"created_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_products\",\"target_table_name\":\"crm_products_base\",\"source_column_name\":\"createdAt\",\"target_column_name\":\"created_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_line_items\",\"target_table_name\":\"crm_line_items_base\",\"source_column_name\":\"createdAt\",\"target_column_name\":\"created_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_quotes\",\"target_table_name\":\"crm_quotes_base\",\"source_column_name\":\"createdAt\",\"target_column_name\":\"created_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_calls\",\"target_table_name\":\"crm_calls_base\",\"source_column_name\":\"createdAt\",\"target_column_name\":\"created_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_meetings\",\"target_table_name\":\"crm_meetings_base\",\"source_column_name\":\"createdAt\",\"target_column_name\":\"created_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_notes\",\"target_table_name\":\"crm_notes_base\",\"source_column_name\":\"createdAt\",\"target_column_name\":\"created_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tasks\",\"target_table_name\":\"crm_tasks_base\",\"source_column_name\":\"createdAt\",\"target_column_name\":\"created_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":2,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_owners\",\"target_table_name\":\"crm_owners_base\",\"source_column_name\":\"createdAt\",\"target_column_name\":\"created_at\",\"target_data_type\":\"STRING\",\"ordinal_position\":8,\"include_in_md5hash\":true,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_deals\",\"target_table_name\":\"crm_deals_base\",\"source_column_name\":\"N/A\",\"target_column_name\":\"object_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":9,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tickets\",\"target_table_name\":\"crm_tickets_base\",\"source_column_name\":\"N/A\",\"target_column_name\":\"object_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":9,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_products\",\"target_table_name\":\"crm_products_base\",\"source_column_name\":\"N/A\",\"target_column_name\":\"object_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":9,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_line_items\",\"target_table_name\":\"crm_line_items_base\",\"source_column_name\":\"N/A\",\"target_column_name\":\"object_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":9,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_quotes\",\"target_table_name\":\"crm_quotes_base\",\"source_column_name\":\"N/A\",\"target_column_name\":\"object_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":9,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_calls\",\"target_table_name\":\"crm_calls_base\",\"source_column_name\":\"N/A\",\"target_column_name\":\"object_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":9,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_meetings\",\"target_table_name\":\"crm_meetings_base\",\"source_column_name\":\"N/A\",\"target_column_name\":\"object_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":9,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_notes\",\"target_table_name\":\"crm_notes_base\",\"source_column_name\":\"N/A\",\"target_column_name\":\"object_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":9,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tasks\",\"target_table_name\":\"crm_tasks_base\",\"source_column_name\":\"N/A\",\"target_column_name\":\"object_type\",\"target_data_type\":\"STRING\",\"ordinal_position\":9,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_events\",\"target_table_name\":\"marketing_events_base\",\"source_column_name\":\"N/A\",\"target_column_name\":\"period\",\"target_data_type\":\"STRING\",\"ordinal_position\":22,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_contacts\",\"target_table_name\":\"crm_contacts_base\",\"source_column_name\":\"url\",\"target_column_name\":\"url\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_companies\",\"target_table_name\":\"crm_companies_base\",\"source_column_name\":\"url\",\"target_column_name\":\"url\",\"target_data_type\":\"STRING\",\"ordinal_position\":5,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_deals\",\"target_table_name\":\"crm_deals_base\",\"source_column_name\":\"url\",\"target_column_name\":\"url\",\"target_data_type\":\"STRING\",\"ordinal_position\":7,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tickets\",\"target_table_name\":\"crm_tickets_base\",\"source_column_name\":\"url\",\"target_column_name\":\"url\",\"target_data_type\":\"STRING\",\"ordinal_position\":7,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_products\",\"target_table_name\":\"crm_products_base\",\"source_column_name\":\"url\",\"target_column_name\":\"url\",\"target_data_type\":\"STRING\",\"ordinal_position\":7,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_line_items\",\"target_table_name\":\"crm_line_items_base\",\"source_column_name\":\"url\",\"target_column_name\":\"url\",\"target_data_type\":\"STRING\",\"ordinal_position\":7,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_quotes\",\"target_table_name\":\"crm_quotes_base\",\"source_column_name\":\"url\",\"target_column_name\":\"url\",\"target_data_type\":\"STRING\",\"ordinal_position\":7,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_calls\",\"target_table_name\":\"crm_calls_base\",\"source_column_name\":\"url\",\"target_column_name\":\"url\",\"target_data_type\":\"STRING\",\"ordinal_position\":7,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_meetings\",\"target_table_name\":\"crm_meetings_base\",\"source_column_name\":\"url\",\"target_column_name\":\"url\",\"target_data_type\":\"STRING\",\"ordinal_position\":7,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_notes\",\"target_table_name\":\"crm_notes_base\",\"source_column_name\":\"url\",\"target_column_name\":\"url\",\"target_data_type\":\"STRING\",\"ordinal_position\":7,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tasks\",\"target_table_name\":\"crm_tasks_base\",\"source_column_name\":\"url\",\"target_column_name\":\"url\",\"target_data_type\":\"STRING\",\"ordinal_position\":7,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_deals\",\"target_table_name\":\"crm_deals_base\",\"source_column_name\":\"properties\",\"target_column_name\":\"properties_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":8,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tickets\",\"target_table_name\":\"crm_tickets_base\",\"source_column_name\":\"properties\",\"target_column_name\":\"properties_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":8,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_products\",\"target_table_name\":\"crm_products_base\",\"source_column_name\":\"properties\",\"target_column_name\":\"properties_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":8,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_line_items\",\"target_table_name\":\"crm_line_items_base\",\"source_column_name\":\"properties\",\"target_column_name\":\"properties_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":8,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_quotes\",\"target_table_name\":\"crm_quotes_base\",\"source_column_name\":\"properties\",\"target_column_name\":\"properties_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":8,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_calls\",\"target_table_name\":\"crm_calls_base\",\"source_column_name\":\"properties\",\"target_column_name\":\"properties_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":8,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_meetings\",\"target_table_name\":\"crm_meetings_base\",\"source_column_name\":\"properties\",\"target_column_name\":\"properties_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":8,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_notes\",\"target_table_name\":\"crm_notes_base\",\"source_column_name\":\"properties\",\"target_column_name\":\"properties_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":8,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_tasks\",\"target_table_name\":\"crm_tasks_base\",\"source_column_name\":\"properties\",\"target_column_name\":\"properties_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":8,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"content\",\"target_column_name\":\"content_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":46,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"stats\",\"target_column_name\":\"stats_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":47,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"testing\",\"target_column_name\":\"testing_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":48,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"rssData\",\"target_column_name\":\"rss_data_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":49,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"to\",\"target_column_name\":\"to_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":50,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"allEmailCampaignIds\",\"target_column_name\":\"all_email_campaign_ids_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":51,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"teamsWithAccess\",\"target_column_name\":\"teams_with_access_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":52,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_emails\",\"target_table_name\":\"marketing_emails_base\",\"source_column_name\":\"workflowNames\",\"target_column_name\":\"workflow_names_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":53,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"crm_owners\",\"target_table_name\":\"crm_owners_base\",\"source_column_name\":\"teams\",\"target_column_name\":\"teams_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":11,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.deviceBreakdown\",\"target_column_name\":\"device_breakdown_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":31,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"aggregate.qualifierStats\",\"target_column_name\":\"qualifier_stats_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":32,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.deviceBreakdown\",\"target_column_name\":\"campaign_device_breakdown_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":63,\"include_in_md5hash\":false,\"is_primary_key\":false},{\"source_name\":\"HubSpot\",\"source_table_name\":\"marketing_email_statistics\",\"target_table_name\":\"marketing_email_statistics_base\",\"source_column_name\":\"campaignAggregations.$first.qualifierStats\",\"target_column_name\":\"campaign_qualifier_stats_json\",\"target_data_type\":\"STRING\",\"ordinal_position\":64,\"include_in_md5hash\":false,\"is_primary_key\":false}]"
+p_debug                  = False # OPTIONAL — True = take exact row counts for logging.
+                                 # False (default) skips operational counts; control
+                                 # flow uses cheap existence checks instead.
 
 
 # In[ ]:
@@ -126,378 +109,16 @@ _required = {
 }
 validate_required_params(_required)  # noqa: F821  # type: ignore[name-defined]
 
-# Placeholders so except block can always reference them
+# Fixed table references.
 qualified_source = f"lh_bronze.{p_source_schema}.{p_source_table}"
 qualified_target = f"lh_silver.silver_s1.{p_target_table}"
-source_row_count = 0
-rows_inserted    = 0
-rows_updated     = 0
 
-print("=" * 65)
-print("  nb_silver_s1_ingestion — START")
-print("=" * 65)
-print(f"  source          : {qualified_source}")
-print(f"  target          : {qualified_target}")
-print(f"  ingestion_date  : {p_ingestion_date}")
-print(f"  ingestion_run_id: {p_ingestion_run_id}")
-print("=" * 65)
-
-
-# In[ ]:
-
-
-try:
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # SECTION 2 — Resolve entity_name and schema mappings from JSON metadata
-    # schema_config.target_table_name = bronze table name = p_source_table
-    # schema_config.source_table_name = landing entity name (e.g. 'Client')
-    # ══════════════════════════════════════════════════════════════════════════
-
-    print(f"\n[1/5] Resolving metadata from JSON parameters")
-
-    # ── 2a. schema_config → filter by target_table_name to get mappings and entity_name ──
-    schema_config_df = schema_config_df_from_json(p_schema_config_json)  # noqa: F821  # type: ignore[name-defined]
-
-    mappings = (
-        schema_config_df
-        .filter(
-            (F.lower(F.col("bronze_table_name")) == p_source_table.lower()) &
-            (F.col("bronze_column_name") != "N/A")
-        )
-        .orderBy("ordinal_position")
-        .collect()
-    )
-    if not mappings:
-        raise ValueError(
-            f"No schema_config mappings found for bronze_table_name='{p_source_table}'. "
-            f"Ensure column mappings are registered in schema_config with the correct bronze_table_name."
-        )
-
-    entity_name = mappings[0]["landing_table_name"]
-    print(f"  entity_name resolved : '{entity_name}' (from bronze_table_name='{p_source_table}')")
-    print(f"  Schema mappings      : {len(mappings)} columns")
-
-    # ── 2b. ingestion_config → is_scd2 and partition_by_column_names ─────────
-    ingestion_config_df = ingestion_config_df_from_json(p_ingestion_config_json)  # noqa: F821  # type: ignore[name-defined]
-
-    ic_row = (
-        ingestion_config_df
-        .filter(F.lower(F.col("silver_table")) == p_target_table.lower())
-        .limit(1)
-        .collect()
-    )
-    ic_config      = ic_row[0] if ic_row else None
-    is_scd2        = bool(ic_config["is_scd2"]) if ic_config and ic_config["is_scd2"] else False
-    partition_cols = (
-        [c.strip() for c in (ic_config["partition_by_column_names"] or "").split(",") if c.strip()]
-        if ic_config else []
-    )
-    src_busn_asst  = ((ic_config["src_busn_asst"] or "").strip() or None) if ic_config else None
-    print(f"  is_scd2              : {is_scd2}")
-    print(f"  partition_cols       : {partition_cols or '(none)'}")
-    print(f"  src_busn_asst        : {src_busn_asst or '(none)'}")
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # SECTION 3 — Read Source Data from lh_bronze
-    # Derive the filter date by computing max(data_timestamp) directly from the
-    # bronze table. All rows matching that date form the current batch.
-    # ══════════════════════════════════════════════════════════════════════════
-
-    print(f"\n[2/5] Reading bronze source: {qualified_source}")
-
-    from pyspark.sql import functions as F
-
-    try:
-        source_df = spark.table(qualified_source).filter(
-            F.col("ingestion_date") == p_ingestion_date
-        )
-    except Exception as e:
-        raise RuntimeError(
-            f"Failed to read '{qualified_source}'. "
-            f"Ensure lh_bronze is added to this notebook session.\n{e}"
-        )
-
-    # # ── Derive filter date from bronze max(ingestion_date) ─────────────────────────
-    # max_ingestion_date_row = bronze_df.agg(F.max("ingestion_date").alias("max_ingestion_date")).collect()
-    # max_ingestion_date     = max_ingestion_date_row[0]["max_ingestion_date"] if max_ingestion_date_row else None
-
-    # if max_ingestion_date:
-    #     source_df = bronze_df.filter(F.col("ingestion_date") == max_ingestion_date)
-    #     print(f"  Filter             : ingestion_date = '{max_ingestion_date}'  (max from bronze)")
-    # else:
-    #     source_df = bronze_df
-    #     print(f"  Filter             : none (bronze table has no data_timestamp — reading all rows)")
-
-    source_row_count = source_df.count()
-    print(f"  Rows to merge      : {source_row_count:,}")
-
-    if source_row_count == 0:
-        print("  WARNING: No source rows found for the given filter. Silver table will not be updated.")
-
-    # ── Drop bronze audit columns and replace with silver-run values ──────────
-    # These columns are carried through from bronze but represent the bronze run —
-    # silver has its own run identity, date, and system context.
-    # src_busn_asst is included so it is re-applied from ingestion_config,
-    # ensuring consistency even if bronze was written before this column existed.
-    _BRONZE_AUDIT_COLS = {
-        "ingestion_date", "data_timestamp", "source_system",
-        "ingestion_run_id", "ingestion_timestamp", "src_busn_asst",
-    }
-    _cols_to_drop = [c for c in source_df.columns if c in _BRONZE_AUDIT_COLS]
-    if _cols_to_drop:
-        source_df = source_df.drop(*_cols_to_drop)
-
-    source_df = add_audit_columns(  # noqa: F821  # type: ignore[name-defined]
-        source_df,
-        ingestion_date      = p_ingestion_date,
-        data_timestamp      = p_ingestion_timestamp,
-        source_system       = p_source_system,
-        ingestion_run_id    = p_ingestion_run_id,
-        ingestion_timestamp = p_ingestion_timestamp,
-        src_busn_asst       = src_busn_asst,
-    )
-    print(f"  Replaced audit cols: {_cols_to_drop or '(none found — added fresh)'}")
-
-    # ── Deduplicate source on md5_hash before any SCD logic ──────────────────
-    source_df        = deduplicate_by_md5(source_df, label=p_source_table)  # noqa: F821  # type: ignore[name-defined]
-    source_row_count = source_df.count()
-
-    # ── Cast bronze → silver types + replace NULL/blank/special with defaults ──
-    # Guarantees every mapped column is typed per silver_data_type and non-null.
-    source_df = cast_and_default_silver_columns(source_df, mappings)  # noqa: F821  # type: ignore[name-defined]
-    print(f"  Silver cast + defaults  : {len(mappings)} columns typed & non-null")
-
-    # ── Project to mapped silver columns + system/audit columns only ──────────
-    # Drops any bronze column that has no schema_config mapping (e.g. a column
-    # physically present in bronze but not registered), so it cannot leak into
-    # silver as a stray column. Mapped columns whose bronze source was absent were
-    # already skipped by cast_and_default_silver_columns and simply won't appear.
-    _mapped_silver = [
-        m["silver_column_name"] for m in mappings
-        if m["silver_column_name"] and m["silver_column_name"] in source_df.columns
-    ]
-    _system_cols = [c for c in source_df.columns if c in (_BRONZE_AUDIT_COLS | {"md5_hash"})]
-    _keep_cols   = list(dict.fromkeys(_mapped_silver + _system_cols))
-    source_df    = source_df.select(*_keep_cols)
-    print(f"  Silver projection       : {len(_mapped_silver)} mapped + {len(_system_cols)} system column(s)")
-
-    # ── Validate before merge (skip when there is no source data) ─────────────────
-    if source_row_count > 0:
-        validate_silver_load(source_df, mappings, p_target_table, p_ingestion_date)  # noqa: F821  # type: ignore[name-defined]
-    else:
-        print(f"  Validation skipped — 0 source rows for ingestion_date={p_ingestion_date}.")
-
-
-
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # SECTION 4 — Write / MERGE into Silver S1
-    #
-    # Branched on is_scd2 flag from ingestion_config:
-    #
-    # is_scd2 = True  → SCD Type 2 delegated to apply_scd2() in nb_utils.
-    #   effective_timestamp, expiration_timestamp, is_current are managed inside
-    #   apply_scd2 — do not add them to source_df before calling.
-    #
-    # is_scd2 = False → SCD Type 1, md5 insert-only (no history columns)
-    #   Source rows with a new md5_hash are appended.
-    #   Source rows whose md5_hash already exists in target are skipped entirely.
-    #
-    # Primary key is NOT used in any join — md5_hash is the sole matching key.
-    # Partitioning applied only on first-run CREATE.
-    # ══════════════════════════════════════════════════════════════════════════
-
-    _strategy    = "SCD Type 2 (md5-only)" if is_scd2 else "SCD Type 1 (md5 insert-only)"
-    print(f"\n[3/5] Writing into {qualified_target}  [strategy: {_strategy}]")
-
-    _merge_start = time.time()
-
-    if source_row_count == 0:
-        # No bronze rows for this ingestion_date. Skip the merge entirely — a
-        # metadata-driven load legitimately has no data for some entities/dates,
-        # and running SCD2 with an empty source would EXPIRE every active row.
-        rows_inserted, rows_updated = 0, 0
-        print(f"  SKIP: 0 source rows for ingestion_date={p_ingestion_date} — silver table left unchanged.")
-
-    elif is_scd2:
-        # ══════════════════════════════════════════════════════════════════════
-        # SCD TYPE 2 — delegated to apply_scd2() (defined in nb_utils)
-        # apply_scd2 adds SCD2 columns internally and handles both first-run
-        # creation and incremental merge.
-        # ══════════════════════════════════════════════════════════════════════
-        rows_inserted, rows_updated = apply_scd2(  # noqa: F821  # type: ignore[name-defined]
-            spark                   = spark,
-            source_df               = source_df,
-            qualified_target        = qualified_target,
-            effective_timestamp_val = p_ingestion_timestamp,
-            partition_cols          = partition_cols,
-            tbl_properties          = {"delta.enableChangeDataFeed": "true"},
-        )
-        print(f"  New records      : {rows_inserted:,}")
-        print(f"  Records expired  : {rows_updated:,}")
-
-    else:
-        # ══════════════════════════════════════════════════════════════════════
-        # NON-SCD — append-only via apply_noscd() (defined in nb_utils)
-        #
-        # Every source row is appended as-is; existing target rows are never
-        # matched, updated, or expired. apply_noscd handles first-run create +
-        # append. Idempotency of re-runs is the upstream's responsibility.
-        # ══════════════════════════════════════════════════════════════════════
-
-        # Add is_current flag before appending (Silver schema requirement)
-        source_df = source_df.withColumn("is_current", F.lit(1).cast(IntegerType()))
-
-        # Non-SCD2 silver tables are partitioned by ingestion_date and reloaded
-        # per-date via replaceWhere, so re-running a date replaces its slice
-        # instead of duplicating. ingestion_date leads the partition list; any
-        # config partitions follow.
-        _noscd_partition_cols = ["ingestion_date"] + [c for c in partition_cols if c != "ingestion_date"]
-
-        rows_inserted, rows_updated = apply_noscd(  # noqa: F821  # type: ignore[name-defined]
-            spark             = spark,
-            source_df         = source_df,
-            qualified_target  = qualified_target,
-            business_key_cols = ["md5_hash"],
-            partition_cols    = _noscd_partition_cols,
-            tbl_properties    = {"delta.enableChangeDataFeed": "true"},
-            replace_where     = f"ingestion_date = '{p_ingestion_date}'",
-        )
-        print(f"  Rows loaded      : {rows_inserted:,}  (replaceWhere ingestion_date={p_ingestion_date})")
-
-    _merge_secs = round(time.time() - _merge_start, 6)
-    print(f"  Rows inserted  : {rows_inserted:,}")
-    print(f"  Rows expired   : {rows_updated:,}")
-    print(f"  Merge duration : {_merge_secs}s")
-
-    # ── Enforce NOT NULL on silver columns flagged is_nullable = 0 ────────────
-    # Safe because cast_and_default_silver_columns guarantees no NULLs. Runs
-    # after the table exists; idempotent on subsequent loads.
-    _nn_cols = enforce_silver_not_null(spark, qualified_target, mappings)  # noqa: F821  # type: ignore[name-defined]
-    print(f"  NOT NULL enforced : {len(_nn_cols)} column(s)")
-
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # SECTION 5 — Verify target row count
-    # ══════════════════════════════════════════════════════════════════════════
-
-    print(f"\n[4/5] Verifying target")
-    target_row_count = (
-        spark.table(qualified_target).count()
-        if spark.catalog.tableExists(qualified_target) else 0
-    )
-    print(f"  Rows in lh_silver.{qualified_target} : {target_row_count:,}")
-
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # SECTION 6 — Log operation
-    # ══════════════════════════════════════════════════════════════════════════
-
-    print(f"\n[5/5] Logging")
-    log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]  — injected by # The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
-# %run nb_utils
-        notebook_name  = "nb_silver_s1_ingestion",
-        table_name     = qualified_target,
-        operation_type = "MERGE",
-        rows_before    = target_row_count - rows_inserted,
-        rows_after     = target_row_count,
-        execution_time = round(time.time() - _notebook_start, 6),
-        message        = (
-            f"source={qualified_source} | entity={entity_name} | "
-            f"inserted={rows_inserted} | updated={rows_updated} | "
-            f"run_id={p_ingestion_run_id}"
-        ),
-    )
-
-    print("\n" + "=" * 65)
-    print("  nb_silver_s1_ingestion — COMPLETE")
-    print(f"  source          : {qualified_source}")
-    print(f"  target          : {qualified_target}")
-    print(f"  entity          : {entity_name}")
-    print(f"  source_rows     : {source_row_count:,}")
-    print(f"  rows_inserted   : {rows_inserted:,}")
-    print(f"  rows_updated    : {rows_updated:,}")
-    print(f"  target_total    : {target_row_count:,}")
-    print(f"  ingestion_run_id: {p_ingestion_run_id}")
-    print("=" * 65)
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Error handler — log failure then re-raise so the pipeline marks the
-# activity as failed.
-# ══════════════════════════════════════════════════════════════════════════════
-
-except Exception as _exc:
-    _elapsed = round(time.time() - _notebook_start, 6)
-    log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]  — injected by # The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
-# %run nb_utils
-        notebook_name  = "nb_silver_s1_ingestion",
-        table_name     = qualified_target,
-        operation_type = "MERGE",
-        rows_before    = 0,
-        rows_after     = 0,
-        execution_time = _elapsed,
-        error_message  = str(_exc),
-        message        = f"FAILED | source={p_source_table} | run_id={p_ingestion_run_id}",
-    )
-    raise
-
-
-# In[8]:
-
-
-# ══════════════════════════════════════════════════════════════════════════
-    # SECTION  — Refresh / create Silver S2 materialized lake view(s)
-
-# print(f"\n[MLV] Refreshing/creating silver_s2 materialized lake view(s) for '{p_target_table}'")
-
-# _MLV_LH      = "lh_silver"
-# _MLV_SCHEMA  = "silver_s2"
-# _MLV_SRC_REF = qualified_target   # lh_silver.silver_s1.<table>
-
-# # Audit columns excluded from the view SELECT (matches nb_silver_s2_views_ddl)
-# _MLV_AUDIT_COLS = {
-#     "ingestion_date", "data_timestamp", "source_system",
-#     "ingestion_run_id", "ingestion_timestamp",
-# }
-# _mlv_cols     = [c for c in spark.table(qualified_target).columns]
-# _mlv_col_list = ",\n               ".join(_mlv_cols)
-
-# # ensure_mlv_and_refresh is injected by # The command is not a standard IPython magic command. It is designed for use within Fabric notebooks only.
-# # %run nb_utils — refreshes the MLV if
-# it exists, otherwise creates it. Returns 'refreshed' or 'created'.
-# _mlv_targets = (
-#     [
-#         (f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}_current", "WHERE is_current = 1"),
-#         (f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}_history", ""),
-#     ]
-#     if is_scd2
-#     else [(f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}", "")]
-# )
-
-# try:
-#     for _mlv_name, _mlv_where in _mlv_targets:
-#         _mlv_status = ensure_mlv_and_refresh(  # noqa: F821  # type: ignore[name-defined]
-#             spark        = spark,
-#             view_name    = _mlv_name,
-#             source_ref   = _MLV_SRC_REF,
-#             col_list     = _mlv_col_list,
-#             where_clause = _mlv_where,
-#         )
-#         print(f"  {_mlv_status.upper():<9} {_mlv_name}")
-# except Exception as _mlv_exc:
-#     # Non-fatal: silver_s1 load already succeeded. Replace with `raise` to
-#     # make a stale/failed MLV fail the pipeline activity instead.
-#     print(f"  WARNING: MLV refresh/create failed for '{p_target_table}': {_mlv_exc}")
-
-
-
-# In[ ]:
-
-
-# ══════════════════════════════════════════════════════════════════════════
-    # SECTION  — Refresh / create Silver S2 materialized lake view(s)
+# Bronze audit columns carried through from bronze — dropped and replaced with
+# silver-run values. src_busn_asst is re-applied from ingestion_config.
+_BRONZE_AUDIT_COLS = {
+    "ingestion_date", "data_timestamp", "source_system",
+    "ingestion_run_id", "ingestion_timestamp", "src_busn_asst",
+}
 
 # Derived silver_s2-only columns: silver_table -> list of "EXPR AS name" appended
 # to the MLV projection. Lets a table expose computed columns (e.g. a DATE cut
@@ -510,52 +131,349 @@ _SILVER_S2_DERIVED_COLUMNS = {
     ],
 }
 
-print(f"\n[MLV] Refreshing/creating silver_s2 materialized lake view(s) for '{p_target_table}'")
 
-if not spark.catalog.tableExists(qualified_target):
-    # No silver table to build a view over — happens when the load skipped
-    # (0 source rows on a first-ever run). Nothing to refresh.
-    print(f"  SKIP: '{qualified_target}' does not exist (no data loaded) — MLV refresh skipped.")
-else:
-    _MLV_LH      = "lh_silver"
-    _MLV_SCHEMA  = "silver_s2"
-    _MLV_SRC_REF = qualified_target   # lh_silver.silver_s1.<table>
+# In[ ]:
 
-    # Audit columns excluded from the view SELECT (matches nb_silver_s2_views_ddl)
-    _MLV_AUDIT_COLS = {
-        "ingestion_date", "data_timestamp", "source_system",
-        "ingestion_run_id", "ingestion_timestamp",
-    }
-    _mlv_cols     = [c for c in spark.table(qualified_target).columns]
-    # Append any silver_s2-only derived columns registered for this table.
-    _mlv_derived  = _SILVER_S2_DERIVED_COLUMNS.get(p_target_table, [])
-    _mlv_col_list = ",\n               ".join(_mlv_cols + _mlv_derived)
-    if _mlv_derived:
-        print(f"  Derived s2 cols : {', '.join(_mlv_derived)}")
 
-    # ensure_mlv_and_refresh is injected by %run nb_utils — refreshes the MLV if
-    # it exists, otherwise creates it. Returns 'refreshed' or 'created'.
-    _mlv_targets = (
-        [
-            (f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}_current", "WHERE is_current = 1"),
-            (f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}_history", ""),
-        ]
-        if is_scd2
-        else [(f"{_MLV_LH}.{_MLV_SCHEMA}.{p_target_table}", "")]
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 2 — Step functions
+# One function per operation. Each takes what it needs and returns its result;
+# the driver (Section 3) calls them in order. `meta` is a plain dictionary that
+# carries the config resolved in step 1 to the later steps.
+# ══════════════════════════════════════════════════════════════════════════════
+
+def resolve_metadata():
+    """Step 1 — read schema_config mappings and ingestion_config flags. Returns
+    `meta`, a dict of everything later steps need."""
+    logger.info("[1/10] Resolving metadata from JSON parameters")
+
+    # ── schema_config → mappings + entity_name ───────────────────────────────
+    schema_config_df = schema_config_df_from_json(p_schema_config_json)  # noqa: F821  # type: ignore[name-defined]
+    mappings = (
+        schema_config_df
+        .filter(
+            (F.lower(F.col("bronze_table_name")) == p_source_table.lower()) &
+            (F.col("bronze_column_name") != "N/A")
+        )
+        .orderBy("ordinal_position")
+        .collect()
     )
+    if not mappings:
+        raise ValueError(
+            f"No schema_config mappings found for bronze_table_name='{p_source_table}'. "
+            f"Ensure column mappings are registered with the correct bronze_table_name."
+        )
+
+    # ── ingestion_config → is_scd2, partition_cols, src_busn_asst ────────────
+    ingestion_config_df = ingestion_config_df_from_json(p_ingestion_config_json)  # noqa: F821  # type: ignore[name-defined]
+    ic_row = (
+        ingestion_config_df
+        .filter(F.lower(F.col("silver_table")) == p_target_table.lower())
+        .limit(1)
+        .collect()
+    )
+    ic = ic_row[0] if ic_row else None
+
+    meta = {
+        "mappings":       mappings,
+        "entity_name":    mappings[0]["landing_table_name"],
+        "is_scd2":        bool(ic["is_scd2"]) if ic and ic["is_scd2"] else False,
+        "partition_cols": (
+            [c.strip() for c in (ic["partition_by_column_names"] or "").split(",") if c.strip()]
+            if ic else []
+        ),
+        "src_busn_asst":  ((ic["src_busn_asst"] or "").strip() or None) if ic else None,
+    }
+
+    logger.info(f"entity_name='{meta['entity_name']}' (bronze_table_name='{p_source_table}'), "
+                f"mappings={len(meta['mappings'])}, is_scd2={meta['is_scd2']}, "
+                f"partition_cols={meta['partition_cols'] or '(none)'}, "
+                f"src_busn_asst={meta['src_busn_asst'] or '(none)'}")
+    return meta
+
+
+def read_bronze_source():
+    """Step 2 — read bronze for this ingestion_date. Returns source_df (lazy).
+    The row count is taken once, later, off the cached projected frame."""
+    logger.info(f"[2/10] Reading bronze source: {qualified_source}")
+    try:
+        source_df = spark.table(qualified_source).filter(
+            F.col("ingestion_date") == p_ingestion_date
+        )
+    except Exception as e:
+        raise RuntimeError(
+            f"Failed to read '{qualified_source}'. "
+            f"Ensure lh_bronze is added to this notebook session.\n{e}"
+        )
+    return source_df
+
+
+def swap_audit_columns(source_df, meta):
+    """Step 3 — drop the bronze-run audit columns and add fresh silver-run ones."""
+    logger.info("[3/10] Swapping audit columns (bronze -> silver-run)")
+    drop_cols = [c for c in source_df.columns if c in _BRONZE_AUDIT_COLS]
+    if drop_cols:
+        source_df = source_df.drop(*drop_cols)
+    source_df = add_audit_columns(  # noqa: F821  # type: ignore[name-defined]
+        source_df,
+        ingestion_date      = p_ingestion_date,
+        data_timestamp      = p_ingestion_timestamp,
+        source_system       = p_source_system,
+        ingestion_run_id    = p_ingestion_run_id,
+        ingestion_timestamp = p_ingestion_timestamp,
+        src_busn_asst       = meta["src_busn_asst"],
+    )
+    logger.info(f"Replaced audit cols: {drop_cols or '(none found — added fresh)'}")
+    return source_df
+
+
+def deduplicate(source_df):
+    """Step 4 — remove duplicate rows by md5_hash (lazy transform)."""
+    logger.info("[4/10] Deduplicating on md5_hash")
+    return deduplicate_by_md5(source_df, label=p_source_table, debug=p_debug)  # noqa: F821  # type: ignore[name-defined]
+
+
+def cast_and_default(source_df, meta):
+    """Step 5 — cast bronze columns to silver types and replace null/blank/junk."""
+    logger.info("[5/10] Casting bronze -> silver types + defaults")
+    source_df = cast_and_default_silver_columns(source_df, meta["mappings"])  # noqa: F821  # type: ignore[name-defined]
+    logger.info(f"Silver cast + defaults: {len(meta['mappings'])} columns typed & non-null")
+    return source_df
+
+
+def project_columns(source_df, meta):
+    """Step 6 — keep only mapped silver columns + system columns (drop leaked ones)."""
+    logger.info("[6/10] Projecting to mapped silver + system columns")
+    mapped = [m["silver_column_name"] for m in meta["mappings"]
+              if m["silver_column_name"] and m["silver_column_name"] in source_df.columns]
+    system = [c for c in source_df.columns if c in (_BRONZE_AUDIT_COLS | {"md5_hash"})]
+    keep   = list(dict.fromkeys(mapped + system))
+    source_df = source_df.select(*keep)
+    logger.info(f"Projection: {len(mapped)} mapped + {len(system)} system column(s)")
+    return source_df
+
+
+def validate(source_df, meta):
+    """Step 7 — run silver validation checks (raises on a CRITICAL failure)."""
+    logger.info("[7/10] Validating silver load")
+    validate_silver_load(source_df, meta["mappings"], p_target_table, p_ingestion_date)  # noqa: F821  # type: ignore[name-defined]
+
+
+def write_silver(source_df, meta):
+    """Step 8 — SCD2 merge or non-SCD append. Returns (rows_inserted, rows_updated)."""
+    strategy = "SCD Type 2 (md5-only)" if meta["is_scd2"] else "SCD Type 1 (md5 insert-only)"
+    logger.info(f"[8/10] Writing into {qualified_target}  [strategy: {strategy}]")
+    merge_start = time.time()
+
+    if meta["is_scd2"]:
+        rows_inserted, rows_updated = apply_scd2(  # noqa: F821  # type: ignore[name-defined]
+            spark                   = spark,
+            source_df               = source_df,
+            qualified_target        = qualified_target,
+            effective_timestamp_val = p_ingestion_timestamp,
+            partition_cols          = meta["partition_cols"],
+            tbl_properties          = {"delta.enableChangeDataFeed": "true"},
+            debug                   = p_debug,
+        )
+        logger.info(f"New records={rows_inserted}, Records expired={rows_updated}  "
+                    f"(-1 = present but not counted; enable p_debug for exact)")
+    else:
+        # Non-SCD append: add is_current, partition by ingestion_date (+ config),
+        # replaceWhere the ingestion_date slice so re-runs replace rather than dup.
+        src = source_df.withColumn("is_current", F.lit(1).cast(IntegerType()))
+        noscd_partition_cols = ["ingestion_date"] + [c for c in meta["partition_cols"] if c != "ingestion_date"]
+        rows_inserted, rows_updated = apply_noscd(  # noqa: F821  # type: ignore[name-defined]
+            spark             = spark,
+            source_df         = src,
+            qualified_target  = qualified_target,
+            business_key_cols = ["md5_hash"],
+            partition_cols    = noscd_partition_cols,
+            tbl_properties    = {"delta.enableChangeDataFeed": "true"},
+            replace_where     = f"ingestion_date = '{p_ingestion_date}'",
+            debug             = p_debug,
+        )
+        logger.info(f"Rows loaded={rows_inserted} (replaceWhere ingestion_date={p_ingestion_date}; "
+                    f"-1 = written but not counted)")
+
+    logger.info(f"Merge duration: {round(time.time() - merge_start, 6)}s")
+    return rows_inserted, rows_updated
+
+
+def enforce_not_null(meta):
+    """Step 9 — SET NOT NULL on is_nullable=0 silver columns (no-op if no table yet)."""
+    logger.info("[9/10] Enforcing NOT NULL on is_nullable=0 columns")
+    nn_cols = enforce_silver_not_null(spark, qualified_target, meta["mappings"])  # noqa: F821  # type: ignore[name-defined]
+    logger.info(f"NOT NULL enforced: {len(nn_cols)} column(s)")
+
+
+def verify_target():
+    """Step 10 — count rows in the target table (operational only). Returns -1 when
+    p_debug is False (count skipped)."""
+    logger.info("[10/10] Verifying target")
+    if not p_debug:
+        logger.info("Target row count skipped (p_debug=False)")
+        return -1
+    count = (
+        spark.table(qualified_target).count()
+        if spark.catalog.tableExists(qualified_target) else 0
+    )
+    logger.info(f"Rows in {qualified_target}: {count:,}")
+    return count
+
+
+def refresh_silver_s2_mlv(meta):
+    """Non-fatal tail — refresh/create the silver_s2 materialized lake view(s).
+    silver_s1 already loaded; a stale/failed MLV is logged as a WARNING. Change the
+    `logger.warning` in the except to `raise` to fail the pipeline activity instead."""
+    logger.info(f"[MLV] Refreshing/creating silver_s2 materialized lake view(s) for '{p_target_table}'")
+    if not spark.catalog.tableExists(qualified_target):
+        logger.info(f"SKIP: '{qualified_target}' does not exist (no data loaded) — MLV refresh skipped.")
+        return
+
+    mlv_lh     = "lh_silver"
+    mlv_schema = "silver_s2"
+    base_cols  = spark.table(qualified_target).columns
+    derived    = _SILVER_S2_DERIVED_COLUMNS.get(p_target_table, [])
+    col_list   = ",\n               ".join(base_cols + derived)
+    if derived:
+        logger.info(f"Derived s2 cols: {', '.join(derived)}")
+
+    if meta["is_scd2"]:
+        mlv_targets = [
+            (f"{mlv_lh}.{mlv_schema}.{p_target_table}_current", "WHERE is_current = 1"),
+            (f"{mlv_lh}.{mlv_schema}.{p_target_table}_history", ""),
+        ]
+    else:
+        mlv_targets = [(f"{mlv_lh}.{mlv_schema}.{p_target_table}", "")]
 
     try:
-        for _mlv_name, _mlv_where in _mlv_targets:
-            _mlv_status = ensure_mlv_and_refresh(  # noqa: F821  # type: ignore[name-defined]
+        for mlv_name, mlv_where in mlv_targets:
+            status = ensure_mlv_and_refresh(  # noqa: F821  # type: ignore[name-defined]
                 spark        = spark,
-                view_name    = _mlv_name,
-                source_ref   = _MLV_SRC_REF,
-                col_list     = _mlv_col_list,
-                where_clause = _mlv_where,
+                view_name    = mlv_name,
+                source_ref   = qualified_target,
+                col_list     = col_list,
+                where_clause = mlv_where,
             )
-            print(f"  {_mlv_status.upper():<9} {_mlv_name}")
-    except Exception as _mlv_exc:
-        # Non-fatal: silver_s1 load already succeeded. Replace with `raise` to
-        # make a stale/failed MLV fail the pipeline activity instead.
-        print(f"  WARNING: MLV refresh/create failed for '{p_target_table}': {_mlv_exc}")
+            logger.info(f"{status.upper():<9} {mlv_name}")
+    except Exception as mlv_exc:
+        logger.warning(f"MLV refresh/create failed for '{p_target_table}': {mlv_exc}")
+
+
+# In[ ]:
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 3 — Driver
+# Runs the steps in order. One try/except: on any failure, log it and re-raise so
+# the pipeline marks the activity as failed. The 0-row skip is a plain `if`.
+#
+# Performance: the transformed frame is cached ONCE (persist) and counted ONCE.
+# That single count materialises the read->dedup->cast->project chain, and both
+# validate() and write_silver() then read the cached data instead of recomputing
+# the whole chain per action. The cache is released after the write.
+# ══════════════════════════════════════════════════════════════════════════════
+
+logger.info("=" * 55)
+logger.info("nb_silver_s1_ingestion_v2 — START")
+logger.info(f"source={qualified_source} | target={qualified_target} | "
+            f"ingestion_date={p_ingestion_date} | run_id={p_ingestion_run_id}")
+
+rows_inserted    = 0
+rows_updated     = 0
+source_row_count = 0
+target_row_count = 0
+meta             = None
+source_df        = None
+
+try:
+    meta = resolve_metadata()
+
+    source_df = read_bronze_source()
+    source_df = swap_audit_columns(source_df, meta)
+    source_df = deduplicate(source_df)
+    source_df = cast_and_default(source_df, meta)
+    source_df = project_columns(source_df, meta)
+
+    # Cache the fully-transformed frame. The 0-row skip is driven by a cheap
+    # existence check (take(1)); the exact source count is operational only, so it
+    # is taken solely in debug. Either way one full materialisation of the source
+    # chain occurs (existence check or the first validate/write action), and
+    # validate() / write_silver() reuse the cached data.
+    source_df = source_df.persist()
+    source_has_rows  = bool(source_df.take(1))
+    source_row_count = source_df.count() if p_debug else (-1 if source_has_rows else 0)
+    logger.info(f"Source has rows: {source_has_rows}"
+                + (f" | count={source_row_count:,}" if p_debug else " (exact count skipped, p_debug=False)"))
+    if not source_has_rows:
+        logger.warning(f"No source rows for ingestion_date={p_ingestion_date} — "
+                       f"silver table will not be updated.")
+
+    if source_has_rows:
+        validate(source_df, meta)
+        rows_inserted, rows_updated = write_silver(source_df, meta)
+    else:
+        logger.info(f"[7-8/10] Validate + write SKIPPED — 0 source rows for "
+                    f"ingestion_date={p_ingestion_date}. Silver table left unchanged.")
+
+    # Done reading source_df — release the cache before the target-side steps.
+    source_df.unpersist()
+
+    enforce_not_null(meta)
+    target_row_count = verify_target()
+
+    log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]
+        notebook_name  = "nb_silver_s1_ingestion_v2",
+        table_name     = qualified_target,
+        operation_type = "MERGE",
+        # Row counts are -1 when p_debug is False (operational counts skipped).
+        rows_before    = (target_row_count - rows_inserted) if p_debug else -1,
+        rows_after     = target_row_count if p_debug else -1,
+        execution_time = round(time.time() - _notebook_start, 6),
+        message        = (
+            f"source={qualified_source} | entity={meta['entity_name']} | "
+            f"inserted={rows_inserted} | updated={rows_updated} | "
+            f"debug={p_debug} | run_id={p_ingestion_run_id}"
+        ),
+    )
+
+    logger.info("=" * 55)
+    logger.info("nb_silver_s1_ingestion_v2 — COMPLETE")
+    logger.info(f"source={qualified_source} | target={qualified_target} | "
+                f"entity={meta['entity_name']}")
+    logger.info(f"source_rows={source_row_count} | rows_inserted={rows_inserted} | "
+                f"rows_updated={rows_updated} | target_total={target_row_count} | "
+                f"debug={p_debug} | run_id={p_ingestion_run_id}  "
+                f"(-1 = not counted; set p_debug=True for exact figures)")
+    logger.info("=" * 55)
+
+except Exception as _exc:
+    logger.error(f"FAILED — source={p_source_table} | run_id={p_ingestion_run_id} | {_exc}")
+    # Best-effort cache release on failure.
+    try:
+        if source_df is not None:
+            source_df.unpersist()
+    except Exception:
+        pass
+    log_fabric_operation(  # noqa: F821  # type: ignore[name-defined]
+        notebook_name  = "nb_silver_s1_ingestion_v2",
+        table_name     = qualified_target,
+        operation_type = "MERGE",
+        rows_before    = 0,
+        rows_after     = 0,
+        execution_time = round(time.time() - _notebook_start, 6),
+        error_message  = str(_exc),
+        message        = f"FAILED | source={p_source_table} | run_id={p_ingestion_run_id}",
+    )
+    raise
+
+
+# In[ ]:
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 4 — Silver S2 materialized lake view(s)  (non-fatal, runs after success)
+# ══════════════════════════════════════════════════════════════════════════════
+
+refresh_silver_s2_mlv(meta)
 

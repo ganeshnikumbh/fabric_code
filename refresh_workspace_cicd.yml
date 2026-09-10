@@ -1,0 +1,191 @@
+# ==============================================================================
+# PIPELINE VARIABLES
+# This section defines reusable variables used throughout the pipeline.
+# - fabricWorkspaceName: Specifies the target Microsoft Fabric workspace for deployment.
+# - targetEnvironment:   Selects which key is read from parameters.yml (dev/tst/uat/stg/prd)
+#                        AND which VariableLibrary value set is activated. It must match a
+#                        value set name in 'vl_lakehouse_config', or Fabric falls back to
+#                        the Default value set and every notebook binds to the WRONG
+#                        lakehouses. Keep this in step with fabricWorkspaceName.
+# - deploySemanticModel: Set to 'false' to skip SemanticModel items. Use this while the
+#                        connection binding in parameters.yml section 6 is still unset --
+#                        it keeps the rest of the deployment green instead of failing the
+#                        whole run on DMTS_MonikerWithUnboundDataSources.
+# - fabricCicdVersion:   Pinned so a new upstream release cannot change deployment
+#                        behaviour without a reviewed commit. Bump deliberately.
+# - fabricCicdLogLevel:  DEBUG prints every find_replace substitution -- use it to prove
+#                        the parameters.yml rules actually reach expressions.tmdl.
+# - agentImage:          Specifies the operating system image (Ubuntu) used for the build agent.
+# ==============================================================================
+variables:
+  - name: fabricWorkspaceName
+    value: 'EQ-Fabric-NP-Dev-Data-Ops'
+  - name: targetEnvironment
+    value: 'dev'
+  - name: deploySemanticModel
+    value: 'false'
+  - name: fabricCicdVersion
+    value: '1.3.0'
+  - name: fabricCicdLogLevel
+    value: 'INFO'
+  - name: agentImage
+    value: 'ubuntu-latest'
+
+# ==============================================================================
+# CI/CD TRIGGERS
+# Configures when the pipeline automatically runs based on repository activity.
+# - batch: Groups concurrent commits into a single run to conserve resources.
+# - branches: Restricts the automatic trigger to only run on the 'develop' branch.
+# - paths: Ensures changes to any file ('**') will trigger the pipeline.
+# - pr: none ensures the pipeline does not run automatically on Pull Requests.
+# ==============================================================================
+trigger:
+  batch: true
+  branches:
+    include:
+      - develop
+  paths:
+    include:
+      - '**'
+
+pr: none
+
+
+# ==============================================================================
+# PIPELINE JOBS
+# Defines the main execution block for the pipeline.
+# This job provisions a virtual machine using the agentImage defined above
+# and executes a series of sequential steps to perform the deployment.
+# ==============================================================================
+jobs:
+  - job: RefreshFabricWorkspace
+    displayName: 'Refresh Fabric workspace from Git'
+    pool:
+      vmImage: ${{ variables.agentImage }}
+
+    steps:
+
+    # Downloads the latest source code from the repository onto the build agent
+    # so that the files are available for deployment.
+    - checkout: self
+
+    # Ensures the build agent is using Python version 3.12 and adds it to the
+    # system PATH so subsequent scripts can execute Python commands successfully.
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.12'
+        addToPath: true
+      displayName: 'Set up Python 3.12'
+
+    # Upgrades the Python package manager (pip) to the latest version and
+    # installs the 'fabric-cicd' library, which contains the deployment logic.
+    # The version is pinned so deployments stay reproducible.
+    - script: |
+        python -m pip install --upgrade pip
+        pip install fabric-cicd==$(fabricCicdVersion)
+      displayName: 'Install fabric-cicd'
+
+
+    # ==========================================================================
+    # EXECUTE DEPLOYMENT SCRIPT
+    # This inline Python script handles the core deployment process:
+    # 1. Extracts Service Principal credentials from pipeline environment variables.
+    # 2. Authenticates with Microsoft Entra ID (Azure AD) to get an OAuth token.
+    # 3. Queries the Fabric REST API to find the internal ID of the target workspace.
+    # 4. Uses the 'fabric-cicd' library to publish all new/updated items from the
+    #    repository and remove any orphaned items that no longer exist in Git.
+    # ==========================================================================
+    - task: PythonScript@0
+      inputs:
+        scriptSource: inline
+        script: |
+          import os
+          from fabric_cicd import (
+            FabricWorkspace, publish_all_items, unpublish_all_orphan_items,
+            change_log_level, constants,
+          )
+          from azure.identity import ClientSecretCredential
+          import requests
+
+          # Pull authentication details and workspace name from pipeline environment variables
+          tenant_id     = os.environ['FABRICCICDTENANTID']
+          client_id     = os.environ['FABRICCICDCLIENTID']
+          client_secret = os.environ['FABRICCICDCLIENTSECRET']
+          workspace_name = os.environ['FABRICWORKSPACENAME']
+          target_env     = os.environ['TARGET_ENV']
+          deploy_semantic_model = os.environ['DEPLOY_SEMANTIC_MODEL'].strip().lower() == 'true'
+          log_level      = os.environ['FABRIC_CICD_LOG_LEVEL'].strip().upper()
+
+          # DEBUG prints every find_replace substitution. Useful for confirming the
+          # parameters.yml rules really reach the semantic model's expressions.tmdl --
+          # in a dev-to-dev run the replacements are identity swaps and otherwise invisible.
+          if log_level == 'DEBUG':
+            change_log_level('DEBUG')
+
+          # Authenticate as dev tenant SP
+          credential = ClientSecretCredential(
+            tenant_id=tenant_id,
+            client_id=client_id,
+            client_secret=client_secret
+          )
+
+          # Get token and look up workspace ID by name
+          # Retrieve an OAuth token to make REST API calls to Fabric
+          token = credential.get_token('https://api.fabric.microsoft.com/.default')
+          headers = {
+            'Authorization': f'Bearer {token.token}',
+            'Content-Type': 'application/json'
+          }
+
+          # Call the Fabric REST API to fetch all workspaces the Service Principal can access
+          response = requests.get('https://api.fabric.microsoft.com/v1/workspaces', headers=headers)
+          response.raise_for_status()
+          workspaces = response.json()['value']
+          # Search the API response to find the Workspace ID that matches our Workspace Name
+          workspace_id = next((w['id'] for w in workspaces if w['displayName'] == workspace_name), None)
+
+          # Fail the pipeline if the workspace isn't found (likely a permissions or typo issue)
+          if not workspace_id:
+            raise ValueError(f'Workspace "{workspace_name}" not found or SP does not have access')
+
+          print(f'Found workspace: {workspace_name} ({workspace_id})')
+
+          # Decide which item types to deploy.
+          # None means "all supported types", which is the default and what we normally want:
+          # item_type_in_scope also limits which types unpublish_all_orphan_items considers,
+          # so narrowing it would leave orphans of the excluded types behind. When the
+          # semantic model is switched off we therefore start from the FULL list and remove
+          # exactly one entry, leaving every other type's behaviour unchanged.
+          item_type_in_scope = None
+          if not deploy_semantic_model:
+            item_type_in_scope = [t for t in constants.ACCEPTED_ITEM_TYPES if t != 'SemanticModel']
+            print('deploySemanticModel=false -> SemanticModel items are skipped '
+                  '(and are NOT orphan-deleted, because they are out of scope).')
+
+          # Deploy all items from repo into workspace
+          target_workspace = FabricWorkspace(
+            workspace_id=workspace_id,
+            environment=target_env,
+            repository_directory=os.getcwd(),
+            parameter_file_path=os.path.join(os.getcwd(), 'parameters.yml'),
+            token_credential=credential,
+            item_type_in_scope=item_type_in_scope,
+          )
+
+          # Deploy new/updated items and delete orphaned items that no longer exist in the repo.
+          # NOTE: unpublish deletes anything in the workspace that is not in Git. That is the
+          # intent of a "refresh from Git" job, but it does mean uncommitted work created
+          # directly in the Fabric UI is removed on every run.
+          publish_all_items(target_workspace)
+          unpublish_all_orphan_items(target_workspace)
+          print('Workspace refreshed successfully.')
+      displayName: 'Run fabric-cicd deployment'
+      # Map secure Azure DevOps pipeline variables to the OS environment variables used in the Python script
+      env:
+        FABRICCICDTENANTID: $(fabricCicdTenantId)
+        FABRICCICDCLIENTID: $(fabricCicdClientId)
+        FABRICCICDCLIENTSECRET: $(fabricCicdClientSecret)
+        FABRICWORKSPACENAME: $(fabricWorkspaceName)
+        TARGET_ENV: $(targetEnvironment)
+        DEPLOY_SEMANTIC_MODEL: $(deploySemanticModel)
+        FABRIC_CICD_LOG_LEVEL: $(fabricCicdLogLevel)

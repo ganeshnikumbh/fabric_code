@@ -1,0 +1,174 @@
+{
+  "table_name": "marketing_email_events",
+  "description": "HubSpot marketing email engagement events - GET /email/public/v1/events. One row per event; nested location/browser/sentBy objects flattened. Covers OPEN and CLICK event types; CLICK adds url/link_id/link_id_v2/referer, OPEN adds duration and location lat/long/zipcode - each is NULL on the other type. NOTE: the records array is under 'events', NOT 'results' - this source_path overrides ingestion_config. Pagination is offset-based via top-level hasMore/offset.",
+  "source_path": "events",
+  "has_pagination": true,
+  "context_fields": [],
+  "fields": [
+    {
+      "column": "id",
+      "source": "id",
+      "type": "string"
+    },
+    {
+      "column": "event_type",
+      "source": "type",
+      "type": "string"
+    },
+    {
+      "column": "created",
+      "source": "created",
+      "type": "integer"
+    },
+    {
+      "column": "recipient",
+      "source": "recipient",
+      "type": "string"
+    },
+    {
+      "column": "duration",
+      "source": "duration",
+      "type": "integer"
+    },
+    {
+      "column": "portal_id",
+      "source": "portalId",
+      "type": "integer"
+    },
+    {
+      "column": "app_id",
+      "source": "appId",
+      "type": "integer"
+    },
+    {
+      "column": "app_name",
+      "source": "appName",
+      "type": "string"
+    },
+    {
+      "column": "email_campaign_id",
+      "source": "emailCampaignId",
+      "type": "integer"
+    },
+    {
+      "column": "email_campaign_group_id",
+      "source": "emailCampaignGroupId",
+      "type": "integer"
+    },
+    {
+      "column": "smtp_id",
+      "source": "smtpId",
+      "type": "string"
+    },
+    {
+      "column": "filtered_event",
+      "source": "filteredEvent",
+      "type": "boolean"
+    },
+    {
+      "column": "sent_by_id",
+      "source": "sentBy.id",
+      "type": "string"
+    },
+    {
+      "column": "sent_by_created",
+      "source": "sentBy.created",
+      "type": "integer"
+    },
+    {
+      "column": "device_type",
+      "source": "deviceType",
+      "type": "string"
+    },
+    {
+      "column": "user_agent",
+      "source": "userAgent",
+      "type": "string"
+    },
+    {
+      "column": "browser_name",
+      "source": "browser.name",
+      "type": "string"
+    },
+    {
+      "column": "browser_family",
+      "source": "browser.family",
+      "type": "string"
+    },
+    {
+      "column": "browser_producer",
+      "source": "browser.producer",
+      "type": "string"
+    },
+    {
+      "column": "browser_producer_url",
+      "source": "browser.producerUrl",
+      "type": "string"
+    },
+    {
+      "column": "browser_type",
+      "source": "browser.type",
+      "type": "string"
+    },
+    {
+      "column": "browser_url",
+      "source": "browser.url",
+      "type": "string"
+    },
+    {
+      "column": "browser_version",
+      "source": "browser.version",
+      "type": "json"
+    },
+    {
+      "column": "location_country",
+      "source": "location.country",
+      "type": "string"
+    },
+    {
+      "column": "location_state",
+      "source": "location.state",
+      "type": "string"
+    },
+    {
+      "column": "location_city",
+      "source": "location.city",
+      "type": "string"
+    },
+    {
+      "column": "location_zipcode",
+      "source": "location.zipcode",
+      "type": "string"
+    },
+    {
+      "column": "location_latitude",
+      "source": "location.latitude",
+      "type": "double"
+    },
+    {
+      "column": "location_longitude",
+      "source": "location.longitude",
+      "type": "double"
+    },
+    {
+      "column": "url",
+      "source": "url",
+      "type": "string"
+    },
+    {
+      "column": "link_id",
+      "source": "linkId",
+      "type": "integer"
+    },
+    {
+      "column": "link_id_v2",
+      "source": "linkIdV2",
+      "type": "string"
+    },
+    {
+      "column": "referer",
+      "source": "referer",
+      "type": "string"
+    }
+  ]
+}
